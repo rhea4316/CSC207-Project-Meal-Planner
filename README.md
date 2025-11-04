@@ -15,6 +15,10 @@ A comprehensive meal planning application that helps users manage their daily an
 
 This meal planning program helps users manage their daily and weekly meals. Users can enter ingredients they have to find matching recipes with nutrient information. Users can also browse recipes and see what ingredients are needed to make them. The program allows users to create and save their own recipes with cooking instructions. Users can plan their meals for breakfast, lunch, and dinner across a full week. The program also lets users adjust recipe serving sizes and view their scheduled meals. All recipes include detailed nutrient information to help users track their dietary intake.
 
+## Work Timeline & Division of Work
+
+https://maddening-year-2cf.notion.site/Meal-Planner-Project-Timeline-2a1e3eca9d8080409a2dcb7f40ee79e5
+
 ## User Stories
 
 ### User Story 1
