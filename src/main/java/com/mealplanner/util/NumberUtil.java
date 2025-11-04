@@ -20,12 +20,8 @@ public class NumberUtil {
      * @return Rounded value
      */
     public static double round(double value, int decimalPlaces) {
-        if (decimalPlaces < 0) {
-            throw new IllegalArgumentException("Decimal places must be non-negative");
-        }
-
-        double multiplier = Math.pow(10, decimalPlaces);
-        return Math.round(value * multiplier) / multiplier;
+        // TODO: Implement rounding logic
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     /**
@@ -37,7 +33,8 @@ public class NumberUtil {
      * @return true if value is within range
      */
     public static boolean isInRange(double value, double min, double max) {
-        return value >= min && value <= max;
+        // TODO: Implement range check
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     /**
@@ -49,10 +46,8 @@ public class NumberUtil {
      * @return Clamped value
      */
     public static double clamp(double value, double min, double max) {
-        if (min > max) {
-            throw new IllegalArgumentException("Min must be less than or equal to max");
-        }
-        return Math.max(min, Math.min(max, value));
+        // TODO: Implement clamping logic
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     /**
@@ -62,7 +57,8 @@ public class NumberUtil {
      * @return Formatted string (e.g., "3.5")
      */
     public static String formatOneDecimal(double value) {
-        return ONE_DECIMAL.format(value);
+        // TODO: Implement one decimal formatting
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     /**
@@ -72,7 +68,8 @@ public class NumberUtil {
      * @return Formatted string (e.g., "3.14")
      */
     public static String formatTwoDecimals(double value) {
-        return TWO_DECIMALS.format(value);
+        // TODO: Implement two decimal formatting
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     /**
@@ -82,7 +79,8 @@ public class NumberUtil {
      * @return true if value has no fractional part
      */
     public static boolean isWholeNumber(double value) {
-        return value == Math.floor(value);
+        // TODO: Implement whole number check
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     /**
@@ -93,20 +91,8 @@ public class NumberUtil {
      * @return Fraction string or decimal
      */
     public static String formatAsFraction(double value) {
-        // Common cooking fractions
-        if (Math.abs(value - 0.25) < 0.01) return "1/4";
-        if (Math.abs(value - 0.333) < 0.01) return "1/3";
-        if (Math.abs(value - 0.5) < 0.01) return "1/2";
-        if (Math.abs(value - 0.666) < 0.01) return "2/3";
-        if (Math.abs(value - 0.75) < 0.01) return "3/4";
-
-        // If whole number, return as integer
-        if (isWholeNumber(value)) {
-            return String.valueOf((int) value);
-        }
-
-        // Otherwise return decimal
-        return formatOneDecimal(value);
+        // TODO: Implement fraction formatting
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     /**
@@ -117,10 +103,8 @@ public class NumberUtil {
      * @return Percentage (0-100+)
      */
     public static double calculatePercentage(double value, double total) {
-        if (total == 0) {
-            return 0.0;
-        }
-        return (value / total) * 100.0;
+        // TODO: Implement percentage calculation
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     /**
@@ -131,15 +115,8 @@ public class NumberUtil {
      * @return Parsed double or default
      */
     public static double parseDouble(String str, double defaultValue) {
-        if (str == null || str.trim().isEmpty()) {
-            return defaultValue;
-        }
-
-        try {
-            return Double.parseDouble(str.trim());
-        } catch (NumberFormatException e) {
-            return defaultValue;
-        }
+        // TODO: Implement double parsing with default
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     /**
@@ -150,15 +127,8 @@ public class NumberUtil {
      * @return Parsed int or default
      */
     public static int parseInt(String str, int defaultValue) {
-        if (str == null || str.trim().isEmpty()) {
-            return defaultValue;
-        }
-
-        try {
-            return Integer.parseInt(str.trim());
-        } catch (NumberFormatException e) {
-            return defaultValue;
-        }
+        // TODO: Implement int parsing with default
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     /**
@@ -170,7 +140,8 @@ public class NumberUtil {
      * @return true if values are within tolerance
      */
     public static boolean approximatelyEqual(double a, double b, double tolerance) {
-        return Math.abs(a - b) <= tolerance;
+        // TODO: Implement approximate equality check
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     /**
@@ -180,23 +151,8 @@ public class NumberUtil {
      * @return Decimal value, or 0 if invalid
      */
     public static double fractionToDecimal(String fraction) {
-        if (fraction == null || !fraction.contains("/")) {
-            return parseDouble(fraction, 0.0);
-        }
-
-        String[] parts = fraction.split("/");
-        if (parts.length != 2) {
-            return 0.0;
-        }
-
-        double numerator = parseDouble(parts[0], 0.0);
-        double denominator = parseDouble(parts[1], 1.0);
-
-        if (denominator == 0) {
-            return 0.0;
-        }
-
-        return numerator / denominator;
+        // TODO: Implement fraction to decimal conversion
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     private NumberUtil() {

@@ -67,10 +67,8 @@ public class NutritionGoals {
      * @return true if all nutrients are at or below goals
      */
     public boolean isWithinGoals(NutritionInfo actual) {
-        return actual.getCalories() <= dailyCalories &&
-               actual.getProtein() <= dailyProtein &&
-               actual.getCarbs() <= dailyCarbs &&
-               actual.getFat() <= dailyFat;
+        // TODO: Implement goal checking logic
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     /**
@@ -80,12 +78,8 @@ public class NutritionGoals {
      * @return NutritionInfo representing remaining amounts (or negative if over)
      */
     public NutritionInfo calculateRemaining(NutritionInfo consumed) {
-        return new NutritionInfo(
-            dailyCalories - consumed.getCalories(),
-            dailyProtein - consumed.getProtein(),
-            dailyCarbs - consumed.getCarbs(),
-            dailyFat - consumed.getFat()
-        );
+        // TODO: Implement remaining calculation logic
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     /**
@@ -95,12 +89,8 @@ public class NutritionGoals {
      * @return array of percentages [calories%, protein%, carbs%, fat%]
      */
     public double[] calculatePercentages(NutritionInfo consumed) {
-        return new double[]{
-            (consumed.getCalories() * 100.0) / dailyCalories,
-            (consumed.getProtein() * 100.0) / dailyProtein,
-            (consumed.getCarbs() * 100.0) / dailyCarbs,
-            (consumed.getFat() * 100.0) / dailyFat
-        };
+        // TODO: Implement percentage calculation logic
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @Override
