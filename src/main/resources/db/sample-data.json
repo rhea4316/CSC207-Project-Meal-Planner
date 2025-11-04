@@ -1,0 +1,87 @@
+{
+  "description": "Sample data for testing the Meal Planner application",
+  "sampleRecipes": [
+    {
+      "recipeID": "sample-001",
+      "recipeName": "Simple Pasta",
+      "servingSize": 2,
+      "prepTime": 10,
+      "cookTime": 15,
+      "ingredients": [
+        {
+          "name": "pasta",
+          "quantity": 200,
+          "unit": "GRAMS",
+          "calories": 280,
+          "protein": 10,
+          "carbs": 55,
+          "fat": 1.5
+        },
+        {
+          "name": "tomato sauce",
+          "quantity": 1,
+          "unit": "CUPS",
+          "calories": 70,
+          "protein": 2,
+          "carbs": 15,
+          "fat": 0.5
+        }
+      ],
+      "steps": [
+        "Boil water in a large pot",
+        "Add pasta and cook for 10-12 minutes",
+        "Drain pasta",
+        "Heat tomato sauce in a pan",
+        "Mix pasta with sauce and serve"
+      ]
+    },
+    {
+      "recipeID": "sample-002",
+      "recipeName": "Scrambled Eggs",
+      "servingSize": 1,
+      "prepTime": 2,
+      "cookTime": 5,
+      "ingredients": [
+        {
+          "name": "eggs",
+          "quantity": 2,
+          "unit": "PIECES",
+          "calories": 140,
+          "protein": 12,
+          "carbs": 1,
+          "fat": 10
+        },
+        {
+          "name": "butter",
+          "quantity": 1,
+          "unit": "TABLESPOONS",
+          "calories": 100,
+          "protein": 0,
+          "carbs": 0,
+          "fat": 11
+        }
+      ],
+      "steps": [
+        "Beat eggs in a bowl",
+        "Melt butter in a pan over medium heat",
+        "Pour eggs into pan",
+        "Stir constantly until cooked",
+        "Serve immediately"
+      ]
+    }
+  ],
+  "sampleUsers": [
+    {
+      "userID": "user-001",
+      "username": "test_user",
+      "password": "password123",
+      "savedRecipes": ["sample-001"],
+      "nutritionGoals": {
+        "dailyCalories": 2000,
+        "dailyProtein": 150,
+        "dailyCarbs": 200,
+        "dailyFat": 70
+      }
+    }
+  ]
+}

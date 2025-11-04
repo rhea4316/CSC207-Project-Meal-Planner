@@ -1,0 +1,16 @@
+# Example API configuration file
+# Copy this file to api_keys.properties and fill in your actual API keys
+# The actual api_keys.properties file is ignored by git for security
+
+# Spoonacular API Key
+# Get your key from: https://spoonacular.com/food-api
+spoonacular.api.key=YOUR_SPOONACULAR_API_KEY_HERE
+
+# Edamam API Keys
+# Get your keys from: https://developer.edamam.com/
+edamam.app.id=YOUR_EDAMAM_APP_ID_HERE
+edamam.app.key=YOUR_EDAMAM_APP_KEY_HERE
+
+# API Base URLs (usually don't need to change these)
+spoonacular.base.url=https://api.spoonacular.com
+edamam.base.url=https://api.edamam.com
