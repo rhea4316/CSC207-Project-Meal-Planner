@@ -1,5 +1,8 @@
 package com.mealplanner.entity;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Value object representing a user's daily nutritional goals.
  * This entity encapsulates nutrition targets to keep the User entity clean (Single Responsibility Principle).
@@ -67,8 +70,8 @@ public class NutritionGoals {
      * @return true if all nutrients are at or below goals
      */
     public boolean isWithinGoals(NutritionInfo actual) {
-        // TODO: Implement goal checking logic
-        throw new UnsupportedOperationException("Not yet implemented");
+        return this.dailyCalories < actual.getCalories() && this.dailyProtein < actual.getProtein() &&
+                this.dailyCarbs < actual.getCarbs() && this.dailyFat < actual.getFat();
     }
 
     /**
@@ -78,8 +81,11 @@ public class NutritionGoals {
      * @return NutritionInfo representing remaining amounts (or negative if over)
      */
     public NutritionInfo calculateRemaining(NutritionInfo consumed) {
-        // TODO: Implement remaining calculation logic
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (isWithinGoals(consumed)) {
+            return new NutritionInfo(consumed.getCalories()-this.dailyCalories, consumed.getProtein()-this.dailyProtein,
+                    consumed.getCalories()-this.dailyCalories, consumed.getCarbs()-this.dailyFat);
+        }
+        throw new UnsupportedOperationException("Comsumed more than goal.");
     }
 
     /**
@@ -89,8 +95,15 @@ public class NutritionGoals {
      * @return array of percentages [calories%, protein%, carbs%, fat%]
      */
     public double[] calculatePercentages(NutritionInfo consumed) {
-        // TODO: Implement percentage calculation logic
-        throw new UnsupportedOperationException("Not yet implemented");
+        if  (isWithinGoals(consumed)) {
+            double calories_per = (double) consumed.getCalories() / this.dailyCalories * 100;
+            double protein_per = (double) consumed.getProtein() / this.dailyProtein * 100;
+            double carb_per = (double) consumed.getCarbs() / this.dailyCarbs * 100;
+            double fat_per = (double) consumed.getFat() / this.dailyFat  * 100;
+            double [] percentages = {calories_per, protein_per, carb_per, fat_per};
+            return percentages;
+        }
+        throw new UnsupportedOperationException("Comsumed more than goal.");
     }
 
     @Override
