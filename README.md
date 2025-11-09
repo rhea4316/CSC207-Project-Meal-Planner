@@ -195,14 +195,14 @@ See [CODE_STRUCTURE.md](CODE_STRUCTURE.md) for detailed architecture documentati
 
 ### Class: Ingredient
 * `name`: String
-* `quantity`: double
+
 * `unit`: **Unit** (P0: Type-safe enum instead of String)
 * `nutrition`: **NutritionInfo** (encapsulated nutrition data)
 
 ### Class: Recipe
 * `recipeID`: String
 * `recipeName`: String
-* `ingredients`: List<Ingredient>
+* `ingredients`: hashmap(Ingredient,quantity: int)
 * `steps`: List<String>
 * `servingSize`: int
 * `nutrition`: **NutritionInfo** (calculated from ingredients)
@@ -221,31 +221,29 @@ See [CODE_STRUCTURE.md](CODE_STRUCTURE.md) for detailed architecture documentati
 ### Class: Schedule
 * `scheduleID`: String
 * `userID`: String
-* `weeklyMeals`: Map<LocalDate, Map<MealType, Recipe>>
+* `weeklyMeals`: Map<LocalDate, Mealplan>
   * Key: LocalDate (proper date type)
   * Value: Map with **MealType** enum keys (P0) mapping to Recipe objects
 
 ### Class: MealPlan
-* `date`: LocalDate (proper date type)
 * `breakfast`: Recipe
 * `lunch`: Recipe
 * `dinner`: Recipe
 * `dailyNutrition`: **NutritionInfo** (calculated from all meals)
 
-### Class: NutritionInfo (P0)
+### Class: NutritionInfo 
 * `calories`: int
 * `protein`: double
 * `carbs`: double
 * `fat`: double
 
-### Class: NutritionGoals (P0)
+### Class: NutritionGoals
 * `dailyCalories`: int
 * `dailyProtein`: double
 * `dailyCarbs`: double
 * `dailyFat`: double
-* Business methods: `isWithinGoals()`, `calculateRemaining()`, `calculatePercentages()`
 
-### Enums (P0 - Type Safety)
+### Enums
 
 #### MealType
 * `BREAKFAST`, `LUNCH`, `DINNER`

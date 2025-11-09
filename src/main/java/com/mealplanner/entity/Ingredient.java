@@ -5,5 +5,5 @@ package com.mealplanner.entity;
 // TODO: Implement immutable ingredient class with name, quantity, unit, and nutrition values (calories, protein, carbs, fat)
 
 public class Ingredient {
-
+//Add instance attribute like name and nututrition values
 }
