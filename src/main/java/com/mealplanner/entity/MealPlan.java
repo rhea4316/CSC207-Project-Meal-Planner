@@ -5,5 +5,6 @@ package com.mealplanner.entity;
 // TODO: Implement meal plan class with method to calculate total daily nutrition from all meals
 
 public class MealPlan {
-
+//dictionary for breakfast, lunch, dinner
+//int: serving size
 }
