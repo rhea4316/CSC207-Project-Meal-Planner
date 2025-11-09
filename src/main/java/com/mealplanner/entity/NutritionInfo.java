@@ -68,8 +68,9 @@ public class NutritionInfo {
      * @throws IllegalArgumentException if multiplier is negative
      */
     public NutritionInfo scale(double multiplier) {
-        // TODO: Implement scaling logic
-        throw new UnsupportedOperationException("Not yet implemented");
+        int roundedCalories = (int) Math.round(this.calories * multiplier);
+
+        return new NutritionInfo(roundedCalories, this.protein * multiplier, this.carbs * multiplier, this.fat * multiplier);
     }
 
     /**
@@ -80,8 +81,12 @@ public class NutritionInfo {
      * @throws IllegalArgumentException if other is null
      */
     public NutritionInfo add(NutritionInfo other) {
-        // TODO: Implement addition logic
-        throw new UnsupportedOperationException("Not yet implemented");
+        int newCalories = this.calories + other.calories;
+        double newProtein = this.protein + other.protein;
+        double newCarbs = this.carbs + other.carbs;
+        double newFat = this.fat + other.fat;
+
+        return new NutritionInfo(newCalories, newProtein, newCarbs, newFat);
     }
 
     @Override
