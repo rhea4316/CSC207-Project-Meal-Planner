@@ -69,8 +69,8 @@ public class NutritionGoals {
      * @return true if all nutrients are at or below goals
      */
     public boolean isWithinGoals(@NotNull NutritionInfo actual) {
-        return this.dailyCalories > actual.getCalories() && this.dailyProtein > actual.getProtein() &&
-                this.dailyCarbs > actual.getCarbs() && this.dailyFat > actual.getFat();
+        return this.dailyCalories >= actual.getCalories() && this.dailyProtein >= actual.getProtein() &&
+                this.dailyCarbs >= actual.getCarbs() && this.dailyFat >= actual.getFat();
     }
 
     /**
@@ -82,7 +82,7 @@ public class NutritionGoals {
     public NutritionInfo calculateRemaining(NutritionInfo consumed) {
         if (isWithinGoals(consumed)) {
             return new NutritionInfo(this.dailyCalories-consumed.getCalories(), this.dailyProtein-consumed.getProtein(),
-                    this.dailyCalories-consumed.getCalories(), this.dailyFat-consumed.getCarbs());
+                    this.dailyCalories-consumed.getCalories(), this.dailyFat-consumed.getFat());
         }
         throw new UnsupportedOperationException("Consumed more than goal.");
     }
@@ -94,6 +94,9 @@ public class NutritionGoals {
      * @return array of percentages [calories%, protein%, carbs%, fat%]
      */
     public double[] calculatePercentages(@NotNull NutritionInfo consumed) {
+        if (this.dailyCalories == 0 || this.dailyProtein == 0 || this.dailyCarbs == 0 || this.dailyFat == 0) {
+            throw new UnsupportedOperationException("Nutrition goals cannot be zero");
+        }
         double calories_per = (double) consumed.getCalories() / this.dailyCalories * 100;
         double protein_per = (double) consumed.getProtein() / this.dailyProtein * 100;
         double carb_per = (double) consumed.getCarbs() / this.dailyCarbs * 100;
