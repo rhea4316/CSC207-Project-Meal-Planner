@@ -9,33 +9,26 @@ import java.util.Objects;
 // TODO: Implement user class with methods for managing saved recipes and generating grocery lists
 
 public class User {
-    private final String userId;
-    private String username;
-    private String password;
-
-    private List<String> savedRecipeIds;              /// user saved recipes by recipe ID
-    private List<Ingredient> groceryList;            /// user ingredient shopping list
+    private String username;                            /// Username for identification
+    private String userId;                              /// User's ID (not sure if this is necessary)
+    private List<String> savedRecipeIds;              /// user's recipes by recipe ID
+    private List<Ingredient> groceryList;            /// user grocery list of ingredients
     private Schedule mealSchedule;                          /// user meal schedule
     private NutritionGoals nutritionGoals;                  ///user nutrition goals
 
 
-    public User(String userId, String username, String password) {
-        this.userId = requireNonBlank(userId, "userId");
+    public User(String username) {
         this.username = requireNonBlank(username, "username");
-        this.password = requireNonBlank(password, "password");
+        this.userId = requireNonBlank(username, "user ID");
         this.savedRecipeIds = new ArrayList<>();
         this.groceryList = new ArrayList<>();
 
     }
 
-    public User(String userId, String username, String password, NutritionGoals nutritionGoals, Schedule mealSchedule)
-    {this.userId = userId;
-        this.username = username;
-        this.password = password;
+    public User(String username, NutritionGoals nutritionGoals, Schedule mealSchedule)
+    {this.username = username;
         this.nutritionGoals = nutritionGoals;
         this.mealSchedule = mealSchedule;}
-
-
 
 
     ///  Getters and setters
@@ -52,14 +45,6 @@ public class User {
         this.username = requireNonBlank(username, "username");
     }
 
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = requireNonBlank(password, "password");
-    }
-
     public NutritionGoals getNutritionGoals() {
         return nutritionGoals;
     }
@@ -74,13 +59,14 @@ public class User {
 
     public void setMealSchedule(Schedule mealSchedule) {
         this.mealSchedule = mealSchedule;
+
     }
 
 
     ///  Managing the user's saved recipes
 
 
-    ///  Return the User's saved recipe IDs
+    ///  Return the User's saved recipes as a list of recipe IDs
     public List<String> getSavedRecipeIds() {
         return Collections.unmodifiableList(savedRecipeIds);
     }
@@ -140,7 +126,7 @@ public class User {
         if (this == o) return true;
         if (!(o instanceof User)) return false;
         User other = (User) o;
-        return Objects.equals(userId, other.userId);
+        return Objects.equals(username, other.username);
     }
 
 
