@@ -13,8 +13,8 @@ public final class Ingredient {
     private final double protein;
     private final double carbs;
     private final double fat;
-}
-public Ingredient(String name, double quantity, String unit, int calories, double protein, double carbs, double fat) {
+
+    public Ingredient(String name, double quantity, String unit, int calories, double protein, double carbs, double fat) {
         this.name = name;
         this.quantity = quantity;
         this.unit = unit;
@@ -23,7 +23,8 @@ public Ingredient(String name, double quantity, String unit, int calories, doubl
         this.carbs = carbs;
         this.fat = fat;
     }
-public String getName() {
+
+    public String getName() {
         return name;
     }
 
@@ -51,3 +52,4 @@ public String getName() {
         return fat;
     }
 
+}

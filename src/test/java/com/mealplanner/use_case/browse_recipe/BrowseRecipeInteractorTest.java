@@ -31,9 +31,8 @@ public class BrowseRecipeInteractorTest {
     }
 
     @Test
-    public void testBrowseRecipesSuccess() {
-        // TODO: Test browsing recipes when recipes exist
-        // TODO: Verify presenter receives recipe list
+    public void browseRecipeTest() {
+
     }
 
     @Test

@@ -36,6 +36,7 @@ public class FileRecipeRepository implements RecipeRepository {
 
     @Override
     public void save(Recipe recipe) throws DataAccessException {
+        throw new UnsupportedOperationException("TODO");
         // TODO: Implement save - serialize recipe to JSON file
         logger.debug("Saving recipe: {}", recipe.getRecipeId());
         throw new UnsupportedOperationException("Not yet implemented");
