@@ -4,6 +4,12 @@ package com.mealplanner.use_case.browse_recipe;
 // Responsible: Regina (interface), Everyone (implementation)
 // TODO: Define method to get recipe by ID from API or database
 
-public interface BrowseRecipeDataAccessInterface {
+import com.mealplanner.entity.Recipe;
 
+public interface BrowseRecipeDataAccessInterface {
+    // get recipe ID/specifications from InputData
+    // use those to find corresponding recipes from API
+    void getRecipeID(Recipe recipe);
+
+    void getRecipeName(String name);
 }

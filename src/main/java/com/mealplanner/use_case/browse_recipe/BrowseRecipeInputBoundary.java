@@ -6,4 +6,6 @@ package com.mealplanner.use_case.browse_recipe;
 
 public interface BrowseRecipeInputBoundary {
 
+    void execute(BrowseRecipeInputData browseRecipeInputData);
+
 }
