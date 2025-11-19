@@ -16,12 +16,15 @@ public class Recipe {
     private final Integer cookTimeMinutes;
     private final List<DietaryRestriction> dietaryRestrictions;
 
+    // Add a unique identifier for the recipe
+    private final String recipeId;
+
     /**
      * Constructs a new Recipe with required and optional information.
      */
     public Recipe(String name, List<String> ingredients, List<String> steps, 
                  int servingSize, NutritionInfo nutritionInfo, Integer cookTimeMinutes,
-                 List<DietaryRestriction> dietaryRestrictions) {
+                 List<DietaryRestriction> dietaryRestrictions, String recipeId) {
         validateInputs(name, ingredients, steps, servingSize);
 
         this.name = name.trim();
@@ -32,13 +35,14 @@ public class Recipe {
         this.cookTimeMinutes = cookTimeMinutes; // Can be null
         this.dietaryRestrictions = dietaryRestrictions != null ? 
             new ArrayList<>(dietaryRestrictions) : new ArrayList<>();
+        this.recipeId = recipeId != null ? recipeId.trim() : null;
     }
 
     /**
      * Constructs a new Recipe with only required fields.
      */
     public Recipe(String name, List<String> ingredients, List<String> steps, int servingSize) {
-        this(name, ingredients, steps, servingSize, null, null, null);
+        this(name, ingredients, steps, servingSize, null, null, null, null);
     }
 
     private void validateInputs(String name, List<String> ingredients,
@@ -76,7 +80,8 @@ public class Recipe {
                 newServingSize,
                 scaledNutrition,
                 this.cookTimeMinutes,
-                this.dietaryRestrictions
+                this.dietaryRestrictions,
+                this.recipeId // Preserve the recipeId
         );
     }
 
@@ -126,6 +131,10 @@ public class Recipe {
         return new ArrayList<>(dietaryRestrictions);
     }
 
+    public String getRecipeId() {
+        return recipeId;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -142,13 +151,14 @@ public class Recipe {
                 && Objects.equals(steps, recipe.steps)
                 && Objects.equals(nutritionInfo, recipe.nutritionInfo)
                 && Objects.equals(cookTimeMinutes, recipe.cookTimeMinutes)
-                && Objects.equals(dietaryRestrictions, recipe.dietaryRestrictions);
+                && Objects.equals(dietaryRestrictions, recipe.dietaryRestrictions)
+                && Objects.equals(recipeId, recipe.recipeId);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(name, ingredients, steps, servingSize,
-                nutritionInfo, cookTimeMinutes, dietaryRestrictions);
+                nutritionInfo, cookTimeMinutes, dietaryRestrictions, recipeId);
     }
 
     @Override
