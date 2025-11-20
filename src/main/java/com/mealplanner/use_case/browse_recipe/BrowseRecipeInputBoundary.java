@@ -4,8 +4,10 @@ package com.mealplanner.use_case.browse_recipe;
 // Responsible: Regina
 // TODO: Define execute method that takes BrowseRecipeInputData (containing recipe ID) as parameter
 
+import java.io.IOException;
+
 public interface BrowseRecipeInputBoundary {
 
-    void execute(BrowseRecipeInputData browseRecipeInputData);
+    void execute(BrowseRecipeInputData browseRecipeInputData) throws IOException;
 
 }

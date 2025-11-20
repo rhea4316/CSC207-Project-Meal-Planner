@@ -5,8 +5,8 @@ package com.mealplanner.use_case.browse_recipe;
 // TODO: Define methods for presentRecipeDetails (success) and presentError (failure) cases
 
 public interface BrowseRecipeOutputBoundary {
-    void prepareSuccessView(BrowseRecipeOutputData browseRecipeOutputData);
+    void presentRecipeDetails(BrowseRecipeOutputData browseRecipeOutputData);
 
-    void prepareFailureView(String errormessage);
+    void presentError(String errorMessage);
 
 }
