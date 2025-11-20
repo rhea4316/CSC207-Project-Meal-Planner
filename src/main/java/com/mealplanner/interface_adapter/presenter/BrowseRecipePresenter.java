@@ -20,7 +20,7 @@ public class BrowseRecipePresenter implements BrowseRecipeOutputBoundary {
     @Override
     public void presentRecipeDetails(BrowseRecipeOutputData browseRecipeOutputData) {
         browseRecipeViewModel.setRecipes(browseRecipeOutputData.getRecipes());
-//        viewManager.setActiveView
+        viewManager.setActiveView("BrowseRecipeView");
     }
 
     @Override
