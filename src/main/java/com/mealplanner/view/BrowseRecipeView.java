@@ -2,7 +2,6 @@ package com.mealplanner.view;
 
 // Swing view for browsing available recipes - displays recipe list and selection interface.
 // Responsible: Regina (functionality), Everyone (GUI implementation)
-// TODO: Create JPanel with recipe list display - listen to RecipeBrowseViewModel and call controller on recipe selection
 
 import com.mealplanner.entity.Recipe;
 import com.mealplanner.interface_adapter.controller.BrowseRecipeController;
@@ -142,12 +141,12 @@ public class BrowseRecipeView extends JPanel implements PropertyChangeListener, 
     public void propertyChange(PropertyChangeEvent evt) {
         switch (evt.getPropertyName()) {
             case "recipes":
-                displayRecipes(RecipeBrowseViewModel.getRecipes());
+                displayRecipes(recipeBrowseViewModel.getRecipes());
                 errorLabel.setText("");
                 break;
             case "errorMessage":
                 resultsTextArea.setText("");
-                errorLabel.setText(RecipeBrowseViewModel.getErrorMessage());
+                errorLabel.setText(recipeBrowseViewModel.getErrorMessage());
                 break;
         }
 

@@ -2,7 +2,6 @@ package com.mealplanner.interface_adapter.view_model;
 
 // ViewModel for browsing recipe details - holds data for BrowseRecipeView.
 // Responsible: Regina, Everyone (GUI)
-// TODO: Implement fields for recipe details, ingredient list with quantities, and property change support
 
 import com.mealplanner.entity.Recipe;
 
@@ -62,9 +61,9 @@ public class RecipeBrowseViewModel {
     }
 
     //Getters:
-    public static List<Recipe> getRecipes() {return this.recipes;}
+    public List<Recipe> getRecipes() {return this.recipes;}
 
-    public static String getErrorMessage() {return this.errorMessage;}
+    public String getErrorMessage() {return this.errorMessage;}
 
     public boolean isDisplayRecipes() {return this.displayRecipes;}
 

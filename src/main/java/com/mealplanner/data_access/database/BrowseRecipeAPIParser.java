@@ -15,15 +15,6 @@ import java.util.List;
 public class BrowseRecipeAPIParser implements BrowseRecipeDataAccessInterface {
     //would probably need a getrecipe/list of recipes method:
     // i.e. input search filters or recipe name and then the method would call the api and return the parsed information
-//    private String query;
-////    private String includedIngredients;
-//    private int numberOfRecipes;
-//
-//    public BrowseRecipeAPIParser(String query, int numberOfRecipes) {
-//        this.query = query;
-////        this.includedIngredients = includedIngredients;
-//        this.numberOfRecipes = numberOfRecipes;
-//    }
     private final OkHttpClient client;
 
     public BrowseRecipeAPIParser(OkHttpClient okHttpClient) {
