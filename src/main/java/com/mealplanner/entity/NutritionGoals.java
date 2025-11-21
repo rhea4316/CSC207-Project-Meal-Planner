@@ -1,5 +1,7 @@
 package com.mealplanner.entity;
 
+import org.jetbrains.annotations.NotNull;
+
 /**
  * Value object representing a user's daily nutritional goals.
  * This entity encapsulates nutrition targets to keep the User entity clean (Single Responsibility Principle).
@@ -66,9 +68,9 @@ public class NutritionGoals {
      * @param actual the actual nutrition consumed
      * @return true if all nutrients are at or below goals
      */
-    public boolean isWithinGoals(NutritionInfo actual) {
-        // TODO: Implement goal checking logic
-        throw new UnsupportedOperationException("Not yet implemented");
+    public boolean isWithinGoals(@NotNull NutritionInfo actual) {
+        return this.dailyCalories >= actual.getCalories() && this.dailyProtein >= actual.getProtein() &&
+                this.dailyCarbs >= actual.getCarbs() && this.dailyFat >= actual.getFat();
     }
 
     /**
@@ -78,8 +80,11 @@ public class NutritionGoals {
      * @return NutritionInfo representing remaining amounts (or negative if over)
      */
     public NutritionInfo calculateRemaining(NutritionInfo consumed) {
-        // TODO: Implement remaining calculation logic
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (isWithinGoals(consumed)) {
+            return new NutritionInfo(this.dailyCalories-consumed.getCalories(), this.dailyProtein-consumed.getProtein(),
+                    this.dailyCalories-consumed.getCalories(), this.dailyFat-consumed.getFat());
+        }
+        throw new UnsupportedOperationException("Consumed more than goal.");
     }
 
     /**
@@ -88,9 +93,16 @@ public class NutritionGoals {
      * @param consumed the nutrition consumed
      * @return array of percentages [calories%, protein%, carbs%, fat%]
      */
-    public double[] calculatePercentages(NutritionInfo consumed) {
-        // TODO: Implement percentage calculation logic
-        throw new UnsupportedOperationException("Not yet implemented");
+    public double[] calculatePercentages(@NotNull NutritionInfo consumed) {
+        if (this.dailyCalories == 0 || this.dailyProtein == 0 || this.dailyCarbs == 0 || this.dailyFat == 0) {
+            throw new UnsupportedOperationException("Nutrition goals cannot be zero");
+        }
+        double calories_per = (double) consumed.getCalories() / this.dailyCalories * 100;
+        double protein_per = (double) consumed.getProtein() / this.dailyProtein * 100;
+        double carb_per = (double) consumed.getCarbs() / this.dailyCarbs * 100;
+        double fat_per = (double) consumed.getFat() / this.dailyFat  * 100;
+        double [] percentages = {calories_per, protein_per, carb_per, fat_per};
+        return percentages;
     }
 
     @Override

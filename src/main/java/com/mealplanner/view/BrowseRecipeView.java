@@ -2,8 +2,155 @@ package com.mealplanner.view;
 
 // Swing view for browsing available recipes - displays recipe list and selection interface.
 // Responsible: Regina (functionality), Everyone (GUI implementation)
-// TODO: Create JPanel with recipe list display - listen to RecipeBrowseViewModel and call controller on recipe selection
 
-public class BrowseRecipeView {
+import com.mealplanner.entity.Recipe;
+import com.mealplanner.interface_adapter.controller.BrowseRecipeController;
+import com.mealplanner.interface_adapter.view_model.RecipeBrowseViewModel;
 
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.io.IOException;
+
+public class BrowseRecipeView extends JPanel implements PropertyChangeListener, ActionListener {
+    private final RecipeBrowseViewModel recipeBrowseViewModel;
+    private final BrowseRecipeController browseRecipeController;
+
+    private JPanel searchPanel;
+    private JTextField queryTextField;
+    private JTextField ingredientsTextField;
+    private JSpinner numberOfResultsSpinner;
+    private JButton searchButton;
+
+    private JPanel resultsPanel;
+    private JTextArea resultsTextArea;
+    private JScrollPane resultsScrollPane;
+
+    private JLabel errorLabel;
+
+    public BrowseRecipeView(RecipeBrowseViewModel recipeBrowseViewModel, BrowseRecipeController browseRecipeController) {
+        this.recipeBrowseViewModel = recipeBrowseViewModel;
+        this.browseRecipeController = browseRecipeController;
+
+        recipeBrowseViewModel.addPropertyChangeListener(this);
+
+        setLayout(new BorderLayout());
+        createSearchPanel();
+        createResultsPanel();
+        createErrorLabel();
+        add(searchPanel, BorderLayout.NORTH);
+        add(resultsPanel, BorderLayout.CENTER);
+        add(errorLabel, BorderLayout.SOUTH);
+
+    }
+
+    private void createSearchPanel() {
+        searchPanel = new JPanel(new GridLayout(4, 2, 5, 5));
+
+        searchPanel.add(new JLabel("Search Query:"));
+        queryTextField = new JTextField();
+        searchPanel.add(queryTextField);
+
+        searchPanel.add(new JLabel("Ingredients (comma-separated, optional):"));
+        ingredientsTextField = new JTextField();
+        searchPanel.add(ingredientsTextField);
+
+        searchPanel.add(new JLabel("Number of Recipes:"));
+        SpinnerNumberModel spinnerNumberModel = new SpinnerNumberModel(1, 0, 100, 1);
+        numberOfResultsSpinner = new JSpinner(spinnerNumberModel);
+        searchPanel.add(numberOfResultsSpinner);
+
+        searchButton = new JButton("Search:");
+        searchButton.addActionListener(this);
+        searchButton.setActionCommand("search");
+        searchPanel.add(searchButton);
+
+    }
+
+    private void createResultsPanel() {
+        resultsPanel = new JPanel(new BorderLayout());
+        resultsPanel.add(new JLabel("Search Results:"), BorderLayout.NORTH);
+
+        resultsTextArea = new JTextArea();
+        resultsTextArea.setEditable(false);
+
+        resultsScrollPane = new JScrollPane(resultsTextArea);
+        resultsPanel.add(resultsScrollPane, BorderLayout.CENTER);
+    }
+
+    private void createErrorLabel() {
+        errorLabel = new JLabel();
+        errorLabel.setForeground(Color.RED);
+
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        if ("search".equals(e.getActionCommand())) {
+            performSearch();
+        }
+    }
+
+    private void performSearch() {
+        String query = queryTextField.getText().trim();
+        String ingredients = ingredientsTextField.getText().trim();
+        int numberOfRecipes = (Integer) numberOfResultsSpinner.getValue();
+
+        if (query.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                    "Please enter a search query", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        try {
+            if (ingredients.isEmpty()) {
+                browseRecipeController.execute(query, numberOfRecipes);
+            } else {
+                browseRecipeController.execute(query, numberOfRecipes, ingredients);
+            }
+        } catch (IOException ex) {
+            recipeBrowseViewModel.setErrorMessage("Network error: " + ex.getMessage());
+        }
+    }
+
+    private void displayRecipes(java.util.List<Recipe> recipes) {
+        String results = "";
+
+        if (recipes.isEmpty()) {
+            results += "No recipes found.";
+
+        } else {
+            for (Recipe recipe : recipes) {
+                Recipe curr = recipe;
+                results += "Recipe: " + recipe.getName() + "\n";
+                results += "Ingredients: " + curr.getIngredients() + "\n";
+                results += "Serving Size: " + curr.getServingSize() + "\n";
+                results += "Full Recipe URL: " + curr.getSteps() + "\n";
+                results += "\n" + "-".repeat(50) + "\n";
+            }
+        }
+
+        resultsTextArea.setText(results);
+        resultsTextArea.setCaretPosition(0);
+    }
+
+    @Override
+    public void propertyChange(PropertyChangeEvent evt) {
+        switch (evt.getPropertyName()) {
+            case "recipes":
+                displayRecipes(recipeBrowseViewModel.getRecipes());
+                errorLabel.setText("");
+                break;
+            case "errorMessage":
+                resultsTextArea.setText("");
+                errorLabel.setText(recipeBrowseViewModel.getErrorMessage());
+                break;
+        }
+
+    }
 }
+
+
