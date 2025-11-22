@@ -24,24 +24,43 @@ public class ConfigLoader {
      * This method is called automatically on first access, but can be called manually for testing.
      */
     public static synchronized void initialize() {
-        // TODO: Implement configuration initialization
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (initialized) {
+            return;
+        }
+
+        try {
+            loadResourceProperties("/config/application.properties");
+            loadExternalApiKeys();
+            initialized = true;
+        } catch (IOException e) {
+            // If loading fails, continue with empty properties (will use defaults)
+            System.err.println("Warning: Could not load configuration: " + e.getMessage());
+        }
     }
 
     /**
      * Loads properties from a resource file.
      */
     private static void loadResourceProperties(String resourcePath) throws IOException {
-        // TODO: Implement resource property loading
-        throw new UnsupportedOperationException("Not yet implemented");
+        try (InputStream input = ConfigLoader.class.getResourceAsStream(resourcePath)) {
+            if (input != null) {
+                properties.load(input);
+            }
+        }
     }
 
     /**
      * Attempts to load API keys from external config file or environment variables.
      */
     private static void loadExternalApiKeys() {
-        // TODO: Implement external API key loading
-        throw new UnsupportedOperationException("Not yet implemented");
+        // Try to load from config/api_keys.properties file if it exists
+        try (InputStream input = ConfigLoader.class.getResourceAsStream("/config/api_keys.properties")) {
+            if (input != null) {
+                properties.load(input);
+            }
+        } catch (IOException e) {
+            // Ignore - API keys are optional
+        }
     }
 
     /**
@@ -51,8 +70,10 @@ public class ConfigLoader {
      * @return the property value, or null if not found
      */
     public static String getProperty(String key) {
-        // TODO: Implement property retrieval
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (!initialized) {
+            initialize();
+        }
+        return properties.getProperty(key);
     }
 
     /**
@@ -63,8 +84,10 @@ public class ConfigLoader {
      * @return the property value, or defaultValue if not found
      */
     public static String getProperty(String key, String defaultValue) {
-        // TODO: Implement property retrieval with default
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (!initialized) {
+            initialize();
+        }
+        return properties.getProperty(key, defaultValue);
     }
 
     /**
@@ -75,8 +98,18 @@ public class ConfigLoader {
      * @return the property value as integer, or defaultValue if not found/invalid
      */
     public static int getIntProperty(String key, int defaultValue) {
-        // TODO: Implement integer property retrieval
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (!initialized) {
+            initialize();
+        }
+        String value = properties.getProperty(key);
+        if (value == null) {
+            return defaultValue;
+        }
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
     }
 
     /**
@@ -87,8 +120,14 @@ public class ConfigLoader {
      * @return the property value as boolean, or defaultValue if not found
      */
     public static boolean getBooleanProperty(String key, boolean defaultValue) {
-        // TODO: Implement boolean property retrieval
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (!initialized) {
+            initialize();
+        }
+        String value = properties.getProperty(key);
+        if (value == null) {
+            return defaultValue;
+        }
+        return Boolean.parseBoolean(value);
     }
 
     /**
@@ -98,15 +137,18 @@ public class ConfigLoader {
      * @return true if the property exists, false otherwise
      */
     public static boolean hasProperty(String key) {
-        // TODO: Implement property existence check
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (!initialized) {
+            initialize();
+        }
+        return properties.containsKey(key);
     }
 
     /**
      * Reloads all configuration. Useful for testing.
      */
     public static synchronized void reload() {
-        // TODO: Implement configuration reload
-        throw new UnsupportedOperationException("Not yet implemented");
+        properties.clear();
+        initialized = false;
+        initialize();
     }
 }

@@ -8,7 +8,7 @@ import javax.swing.SwingUtilities;
 import com.mealplanner.interface_adapter.controller.StoreRecipeController;
 import com.mealplanner.interface_adapter.presenter.StoreRecipePresenter;
 import com.mealplanner.interface_adapter.view_model.RecipeStoreViewModel;
-import com.mealplanner.repository.impl.InMemoryRecipeRepository;
+import com.mealplanner.repository.impl.FileRecipeRepository;
 import com.mealplanner.use_case.store_recipe.StoreRecipeInteractor;
 import com.mealplanner.view.StoreRecipeView;
 
@@ -34,8 +34,8 @@ public class StoreRecipeDemo {
         // Presenter
         StoreRecipePresenter presenter = new StoreRecipePresenter(viewModel);
 
-        // Repository
-        InMemoryRecipeRepository repo = new InMemoryRecipeRepository();
+        // Repository - using FileRecipeRepository to persist to disk
+        FileRecipeRepository repo = new FileRecipeRepository();
 
         // Interactor (uses RecipeRepository implementation)
         StoreRecipeInteractor interactor = new StoreRecipeInteractor(presenter, repo);
