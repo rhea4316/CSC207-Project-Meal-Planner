@@ -7,24 +7,34 @@ import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.view_model.RecipeBrowseViewModel;
 import com.mealplanner.use_case.browse_recipe.BrowseRecipeOutputBoundary;
 import com.mealplanner.use_case.browse_recipe.BrowseRecipeOutputData;
+import java.util.Objects;
 
 public class BrowseRecipePresenter implements BrowseRecipeOutputBoundary {
     private final RecipeBrowseViewModel browseRecipeViewModel;
     private final ViewManagerModel viewManager;
 
     public BrowseRecipePresenter(RecipeBrowseViewModel browseRecipeViewModel, ViewManagerModel viewManager) {
-        this.browseRecipeViewModel = browseRecipeViewModel;
-        this.viewManager = viewManager;
+        this.browseRecipeViewModel = Objects.requireNonNull(browseRecipeViewModel, 
+                "ViewModel cannot be null");
+        this.viewManager = Objects.requireNonNull(viewManager, "ViewManager cannot be null");
     }
 
     @Override
     public void presentRecipeDetails(BrowseRecipeOutputData browseRecipeOutputData) {
+        if (browseRecipeOutputData == null || browseRecipeOutputData.getRecipes() == null) {
+            browseRecipeViewModel.setErrorMessage("No recipe data available");
+            return;
+        }
         browseRecipeViewModel.setRecipes(browseRecipeOutputData.getRecipes());
-        viewManager.setActiveView("BrowseRecipeView");
+        if (viewManager != null) {
+            viewManager.setActiveView("BrowseRecipeView");
+        }
     }
 
     @Override
     public void presentError(String errorMessage) {
-        browseRecipeViewModel.setErrorMessage(errorMessage);
+        if (browseRecipeViewModel != null) {
+            browseRecipeViewModel.setErrorMessage(errorMessage != null ? errorMessage : "An error occurred");
+        }
     }
 }
