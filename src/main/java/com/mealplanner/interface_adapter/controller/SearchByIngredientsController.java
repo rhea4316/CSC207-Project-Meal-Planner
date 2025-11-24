@@ -5,6 +5,7 @@ package com.mealplanner.interface_adapter.controller;
 
 import com.mealplanner.use_case.search_by_ingredients.SearchByIngredientsInputBoundary;
 import com.mealplanner.use_case.search_by_ingredients.SearchByIngredientsInputData;
+import com.mealplanner.util.StringUtil;
 
 import java.util.Arrays;
 import java.util.List;
@@ -39,12 +40,12 @@ public class SearchByIngredientsController {
     }
 
     private List<String> parseListFromString(String raw) {
-        if (raw == null || raw.trim().isEmpty()) {
+        if (StringUtil.isNullOrEmpty(raw)) {
             return List.of();
         }
         return Arrays.stream(raw.split("\\r?\\n|,"))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
+                .map(StringUtil::safeTrim)
+                .filter(s -> !StringUtil.isNullOrEmpty(s))
                 .collect(Collectors.toList());
     }
 }

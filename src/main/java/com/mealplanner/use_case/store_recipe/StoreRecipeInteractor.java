@@ -8,6 +8,8 @@ import java.util.UUID;
 import com.mealplanner.entity.Recipe;
 import com.mealplanner.exception.DataAccessException;
 import com.mealplanner.repository.RecipeRepository;
+import com.mealplanner.util.StringUtil;
+import com.mealplanner.util.ValidationUtil;
 
 public class StoreRecipeInteractor implements StoreRecipeInputBoundary {
 
@@ -27,8 +29,13 @@ public class StoreRecipeInteractor implements StoreRecipeInputBoundary {
 			return;
 		}
 
-		if (inputData.getName() == null || inputData.getName().trim().isEmpty()) {
+		if (StringUtil.isNullOrEmpty(inputData.getName())) {
 			presenter.presentError("Recipe name cannot be empty");
+			return;
+		}
+
+		if (!ValidationUtil.validateRecipeName(inputData.getName())) {
+			presenter.presentError("Recipe name is invalid");
 			return;
 		}
 
@@ -42,8 +49,8 @@ public class StoreRecipeInteractor implements StoreRecipeInputBoundary {
 			return;
 		}
 
-		if (inputData.getServingSize() <= 0) {
-			presenter.presentError("Serving size must be greater than zero");
+		if (!ValidationUtil.validateServingSize(inputData.getServingSize())) {
+			presenter.presentError("Serving size must be between 1 and 100");
 			return;
 		}
 
