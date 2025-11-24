@@ -49,11 +49,7 @@ public class RecipeBrowseViewModel {
         String oldErrorMessage = this.errorMessage;
         boolean oldDisplayRecipes = this.displayRecipes;
 
-        if (oldErrorMessage != null) {
-            this.errorMessage = errorMessage;
-        } else {
-            this.errorMessage = "";
-        }
+        this.errorMessage = errorMessage != null ? errorMessage : "";
 
         this.displayRecipes = false;
         this.propertyChangeSupport.firePropertyChange("errorMessage", oldErrorMessage, this.errorMessage);
