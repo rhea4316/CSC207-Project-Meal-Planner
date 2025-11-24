@@ -6,4 +6,7 @@ package com.mealplanner.util;
 
 public class ValidationUtil {
 
+    private ValidationUtil() {
+        // Utility class - prevent instantiation
+    }
 }

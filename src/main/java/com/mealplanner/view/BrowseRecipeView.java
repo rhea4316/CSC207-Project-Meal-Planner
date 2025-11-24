@@ -32,6 +32,13 @@ public class BrowseRecipeView extends JPanel implements PropertyChangeListener, 
     private JLabel errorLabel;
 
     public BrowseRecipeView(RecipeBrowseViewModel recipeBrowseViewModel, BrowseRecipeController browseRecipeController) {
+        if (recipeBrowseViewModel == null) {
+            throw new IllegalArgumentException("ViewModel cannot be null");
+        }
+        if (browseRecipeController == null) {
+            throw new IllegalArgumentException("Controller cannot be null");
+        }
+        
         this.recipeBrowseViewModel = recipeBrowseViewModel;
         this.browseRecipeController = browseRecipeController;
 
@@ -117,23 +124,32 @@ public class BrowseRecipeView extends JPanel implements PropertyChangeListener, 
     }
 
     private void displayRecipes(java.util.List<Recipe> recipes) {
-        String results = "";
+        if (recipes == null) {
+            resultsTextArea.setText("No recipes available.");
+            return;
+        }
+        
+        StringBuilder results = new StringBuilder();
 
         if (recipes.isEmpty()) {
-            results += "No recipes found.";
-
+            results.append("No recipes found.");
         } else {
             for (Recipe recipe : recipes) {
-                Recipe curr = recipe;
-                results += "Recipe: " + recipe.getName() + "\n";
-                results += "Ingredients: " + curr.getIngredients() + "\n";
-                results += "Serving Size: " + curr.getServingSize() + "\n";
-                results += "Full Recipe URL: " + curr.getSteps() + "\n";
-                results += "\n" + "-".repeat(50) + "\n";
+                if (recipe != null) {
+                    results.append("Recipe: ").append(recipe.getName()).append("\n");
+                    results.append("Ingredients: ").append(recipe.getIngredients()).append("\n");
+                    results.append("Serving Size: ").append(recipe.getServingSize()).append("\n");
+                    String steps = recipe.getSteps();
+                    if (steps != null && !steps.isEmpty()) {
+                        results.append("Instructions: ").append(steps.length() > 100 ? 
+                            steps.substring(0, 100) + "..." : steps).append("\n");
+                    }
+                    results.append("\n").append("-".repeat(50)).append("\n");
+                }
             }
         }
 
-        resultsTextArea.setText(results);
+        resultsTextArea.setText(results.toString());
         resultsTextArea.setCaretPosition(0);
     }
 
@@ -146,7 +162,8 @@ public class BrowseRecipeView extends JPanel implements PropertyChangeListener, 
                 break;
             case "errorMessage":
                 resultsTextArea.setText("");
-                errorLabel.setText(recipeBrowseViewModel.getErrorMessage());
+                String errorMsg = recipeBrowseViewModel.getErrorMessage();
+                errorLabel.setText(errorMsg != null ? errorMsg : "");
                 break;
         }
 

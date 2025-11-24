@@ -2,6 +2,7 @@ package com.mealplanner.use_case.adjust_serving_size;
 
 import com.mealplanner.entity.Recipe;
 import com.mealplanner.exception.RecipeNotFoundException;
+import java.util.Objects;
 
 // Main business logic for adjusting recipe serving sizes with ingredient scaling.
 // Responsible: Eden
@@ -12,12 +13,17 @@ public class AdjustServingSizeInteractor implements AdjustServingSizeInputBounda
 
     public AdjustServingSizeInteractor(AdjustServingSizeDataAccessInterface dataAccess,
                                       AdjustServingSizeOutputBoundary presenter) {
-        this.dataAccess = dataAccess;
-        this.presenter = presenter;
+        this.dataAccess = Objects.requireNonNull(dataAccess, "Data access cannot be null");
+        this.presenter = Objects.requireNonNull(presenter, "Presenter cannot be null");
     }
 
     @Override
     public void execute(AdjustServingSizeInputData inputData) {
+        if (inputData == null) {
+            presenter.presentError("Input data cannot be null");
+            return;
+        }
+        
         String recipeId = inputData.getRecipeId();
         int newServingSize = inputData.getNewServingSize();
         
@@ -48,6 +54,8 @@ public class AdjustServingSizeInteractor implements AdjustServingSizeInputBounda
             presenter.presentError("Recipe not found: " + e.getMessage());
         } catch (IllegalArgumentException e) {
             presenter.presentError("Invalid serving size: " + e.getMessage());
+        } catch (Exception e) {
+            presenter.presentError("An error occurred while adjusting serving size: " + e.getMessage());
         }
     }
 }

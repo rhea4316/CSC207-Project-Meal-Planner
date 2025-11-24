@@ -42,10 +42,13 @@ public class FileRecipeRepository implements RecipeRepository {
      * @param dataDirectory Directory where recipe files are stored
      */
     public FileRecipeRepository(String dataDirectory) {
-        this.dataDirectory = dataDirectory;
+        if (dataDirectory == null || dataDirectory.trim().isEmpty()) {
+            throw new IllegalArgumentException("Data directory cannot be null or empty");
+        }
+        this.dataDirectory = dataDirectory.trim();
         this.gson = new GsonBuilder().setPrettyPrinting().create();
         initializeDirectory();
-        logger.info("FileRecipeRepository initialized with directory: {}", dataDirectory);
+        logger.info("FileRecipeRepository initialized with directory: {}", this.dataDirectory);
     }
 
     /**
@@ -165,7 +168,8 @@ public class FileRecipeRepository implements RecipeRepository {
         String searchTerm = name.toLowerCase().trim();
 
         return findAll().stream()
-                .filter(recipe -> recipe.getName().toLowerCase().contains(searchTerm))
+                .filter(recipe -> recipe != null && recipe.getName() != null 
+                        && recipe.getName().toLowerCase().contains(searchTerm))
                 .collect(Collectors.toList());
     }
 

@@ -1,8 +1,7 @@
 package com.mealplanner.use_case.store_recipe;
 
 // Main business logic for storing/creating recipes with nutrition calculation.
-// Responsible: Aaryan 
-// TODO: Implement execute method: validate fields, create Recipe entity, calculate nutrition, save to database, pass result to presenter
+// Responsible: Aaryan
 import java.util.Objects;
 import java.util.UUID;
 
@@ -51,11 +50,14 @@ public class StoreRecipeInteractor implements StoreRecipeInputBoundary {
 		// Generate a unique recipe ID
 		String recipeId = "recipe-" + UUID.randomUUID().toString();
 
+		// Convert steps list to string (join with newlines)
+		String stepsString = String.join("\n", inputData.getSteps());
+
 		// Create Recipe entity (nutrition calculation and optional fields omitted here)
 		Recipe recipe = new Recipe(
 				inputData.getName(),
 				inputData.getIngredients(),
-				inputData.getSteps(),
+				stepsString,
 				inputData.getServingSize(),
 				null, // nutritionInfo
 				null, // cookTimeMinutes
