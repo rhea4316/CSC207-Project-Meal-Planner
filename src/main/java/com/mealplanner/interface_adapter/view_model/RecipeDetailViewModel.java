@@ -51,6 +51,10 @@ public class RecipeDetailViewModel {
             this.servingSize = recipe.getServingSize();
             this.ingredients = new ArrayList<>(recipe.getIngredients());
             this.nutrition = recipe.getNutritionInfo();
+        } else {
+            this.servingSize = 1;
+            this.ingredients = new ArrayList<>();
+            this.nutrition = null;
         }
         propertyChangeSupport.firePropertyChange(PROP_RECIPE, oldRecipe, recipe);
         propertyChangeSupport.firePropertyChange(PROP_SERVING_SIZE, null, servingSize);

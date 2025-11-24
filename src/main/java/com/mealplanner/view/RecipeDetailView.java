@@ -112,7 +112,12 @@ public class RecipeDetailView extends JPanel implements PropertyChangeListener, 
                 JOptionPane.showMessageDialog(this, "No recipe selected", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            controller.execute(recipe.getRecipeId(), newServingSize);
+            String recipeId = recipe.getRecipeId();
+            if (recipeId == null || recipeId.trim().isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Recipe ID is missing", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            controller.execute(recipeId, newServingSize);
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(this, "Invalid serving size. Please enter a number.", "Error", JOptionPane.ERROR_MESSAGE);
         }

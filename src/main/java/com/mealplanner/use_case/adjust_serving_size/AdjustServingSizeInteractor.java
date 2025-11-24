@@ -18,7 +18,14 @@ public class AdjustServingSizeInteractor implements AdjustServingSizeInputBounda
 
     @Override
     public void execute(AdjustServingSizeInputData inputData) {
+        String recipeId = inputData.getRecipeId();
         int newServingSize = inputData.getNewServingSize();
+        
+        // Validate recipe ID
+        if (recipeId == null || recipeId.trim().isEmpty()) {
+            presenter.presentError("Recipe ID cannot be empty");
+            return;
+        }
         
         // Validate serving size
         if (newServingSize <= 0) {
@@ -28,7 +35,7 @@ public class AdjustServingSizeInteractor implements AdjustServingSizeInputBounda
 
         try {
             // Retrieve recipe
-            Recipe recipe = dataAccess.getRecipeById(inputData.getRecipeId());
+            Recipe recipe = dataAccess.getRecipeById(recipeId);
             
             // Adjust serving size using Recipe's built-in method
             Recipe adjustedRecipe = recipe.adjustServingSize(newServingSize);
