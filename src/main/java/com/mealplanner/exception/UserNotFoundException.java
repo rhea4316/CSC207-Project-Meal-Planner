@@ -9,12 +9,12 @@ public class UserNotFoundException extends MealPlannerException {
     private final String username;
 
     public UserNotFoundException(String username) {
-        super("User not found: " + username);
+        super("User not found: " + (username != null ? username : "null"));
         this.username = username;
     }
 
     public UserNotFoundException(String message, String username) {
-        super(message);
+        super(message != null ? message : "User not found");
         this.username = username;
     }
 
