@@ -3,6 +3,7 @@ package com.mealplanner.view;
 // Swing view for creating and storing new recipes - displays recipe creation form.
 // Responsible: Aaryan (functionality), Everyone (GUI implementation)
 import com.mealplanner.entity.Unit;
+import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.StoreRecipeController;
 import com.mealplanner.interface_adapter.view_model.RecipeStoreViewModel;
 
@@ -38,12 +39,26 @@ public class StoreRecipeView extends JPanel {
 	private final JButton saveButton = new JButton("Save Recipe");
 
 	private final JLabel statusLabel = new JLabel(" ");
+	
+	private final ViewManagerModel viewManagerModel;
 
 	public StoreRecipeView(StoreRecipeController controller, RecipeStoreViewModel viewModel) {
+		this(controller, viewModel, null);
+	}
+	
+	public StoreRecipeView(StoreRecipeController controller, RecipeStoreViewModel viewModel, ViewManagerModel viewManagerModel) {
 		super(new BorderLayout());
 		
 		if (controller == null) {
 			throw new IllegalArgumentException("Controller cannot be null");
+		}
+		
+		this.viewManagerModel = viewManagerModel;
+
+		// Create navigation panel
+		JPanel navPanel = createNavigationPanel();
+		if (navPanel != null) {
+			this.add(navPanel, BorderLayout.NORTH);
 		}
 
 		JPanel form = new JPanel(new GridBagLayout());
@@ -183,6 +198,26 @@ public class StoreRecipeView extends JPanel {
 		ingredientNameField.setText("");
 		stepsArea.setText("");
 		servingSizeField.setText("1");
+	}
+	
+	private JPanel createNavigationPanel() {
+		if (viewManagerModel == null) {
+			return null;
+		}
+		
+		JPanel navPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+		navPanel.setBorder(BorderFactory.createTitledBorder("Navigation"));
+		
+		JButton browseButton = new JButton("Browse Recipes");
+		browseButton.addActionListener(e -> viewManagerModel.setActiveView("BrowseRecipeView"));
+		
+		JButton searchButton = new JButton("Search by Ingredients");
+		searchButton.addActionListener(e -> viewManagerModel.setActiveView("SearchByIngredientsView"));
+		
+		navPanel.add(browseButton);
+		navPanel.add(searchButton);
+		
+		return navPanel;
 	}
 
 }
