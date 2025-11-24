@@ -4,6 +4,7 @@ package com.mealplanner.view;
 // Responsible: Regina (functionality), Everyone (GUI implementation)
 
 import com.mealplanner.entity.Recipe;
+import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.BrowseRecipeController;
 import com.mealplanner.interface_adapter.view_model.RecipeBrowseViewModel;
 
@@ -18,6 +19,7 @@ import java.io.IOException;
 public class BrowseRecipeView extends JPanel implements PropertyChangeListener, ActionListener {
     private final RecipeBrowseViewModel recipeBrowseViewModel;
     private final BrowseRecipeController browseRecipeController;
+    private final ViewManagerModel viewManagerModel;
 
     private JPanel searchPanel;
     private JTextField queryTextField;
@@ -32,6 +34,10 @@ public class BrowseRecipeView extends JPanel implements PropertyChangeListener, 
     private JLabel errorLabel;
 
     public BrowseRecipeView(RecipeBrowseViewModel recipeBrowseViewModel, BrowseRecipeController browseRecipeController) {
+        this(recipeBrowseViewModel, browseRecipeController, null);
+    }
+    
+    public BrowseRecipeView(RecipeBrowseViewModel recipeBrowseViewModel, BrowseRecipeController browseRecipeController, ViewManagerModel viewManagerModel) {
         if (recipeBrowseViewModel == null) {
             throw new IllegalArgumentException("ViewModel cannot be null");
         }
@@ -41,16 +47,29 @@ public class BrowseRecipeView extends JPanel implements PropertyChangeListener, 
         
         this.recipeBrowseViewModel = recipeBrowseViewModel;
         this.browseRecipeController = browseRecipeController;
+        this.viewManagerModel = viewManagerModel;
 
         recipeBrowseViewModel.addPropertyChangeListener(this);
 
         setLayout(new BorderLayout());
+        
+        // Create navigation panel
+        JPanel navPanel = createNavigationPanel();
+        if (navPanel != null) {
+            add(navPanel, BorderLayout.NORTH);
+        }
+        
         createSearchPanel();
         createResultsPanel();
         createErrorLabel();
-        add(searchPanel, BorderLayout.NORTH);
-        add(resultsPanel, BorderLayout.CENTER);
-        add(errorLabel, BorderLayout.SOUTH);
+        
+        // Arrange layout properly
+        JPanel contentPanel = new JPanel(new BorderLayout());
+        contentPanel.add(searchPanel, BorderLayout.NORTH);
+        contentPanel.add(resultsPanel, BorderLayout.CENTER);
+        contentPanel.add(errorLabel, BorderLayout.SOUTH);
+        
+        add(contentPanel, BorderLayout.CENTER);
 
     }
 
@@ -167,6 +186,30 @@ public class BrowseRecipeView extends JPanel implements PropertyChangeListener, 
                 break;
         }
 
+    }
+    
+    private JPanel createNavigationPanel() {
+        if (viewManagerModel == null) {
+            return null;
+        }
+        
+        JPanel navPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        navPanel.setBorder(BorderFactory.createTitledBorder("Navigation"));
+        
+        JButton createButton = new JButton("Create Recipe");
+        createButton.addActionListener(e -> viewManagerModel.setActiveView("StoreRecipeView"));
+        
+        JButton searchButton = new JButton("Search by Ingredients");
+        searchButton.addActionListener(e -> viewManagerModel.setActiveView("SearchByIngredientsView"));
+        
+        JButton homeButton = new JButton("Home");
+        homeButton.addActionListener(e -> viewManagerModel.setActiveView("StoreRecipeView"));
+        
+        navPanel.add(createButton);
+        navPanel.add(searchButton);
+        navPanel.add(homeButton);
+        
+        return navPanel;
     }
 }
 

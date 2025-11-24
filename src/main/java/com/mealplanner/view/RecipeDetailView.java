@@ -2,6 +2,7 @@ package com.mealplanner.view;
 
 import com.mealplanner.entity.NutritionInfo;
 import com.mealplanner.entity.Recipe;
+import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.AdjustServingSizeController;
 import com.mealplanner.interface_adapter.view_model.RecipeDetailViewModel;
 
@@ -19,6 +20,7 @@ import java.util.List;
 public class RecipeDetailView extends JPanel implements PropertyChangeListener, ActionListener {
     private final RecipeDetailViewModel viewModel;
     private final AdjustServingSizeController controller;
+    private final ViewManagerModel viewManagerModel;
 
     private JLabel recipeNameLabel;
     private JTextField servingSizeField;
@@ -28,6 +30,10 @@ public class RecipeDetailView extends JPanel implements PropertyChangeListener, 
     private JLabel errorLabel;
 
     public RecipeDetailView(RecipeDetailViewModel viewModel, AdjustServingSizeController controller) {
+        this(viewModel, controller, null);
+    }
+    
+    public RecipeDetailView(RecipeDetailViewModel viewModel, AdjustServingSizeController controller, ViewManagerModel viewManagerModel) {
         if (viewModel == null) {
             throw new IllegalArgumentException("ViewModel cannot be null");
         }
@@ -37,10 +43,18 @@ public class RecipeDetailView extends JPanel implements PropertyChangeListener, 
         
         this.viewModel = viewModel;
         this.controller = controller;
+        this.viewManagerModel = viewManagerModel;
 
         viewModel.addPropertyChangeListener(this);
 
         setLayout(new BorderLayout());
+        
+        // Create navigation panel
+        JPanel navPanel = createNavigationPanel();
+        if (navPanel != null) {
+            add(navPanel, BorderLayout.NORTH);
+        }
+        
         createComponents();
     }
 
@@ -48,7 +62,10 @@ public class RecipeDetailView extends JPanel implements PropertyChangeListener, 
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         recipeNameLabel = new JLabel("Recipe Name");
         topPanel.add(recipeNameLabel);
-        add(topPanel, BorderLayout.NORTH);
+        
+        // Add topPanel to center area, not NORTH (NORTH is for navigation)
+        JPanel contentPanel = new JPanel(new BorderLayout());
+        contentPanel.add(topPanel, BorderLayout.NORTH);
 
         JPanel centerPanel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
@@ -90,12 +107,34 @@ public class RecipeDetailView extends JPanel implements PropertyChangeListener, 
         nutritionArea.setEditable(false);
         centerPanel.add(new JScrollPane(nutritionArea), gbc);
 
-        add(centerPanel, BorderLayout.CENTER);
+        contentPanel.add(centerPanel, BorderLayout.CENTER);
 
         // Error label
         errorLabel = new JLabel();
         errorLabel.setForeground(Color.RED);
-        add(errorLabel, BorderLayout.SOUTH);
+        contentPanel.add(errorLabel, BorderLayout.SOUTH);
+        
+        add(contentPanel, BorderLayout.CENTER);
+    }
+    
+    private JPanel createNavigationPanel() {
+        if (viewManagerModel == null) {
+            return null;
+        }
+        
+        JPanel navPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        navPanel.setBorder(BorderFactory.createTitledBorder("Navigation"));
+        
+        JButton backButton = new JButton("Back to Browse");
+        backButton.addActionListener(e -> viewManagerModel.setActiveView("BrowseRecipeView"));
+        
+        JButton homeButton = new JButton("Home");
+        homeButton.addActionListener(e -> viewManagerModel.setActiveView("StoreRecipeView"));
+        
+        navPanel.add(backButton);
+        navPanel.add(homeButton);
+        
+        return navPanel;
     }
 
     @Override
