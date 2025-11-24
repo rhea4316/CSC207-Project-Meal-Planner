@@ -5,6 +5,8 @@ import com.mealplanner.entity.Recipe;
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.AdjustServingSizeController;
 import com.mealplanner.interface_adapter.view_model.RecipeDetailViewModel;
+import com.mealplanner.util.StringUtil;
+import com.mealplanner.util.NumberUtil;
 
 import javax.swing.*;
 import java.awt.*;
@@ -145,28 +147,29 @@ public class RecipeDetailView extends JPanel implements PropertyChangeListener, 
     }
 
     private void performAdjust() {
-        String servingSizeText = servingSizeField.getText().trim();
-        if (servingSizeText.isEmpty()) {
+        String servingSizeText = StringUtil.safeTrim(servingSizeField.getText());
+        if (StringUtil.isNullOrEmpty(servingSizeText)) {
             JOptionPane.showMessageDialog(this, "Please enter a serving size", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        try {
-            int newServingSize = Integer.parseInt(servingSizeText);
-            Recipe recipe = viewModel.getRecipe();
-            if (recipe == null) {
-                JOptionPane.showMessageDialog(this, "No recipe selected", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            String recipeId = recipe.getRecipeId();
-            if (recipeId == null || recipeId.trim().isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Recipe ID is missing", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            controller.execute(recipeId, newServingSize);
-        } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this, "Invalid serving size. Please enter a number.", "Error", JOptionPane.ERROR_MESSAGE);
+        int newServingSize = NumberUtil.parseInt(servingSizeText, 0);
+        if (newServingSize <= 0) {
+            JOptionPane.showMessageDialog(this, "Invalid serving size. Please enter a positive number.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
         }
+        
+        Recipe recipe = viewModel.getRecipe();
+        if (recipe == null) {
+            JOptionPane.showMessageDialog(this, "No recipe selected", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        String recipeId = recipe.getRecipeId();
+        if (StringUtil.isNullOrEmpty(recipeId)) {
+            JOptionPane.showMessageDialog(this, "Recipe ID is missing", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        controller.execute(recipeId, newServingSize);
     }
 
     private void displayRecipe(Recipe recipe) {
@@ -243,7 +246,7 @@ public class RecipeDetailView extends JPanel implements PropertyChangeListener, 
                 break;
             case RecipeDetailViewModel.PROP_ERROR_MESSAGE:
                 String errorMessage = viewModel.getErrorMessage();
-                errorLabel.setText(errorMessage != null && !errorMessage.isEmpty() ? errorMessage : "");
+                errorLabel.setText(StringUtil.hasContent(errorMessage) ? errorMessage : "");
                 break;
         }
     }
