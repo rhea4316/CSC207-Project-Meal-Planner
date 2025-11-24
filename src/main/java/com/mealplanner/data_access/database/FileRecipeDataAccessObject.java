@@ -5,5 +5,4 @@ package com.mealplanner.data_access.database;
 // TODO: Implement StoreRecipeDataAccessInterface and other recipe interfaces - save/retrieve Recipe entities from data/recipes/
 
 public class FileRecipeDataAccessObject {
-
 }

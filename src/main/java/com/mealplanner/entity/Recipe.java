@@ -8,7 +8,7 @@ public class Recipe {
     // Required fields
     private final String name;
     private final List<String> ingredients;
-    private final List<String> steps;
+    private final String steps;
     private final int servingSize;
     
     // Optional fields
@@ -16,33 +16,37 @@ public class Recipe {
     private final Integer cookTimeMinutes;
     private final List<DietaryRestriction> dietaryRestrictions;
 
+    // Add a unique identifier for the recipe
+    private final String recipeId;
+
     /**
      * Constructs a new Recipe with required and optional information.
      */
-    public Recipe(String name, List<String> ingredients, List<String> steps, 
+    public Recipe(String name, List<String> ingredients, String steps,
                  int servingSize, NutritionInfo nutritionInfo, Integer cookTimeMinutes,
-                 List<DietaryRestriction> dietaryRestrictions) {
+                 List<DietaryRestriction> dietaryRestrictions, String recipeId) {
         validateInputs(name, ingredients, steps, servingSize);
 
         this.name = name.trim();
         this.ingredients = new ArrayList<>(ingredients);
-        this.steps = new ArrayList<>(steps);
+        this.steps = steps;
         this.servingSize = servingSize;
         this.nutritionInfo = nutritionInfo; // Can be null
         this.cookTimeMinutes = cookTimeMinutes; // Can be null
         this.dietaryRestrictions = dietaryRestrictions != null ? 
             new ArrayList<>(dietaryRestrictions) : new ArrayList<>();
+        this.recipeId = recipeId != null ? recipeId.trim() : null;
     }
 
     /**
      * Constructs a new Recipe with only required fields.
      */
-    public Recipe(String name, List<String> ingredients, List<String> steps, int servingSize) {
-        this(name, ingredients, steps, servingSize, null, null, null);
+    public Recipe(String name, List<String> ingredients, String steps, int servingSize) {
+        this(name, ingredients, steps, servingSize, null, null, null, null);
     }
 
     private void validateInputs(String name, List<String> ingredients,
-            List<String> steps, int servingSize) {
+            String steps, int servingSize) {
         if (name == null || name.trim().isEmpty()) {
             throw new IllegalArgumentException("Recipe name cannot be empty");
         }
@@ -76,7 +80,8 @@ public class Recipe {
                 newServingSize,
                 scaledNutrition,
                 this.cookTimeMinutes,
-                this.dietaryRestrictions
+                this.dietaryRestrictions,
+                this.recipeId // Preserve the recipeId
         );
     }
 
@@ -102,8 +107,8 @@ public class Recipe {
         return new ArrayList<>(ingredients);
     }
 
-    public List<String> getSteps() {
-        return new ArrayList<>(steps);
+    public String getSteps() {
+        return steps;
     }
 
     public int getServingSize() {
@@ -126,6 +131,10 @@ public class Recipe {
         return new ArrayList<>(dietaryRestrictions);
     }
 
+    public String getRecipeId() {
+        return recipeId;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -142,13 +151,14 @@ public class Recipe {
                 && Objects.equals(steps, recipe.steps)
                 && Objects.equals(nutritionInfo, recipe.nutritionInfo)
                 && Objects.equals(cookTimeMinutes, recipe.cookTimeMinutes)
-                && Objects.equals(dietaryRestrictions, recipe.dietaryRestrictions);
+                && Objects.equals(dietaryRestrictions, recipe.dietaryRestrictions)
+                && Objects.equals(recipeId, recipe.recipeId);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(name, ingredients, steps, servingSize,
-                nutritionInfo, cookTimeMinutes, dietaryRestrictions);
+                nutritionInfo, cookTimeMinutes, dietaryRestrictions, recipeId);
     }
 
     @Override
@@ -156,6 +166,6 @@ public class Recipe {
         return String.format("%s (Serves %d)%s\n%d ingredients, %d steps",
                 name, servingSize,
                 cookTimeMinutes != null ? String.format("\nCook: %d min", cookTimeMinutes) : "",
-                ingredients.size(), steps.size());
+                ingredients.size(), steps);
     }
 }
