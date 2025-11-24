@@ -1,0 +1,13 @@
+{
+  "name": "Fried Rice",
+  "ingredients": [
+    "500 g Rice",
+    "50 g Chicken"
+  ],
+  "steps": [
+    "Cook"
+  ],
+  "servingSize": 1,
+  "dietaryRestrictions": [],
+  "recipeId": "recipe-a7923dd4-2b2a-4e0e-af38-c5ec20e2049e"
+}

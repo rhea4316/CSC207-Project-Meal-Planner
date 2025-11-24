@@ -4,6 +4,7 @@ package com.mealplanner.use_case.store_recipe;
 // Responsible: Aaryan 
 // TODO: Implement execute method: validate fields, create Recipe entity, calculate nutrition, save to database, pass result to presenter
 import java.util.Objects;
+import java.util.UUID;
 
 import com.mealplanner.entity.Recipe;
 import com.mealplanner.exception.DataAccessException;
@@ -47,12 +48,19 @@ public class StoreRecipeInteractor implements StoreRecipeInputBoundary {
 			return;
 		}
 
+		// Generate a unique recipe ID
+		String recipeId = "recipe-" + UUID.randomUUID().toString();
+
 		// Create Recipe entity (nutrition calculation and optional fields omitted here)
 		Recipe recipe = new Recipe(
 				inputData.getName(),
 				inputData.getIngredients(),
 				inputData.getSteps(),
-				inputData.getServingSize()
+				inputData.getServingSize(),
+				null, // nutritionInfo
+				null, // cookTimeMinutes
+				null, // dietaryRestrictions
+				recipeId
 		);
 
 		try {

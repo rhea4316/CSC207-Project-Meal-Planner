@@ -1,0 +1,21 @@
+{
+  "name": "Pasta Carbonara",
+  "ingredients": [
+    "400g spaghetti",
+    "200g pancetta",
+    "4 eggs",
+    "100g parmesan",
+    "Black pepper"
+  ],
+  "steps": [
+    "Boil pasta",
+    "Cook pancetta",
+    "Mix eggs and cheese",
+    "Combine all",
+    "Serve hot"
+  ],
+  "servingSize": 4,
+  "cookTimeMinutes": 30,
+  "dietaryRestrictions": [],
+  "recipeId": "recipe-001"
+}

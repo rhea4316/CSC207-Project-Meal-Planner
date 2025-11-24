@@ -166,15 +166,20 @@ public class StoreRecipeView extends JPanel {
 			servingSize = 1;
 		}
 
-		// Call controller
+		// Call controller - this will trigger the presenter to update the view model
 		controller.execute(name, ingredients, steps, servingSize);
 
-		// Give immediate UI feedback; presenter may later update viewModel with authoritative messages
-		if (viewModel != null) {
-			viewModel.setSuccessMessage("Save requested — processing...");
-		} else {
-			statusLabel.setText("Save requested — processing...");
-		}
+		// Clear form after save is initiated
+		clearForm();
+	}
+
+	private void clearForm() {
+		nameField.setText("");
+		ingredientListModel.clear();
+		ingredientQtyField.setText("");
+		ingredientNameField.setText("");
+		stepsArea.setText("");
+		servingSizeField.setText("1");
 	}
 
 }
