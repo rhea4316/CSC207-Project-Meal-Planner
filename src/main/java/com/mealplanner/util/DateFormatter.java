@@ -6,4 +6,7 @@ package com.mealplanner.util;
 
 public class DateFormatter {
 
+    private DateFormatter() {
+        // Utility class - prevent instantiation
+    }
 }
