@@ -70,6 +70,9 @@ public class ConfigLoader {
      * @return the property value, or null if not found
      */
     public static String getProperty(String key) {
+        if (key == null) {
+            return null;
+        }
         if (!initialized) {
             initialize();
         }
@@ -84,6 +87,9 @@ public class ConfigLoader {
      * @return the property value, or defaultValue if not found
      */
     public static String getProperty(String key, String defaultValue) {
+        if (key == null) {
+            return defaultValue;
+        }
         if (!initialized) {
             initialize();
         }
@@ -98,15 +104,18 @@ public class ConfigLoader {
      * @return the property value as integer, or defaultValue if not found/invalid
      */
     public static int getIntProperty(String key, int defaultValue) {
+        if (key == null) {
+            return defaultValue;
+        }
         if (!initialized) {
             initialize();
         }
         String value = properties.getProperty(key);
-        if (value == null) {
+        if (value == null || value.trim().isEmpty()) {
             return defaultValue;
         }
         try {
-            return Integer.parseInt(value);
+            return Integer.parseInt(value.trim());
         } catch (NumberFormatException e) {
             return defaultValue;
         }
@@ -120,14 +129,17 @@ public class ConfigLoader {
      * @return the property value as boolean, or defaultValue if not found
      */
     public static boolean getBooleanProperty(String key, boolean defaultValue) {
+        if (key == null) {
+            return defaultValue;
+        }
         if (!initialized) {
             initialize();
         }
         String value = properties.getProperty(key);
-        if (value == null) {
+        if (value == null || value.trim().isEmpty()) {
             return defaultValue;
         }
-        return Boolean.parseBoolean(value);
+        return Boolean.parseBoolean(value.trim());
     }
 
     /**
@@ -137,6 +149,9 @@ public class ConfigLoader {
      * @return true if the property exists, false otherwise
      */
     public static boolean hasProperty(String key) {
+        if (key == null) {
+            return false;
+        }
         if (!initialized) {
             initialize();
         }
