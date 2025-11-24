@@ -6,26 +6,27 @@ import java.util.Objects;
 
 // Core entity representing a single day's meal plan (breakfast, lunch, dinner).
 // Responsible: Grace (primary for meal plan management), Mona (view schedule)
-// TODO: Implement meal plan class with method to calculate total daily nutrition from all meals
 
 public class MealPlan {
-//dictionary for breakfast, lunch, dinner
-//int: serving size
     private final Map<MealType, Recipe> meals;
-    private int serving_size;
+    private int servingSize;
 
     public MealPlan(Recipe breakfast, Recipe lunch, Recipe dinner) {
+        if (breakfast == null || lunch == null || dinner == null) {
+            throw new IllegalArgumentException("All meals (breakfast, lunch, dinner) must be non-null");
+        }
         this.meals = new HashMap<>();
         meals.put(MealType.BREAKFAST, breakfast);
         meals.put(MealType.LUNCH, lunch);
         meals.put(MealType.DINNER, dinner);
 
-        serving_size = breakfast.getServingSize() + lunch.getServingSize() + dinner.getServingSize();
+        servingSize = breakfast.getServingSize() + lunch.getServingSize() + dinner.getServingSize();
     }
 
-
     // Getters
-    public int getServing_size() {return serving_size;}
+    public int getServingSize() {
+        return servingSize;
+    }
 
     public Recipe getBreakfast() {return meals.get(MealType.BREAKFAST);}
 
@@ -38,22 +39,31 @@ public class MealPlan {
 
     // Setters
     public void setBreakfast(Recipe breakfast) {
+        if (breakfast == null) {
+            throw new IllegalArgumentException("Breakfast cannot be null");
+        }
         meals.put(MealType.BREAKFAST, breakfast);
-        serving_size = breakfast.getServingSize() +
+        servingSize = breakfast.getServingSize() +
                 meals.get(MealType.LUNCH).getServingSize() +
                 meals.get(MealType.DINNER).getServingSize();
     }
 
     public void setLunch(Recipe lunch) {
+        if (lunch == null) {
+            throw new IllegalArgumentException("Lunch cannot be null");
+        }
         meals.put(MealType.LUNCH, lunch);
-        serving_size = meals.get(MealType.BREAKFAST).getServingSize() +
+        servingSize = meals.get(MealType.BREAKFAST).getServingSize() +
                 lunch.getServingSize() +
                 meals.get(MealType.DINNER).getServingSize();
     }
 
     public void setDinner(Recipe dinner) {
+        if (dinner == null) {
+            throw new IllegalArgumentException("Dinner cannot be null");
+        }
         meals.put(MealType.DINNER, dinner);
-        serving_size = meals.get(MealType.BREAKFAST).getServingSize() +
+        servingSize = meals.get(MealType.BREAKFAST).getServingSize() +
                 meals.get(MealType.LUNCH).getServingSize() +
                 dinner.getServingSize();
     }
@@ -61,21 +71,34 @@ public class MealPlan {
 
     // Business Methods
     public NutritionInfo getTotalDailyNutrition() {
-        int calories = meals.get(MealType.BREAKFAST).getNutritionInfo().getCalories() +
-                meals.get(MealType.LUNCH).getNutritionInfo().getCalories() +
-                meals.get(MealType.DINNER).getNutritionInfo().getCalories();
+        Recipe breakfast = meals.get(MealType.BREAKFAST);
+        Recipe lunch = meals.get(MealType.LUNCH);
+        Recipe dinner = meals.get(MealType.DINNER);
+        
+        NutritionInfo breakfastNutrition = breakfast.getNutritionInfo();
+        NutritionInfo lunchNutrition = lunch.getNutritionInfo();
+        NutritionInfo dinnerNutrition = dinner.getNutritionInfo();
+        
+        // Handle null nutrition info by using empty NutritionInfo
+        if (breakfastNutrition == null) breakfastNutrition = NutritionInfo.empty();
+        if (lunchNutrition == null) lunchNutrition = NutritionInfo.empty();
+        if (dinnerNutrition == null) dinnerNutrition = NutritionInfo.empty();
+        
+        int calories = breakfastNutrition.getCalories() +
+                lunchNutrition.getCalories() +
+                dinnerNutrition.getCalories();
 
-        double proteins = meals.get(MealType.BREAKFAST).getNutritionInfo().getProtein() +
-                meals.get(MealType.LUNCH).getNutritionInfo().getProtein() +
-                meals.get(MealType.DINNER).getNutritionInfo().getProtein();
+        double proteins = breakfastNutrition.getProtein() +
+                lunchNutrition.getProtein() +
+                dinnerNutrition.getProtein();
 
-        double carbs = meals.get(MealType.BREAKFAST).getNutritionInfo().getCarbs() +
-                meals.get(MealType.LUNCH).getNutritionInfo().getCarbs() +
-                meals.get(MealType.DINNER).getNutritionInfo().getCarbs();
+        double carbs = breakfastNutrition.getCarbs() +
+                lunchNutrition.getCarbs() +
+                dinnerNutrition.getCarbs();
 
-        double fats = meals.get(MealType.BREAKFAST).getNutritionInfo().getFat() +
-                meals.get(MealType.LUNCH).getNutritionInfo().getFat() +
-                meals.get(MealType.DINNER).getNutritionInfo().getFat();
+        double fats = breakfastNutrition.getFat() +
+                lunchNutrition.getFat() +
+                dinnerNutrition.getFat();
 
         return new NutritionInfo(calories, proteins, carbs, fats);
     }
@@ -87,14 +110,14 @@ public class MealPlan {
         if (o == null || getClass() != o.getClass()) return false;
 
         MealPlan other = (MealPlan) o;
-        return meals.get(MealType.BREAKFAST) == other.meals.get(MealType.BREAKFAST)
-                && meals.get(MealType.LUNCH) == other.meals.get(MealType.LUNCH)
-                && meals.get(MealType.DINNER) == other.meals.get(MealType.DINNER);
+        return Objects.equals(meals.get(MealType.BREAKFAST), other.meals.get(MealType.BREAKFAST))
+                && Objects.equals(meals.get(MealType.LUNCH), other.meals.get(MealType.LUNCH))
+                && Objects.equals(meals.get(MealType.DINNER), other.meals.get(MealType.DINNER));
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(meals, serving_size);
+        return Objects.hash(meals, servingSize);
     }
 
     @Override

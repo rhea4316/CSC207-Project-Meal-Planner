@@ -1,7 +1,5 @@
 package com.mealplanner.entity;
 
-import org.jetbrains.annotations.NotNull;
-
 /**
  * Value object representing a user's daily nutritional goals.
  * This entity encapsulates nutrition targets to keep the User entity clean (Single Responsibility Principle).
@@ -68,7 +66,10 @@ public class NutritionGoals {
      * @param actual the actual nutrition consumed
      * @return true if all nutrients are at or below goals
      */
-    public boolean isWithinGoals(@NotNull NutritionInfo actual) {
+    public boolean isWithinGoals(NutritionInfo actual) {
+        if (actual == null) {
+            throw new IllegalArgumentException("NutritionInfo cannot be null");
+        }
         return this.dailyCalories >= actual.getCalories() && this.dailyProtein >= actual.getProtein() &&
                 this.dailyCarbs >= actual.getCarbs() && this.dailyFat >= actual.getFat();
     }
@@ -80,9 +81,15 @@ public class NutritionGoals {
      * @return NutritionInfo representing remaining amounts (or negative if over)
      */
     public NutritionInfo calculateRemaining(NutritionInfo consumed) {
+        if (consumed == null) {
+            throw new IllegalArgumentException("Consumed nutrition cannot be null");
+        }
         if (isWithinGoals(consumed)) {
-            return new NutritionInfo(this.dailyCalories-consumed.getCalories(), this.dailyProtein-consumed.getProtein(),
-                    this.dailyCalories-consumed.getCalories(), this.dailyFat-consumed.getFat());
+            return new NutritionInfo(
+                    this.dailyCalories - consumed.getCalories(),
+                    this.dailyProtein - consumed.getProtein(),
+                    this.dailyCarbs - consumed.getCarbs(),
+                    this.dailyFat - consumed.getFat());
         }
         throw new UnsupportedOperationException("Consumed more than goal.");
     }
@@ -93,7 +100,10 @@ public class NutritionGoals {
      * @param consumed the nutrition consumed
      * @return array of percentages [calories%, protein%, carbs%, fat%]
      */
-    public double[] calculatePercentages(@NotNull NutritionInfo consumed) {
+    public double[] calculatePercentages(NutritionInfo consumed) {
+        if (consumed == null) {
+            throw new IllegalArgumentException("Consumed nutrition cannot be null");
+        }
         if (this.dailyCalories == 0 || this.dailyProtein == 0 || this.dailyCarbs == 0 || this.dailyFat == 0) {
             throw new UnsupportedOperationException("Nutrition goals cannot be zero");
         }
