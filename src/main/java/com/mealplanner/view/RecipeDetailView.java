@@ -28,6 +28,13 @@ public class RecipeDetailView extends JPanel implements PropertyChangeListener, 
     private JLabel errorLabel;
 
     public RecipeDetailView(RecipeDetailViewModel viewModel, AdjustServingSizeController controller) {
+        if (viewModel == null) {
+            throw new IllegalArgumentException("ViewModel cannot be null");
+        }
+        if (controller == null) {
+            throw new IllegalArgumentException("Controller cannot be null");
+        }
+        
         this.viewModel = viewModel;
         this.controller = controller;
 
@@ -172,11 +179,15 @@ public class RecipeDetailView extends JPanel implements PropertyChangeListener, 
                 break;
             case RecipeDetailViewModel.PROP_INGREDIENTS:
                 List<String> ingredients = viewModel.getIngredients();
-                StringBuilder ingredientsText = new StringBuilder();
-                for (String ingredient : ingredients) {
-                    ingredientsText.append(ingredient).append("\n");
+                if (ingredients != null) {
+                    StringBuilder ingredientsText = new StringBuilder();
+                    for (String ingredient : ingredients) {
+                        ingredientsText.append(ingredient).append("\n");
+                    }
+                    ingredientsArea.setText(ingredientsText.toString());
+                } else {
+                    ingredientsArea.setText("");
                 }
-                ingredientsArea.setText(ingredientsText.toString());
                 break;
             case RecipeDetailViewModel.PROP_NUTRITION:
                 NutritionInfo nutrition = viewModel.getNutrition();

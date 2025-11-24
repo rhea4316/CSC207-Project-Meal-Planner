@@ -26,6 +26,10 @@ public class ViewManager extends JPanel implements PropertyChangeListener {
     private final Map<String, JPanel> views;
 
     public ViewManager(ViewManagerModel viewManagerModel) {
+        if (viewManagerModel == null) {
+            throw new IllegalArgumentException("ViewManagerModel cannot be null");
+        }
+        
         this.viewManagerModel = viewManagerModel;
         this.cardLayout = new CardLayout();
         this.views = new HashMap<>();
@@ -39,6 +43,12 @@ public class ViewManager extends JPanel implements PropertyChangeListener {
      * Example: viewManager.addView(ViewManager.RECIPE_DETAIL_VIEW, recipeDetailView);
      */
     public void addView(String viewName, JPanel view) {
+        if (viewName == null || viewName.trim().isEmpty()) {
+            throw new IllegalArgumentException("View name cannot be null or empty");
+        }
+        if (view == null) {
+            throw new IllegalArgumentException("View cannot be null");
+        }
         views.put(viewName, view);
         add(view, viewName);
     }

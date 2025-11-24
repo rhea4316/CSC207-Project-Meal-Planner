@@ -2,7 +2,6 @@ package com.mealplanner.view;
 
 // Swing view for creating and storing new recipes - displays recipe creation form.
 // Responsible: Aaryan (functionality), Everyone (GUI implementation)
-// TODO: Create JPanel with form fields for name, ingredients, steps - call StoreRecipeController on save button click
 import com.mealplanner.entity.Unit;
 import com.mealplanner.interface_adapter.controller.StoreRecipeController;
 import com.mealplanner.interface_adapter.view_model.RecipeStoreViewModel;
@@ -42,6 +41,10 @@ public class StoreRecipeView extends JPanel {
 
 	public StoreRecipeView(StoreRecipeController controller, RecipeStoreViewModel viewModel) {
 		super(new BorderLayout());
+		
+		if (controller == null) {
+			throw new IllegalArgumentException("Controller cannot be null");
+		}
 
 		JPanel form = new JPanel(new GridBagLayout());
 		GridBagConstraints gbc = new GridBagConstraints();
