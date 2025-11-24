@@ -8,7 +8,7 @@ public class Recipe {
     // Required fields
     private final String name;
     private final List<String> ingredients;
-    private final List<String> steps;
+    private final String steps;
     private final int servingSize;
     
     // Optional fields
@@ -22,14 +22,14 @@ public class Recipe {
     /**
      * Constructs a new Recipe with required and optional information.
      */
-    public Recipe(String name, List<String> ingredients, List<String> steps, 
+    public Recipe(String name, List<String> ingredients, String steps,
                  int servingSize, NutritionInfo nutritionInfo, Integer cookTimeMinutes,
                  List<DietaryRestriction> dietaryRestrictions, String recipeId) {
         validateInputs(name, ingredients, steps, servingSize);
 
         this.name = name.trim();
         this.ingredients = new ArrayList<>(ingredients);
-        this.steps = new ArrayList<>(steps);
+        this.steps = steps;
         this.servingSize = servingSize;
         this.nutritionInfo = nutritionInfo; // Can be null
         this.cookTimeMinutes = cookTimeMinutes; // Can be null
@@ -41,12 +41,12 @@ public class Recipe {
     /**
      * Constructs a new Recipe with only required fields.
      */
-    public Recipe(String name, List<String> ingredients, List<String> steps, int servingSize) {
-        this(name, ingredients, steps, servingSize, null, null, null, null);
+    public Recipe(String name, List<String> ingredients, String steps, int servingSize) {
+        this(name, ingredients, steps, servingSize, null, null, null);
     }
 
     private void validateInputs(String name, List<String> ingredients,
-            List<String> steps, int servingSize) {
+            String steps, int servingSize) {
         if (name == null || name.trim().isEmpty()) {
             throw new IllegalArgumentException("Recipe name cannot be empty");
         }
@@ -107,8 +107,8 @@ public class Recipe {
         return new ArrayList<>(ingredients);
     }
 
-    public List<String> getSteps() {
-        return new ArrayList<>(steps);
+    public String getSteps() {
+        return steps;
     }
 
     public int getServingSize() {
@@ -166,6 +166,6 @@ public class Recipe {
         return String.format("%s (Serves %d)%s\n%d ingredients, %d steps",
                 name, servingSize,
                 cookTimeMinutes != null ? String.format("\nCook: %d min", cookTimeMinutes) : "",
-                ingredients.size(), steps.size());
+                ingredients.size(), steps);
     }
 }

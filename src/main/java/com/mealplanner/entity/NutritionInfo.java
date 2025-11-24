@@ -68,8 +68,14 @@ public class NutritionInfo {
      * @throws IllegalArgumentException if multiplier is negative
      */
     public NutritionInfo scale(double multiplier) {
-        // TODO: Implement scaling logic
-        throw new UnsupportedOperationException("Not yet implemented");
+        // Check for non-negativity:
+        if (multiplier < 0) {
+            throw new IllegalArgumentException("Nutrition values cannot be negative");
+        }
+        // Scale the calories and round it to the nearest int:
+        int roundedCalories = (int) Math.round(this.calories * multiplier);
+        // Create a new NutritionInfo object and return it
+        return new NutritionInfo(roundedCalories, this.protein * multiplier, this.carbs * multiplier, this.fat * multiplier);
     }
 
     /**
@@ -80,8 +86,17 @@ public class NutritionInfo {
      * @throws IllegalArgumentException if other is null
      */
     public NutritionInfo add(NutritionInfo other) {
-        // TODO: Implement addition logic
-        throw new UnsupportedOperationException("Not yet implemented");
+        // Check if 'other' is null:
+        if (other == null) {
+            throw new IllegalArgumentException("Nutrition values cannot be null");
+        }
+        // Add the respective parameters together:
+        int newCalories = this.calories + other.calories;
+        double newProtein = this.protein + other.protein;
+        double newCarbs = this.carbs + other.carbs;
+        double newFat = this.fat + other.fat;
+        // Create and return a new NutritionInfo object with the added parameters:
+        return new NutritionInfo(newCalories, newProtein, newCarbs, newFat);
     }
 
     @Override
