@@ -1,8 +1,5 @@
 package com.mealplanner.entity;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 // Core entity representing a user with saved recipes, meal schedule, and nutrition goals.
 // Responsible: Mona (primary for login/user management), Everyone (used across use cases)
 
@@ -19,17 +16,13 @@ public class User {
 
     public User(String username) {
         this.username = requireNonBlank(username, "username");
-        this.userId = requireNonBlank(username, "user ID");
+        this.userId = requireNonBlank(userId, "userId");
         this.savedRecipeIds = new ArrayList<>();
         this.groceryList = new ArrayList<>();
+        this.nutritionGoals = null;
+        this.mealSchedule = null;
 
     }
-
-    public User(String username, NutritionGoals nutritionGoals, Schedule mealSchedule)
-    {this.username = username;
-        this.nutritionGoals = nutritionGoals;
-        this.mealSchedule = mealSchedule;}
-
 
     ///  Getters and setters
 
@@ -68,18 +61,18 @@ public class User {
 
     ///  Return the User's saved recipes as a list of recipe IDs
     public List<String> getSavedRecipeIds() {
-        return Collections.unmodifiableList(savedRecipeIds);
+        return new  ArrayList<>(savedRecipeIds);
     }
 
     /// Add a recipe ID to the user's saved recipes
     public void addSavedRecipeId(String recipeId) {
-        String safeId = requireNonBlank(recipeId, "recipeId");
-        if (!savedRecipeIds.contains(safeId)) {
-            savedRecipeIds.add(safeId);
+        String saveId = requireNonBlank(recipeId, "recipeId");
+        if (!savedRecipeIds.contains(saveId)) {
+            savedRecipeIds.add(saveId);
         }
     }
 
-    /// Remove a recipe ID from the user's saved recipes. @return true if it was present and removed.
+    /// Remove a recipe ID from the user's saved recipes. return true if it was present and removed.
     public boolean removeSavedRecipeId(String recipeId) {
         if (recipeId == null) {
             return false;
@@ -95,17 +88,18 @@ public class User {
 
     // Managing User Grocery List
 
-    /// return List view of all ingredients currently on grocery list
-
+    /// return List of all ingredients currently on grocery list
     public List<Ingredient> getGroceryList() {
-        return Collections.unmodifiableList(groceryList);
+        return new ArrayList<>(groceryList);
     }
+
     ///  Add an ingredient to grocery list
     public void addToGroceryList(Ingredient ingredient) {
         if (ingredient != null) {
             groceryList.add(ingredient);
         }
     }
+
     ///  remove an ingredient from grocery list
     public boolean removeFromGroceryList(Ingredient ingredient) {
         if (ingredient == null) {
@@ -113,6 +107,7 @@ public class User {
         }
         return groceryList.remove(ingredient);
     }
+
     ///  clear the grocery list
     public void clearGroceryList() {
         groceryList.clear();
@@ -126,11 +121,16 @@ public class User {
         if (this == o) return true;
         if (!(o instanceof User)) return false;
         User other = (User) o;
-        return Objects.equals(username, other.username);
+        return Objects.equals(userId, other.userId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(userId);
     }
 
 
-    // Helper: To ensure necessary fields are not left empty
+    /// Helper To make sure that important fields are not left empty
 
     private static String requireNonBlank(String value, String fieldName) {
         Objects.requireNonNull(value, fieldName + " cannot be null");
