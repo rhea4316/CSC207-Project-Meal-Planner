@@ -32,12 +32,13 @@ public class ViewScheduleInteractor implements ViewScheduleInputBoundary {
         try {
             User user = dataAccess.getUserByUsername(username);
 
-            Schedule schedule = user.getMealSchedule();
+            Schedule schedule = dataAccess.getScheduleByUserID(user.getUserId());
 
-            if (schedule == null) {
-                presenter.presentError("No Schedule");
+            if (schedule == null || schedule.isEmpty()) {
+                presenter.presentError("No Schedule found for user");
                 return;
             }
+
             ViewScheduleOutputData outputData =
                     new ViewScheduleOutputData(user.getUsername(), schedule);
             presenter.presentSchedule(outputData);
