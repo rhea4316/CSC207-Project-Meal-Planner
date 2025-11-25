@@ -7,6 +7,7 @@ import com.mealplanner.entity.Recipe;
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.SearchByIngredientsController;
 import com.mealplanner.interface_adapter.view_model.RecipeSearchViewModel;
+import com.mealplanner.util.StringUtil;
 
 import javax.swing.*;
 import java.awt.*;
@@ -130,9 +131,9 @@ public class SearchByIngredientsView extends JPanel implements PropertyChangeLis
     }
 
     private void performSearch() {
-        String ingredientsRaw = ingredientsTextArea.getText().trim();
+        String ingredientsRaw = StringUtil.safeTrim(ingredientsTextArea.getText());
 
-        if (ingredientsRaw.isEmpty()) {
+        if (StringUtil.isNullOrEmpty(ingredientsRaw)) {
             JOptionPane.showMessageDialog(this,
                     "Please enter at least one ingredient", "Error", JOptionPane.ERROR_MESSAGE);
             return;
@@ -168,7 +169,7 @@ public class SearchByIngredientsView extends JPanel implements PropertyChangeLis
                 }
                 
                 String steps = recipe.getSteps();
-                if (steps != null && !steps.isEmpty()) {
+                if (StringUtil.hasContent(steps)) {
                     String stepsPreview = steps.length() > 150 ? steps.substring(0, 150) + "..." : steps;
                     results.append("Instructions: ").append(stepsPreview).append("\n");
                 }
@@ -190,7 +191,7 @@ public class SearchByIngredientsView extends JPanel implements PropertyChangeLis
             errorLabel.setText("");
         } else if (RecipeSearchViewModel.PROP_ERROR_MESSAGE.equals(propertyName)) {
             String errorMsg = viewModel.getErrorMessage();
-            if (errorMsg != null && !errorMsg.isEmpty()) {
+            if (StringUtil.hasContent(errorMsg)) {
                 resultsTextArea.setText("");
                 errorLabel.setText(errorMsg);
             } else {

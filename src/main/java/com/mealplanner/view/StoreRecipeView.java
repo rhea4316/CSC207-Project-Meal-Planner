@@ -6,6 +6,8 @@ import com.mealplanner.entity.Unit;
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.StoreRecipeController;
 import com.mealplanner.interface_adapter.view_model.RecipeStoreViewModel;
+import com.mealplanner.util.StringUtil;
+import com.mealplanner.util.NumberUtil;
 
 import javax.swing.*;
 import java.awt.*;
@@ -146,15 +148,15 @@ public class StoreRecipeView extends JPanel {
 	}
 
 	private void onAddIngredient(ActionEvent e) {
-		String qty = ingredientQtyField.getText().trim();
+		String qty = StringUtil.safeTrim(ingredientQtyField.getText());
 		Unit unit = (Unit) unitCombo.getSelectedItem();
-		String name = ingredientNameField.getText().trim();
-		if (name.isEmpty()) {
+		String name = StringUtil.safeTrim(ingredientNameField.getText());
+		if (StringUtil.isNullOrEmpty(name)) {
 			JOptionPane.showMessageDialog(this, "Ingredient name cannot be empty", "Validation", JOptionPane.WARNING_MESSAGE);
 			return;
 		}
 
-		String entry = String.format("%s %s %s", qty.isEmpty() ? "" : qty, unit != null ? unit.getAbbreviation() : "", name).trim();
+		String entry = StringUtil.safeTrim(String.format("%s %s %s", StringUtil.isNullOrEmpty(qty) ? "" : qty, unit != null ? unit.getAbbreviation() : "", name));
 		ingredientListModel.addElement(entry);
 
 		// Clear small inputs
@@ -163,7 +165,7 @@ public class StoreRecipeView extends JPanel {
 	}
 
 	private void onSave(StoreRecipeController controller, RecipeStoreViewModel viewModel) {
-		String name = nameField.getText().trim();
+		String name = StringUtil.safeTrim(nameField.getText());
 		List<String> ingredients = new ArrayList<>();
 		for (int i = 0; i < ingredientListModel.size(); i++) {
 			ingredients.add(ingredientListModel.get(i));
@@ -172,17 +174,13 @@ public class StoreRecipeView extends JPanel {
 		List<String> steps = new ArrayList<>();
 		if (stepsRaw != null && !stepsRaw.isBlank()) {
 			for (String s : stepsRaw.split("\\r?\\n")) {
-				if (!s.trim().isEmpty()) steps.add(s.trim());
+				String trimmed = StringUtil.safeTrim(s);
+				if (!StringUtil.isNullOrEmpty(trimmed)) steps.add(trimmed);
 			}
 		}
 
-		int servingSize = 1;
-		try {
-			servingSize = Integer.parseInt(servingSizeField.getText().trim());
-			if (servingSize <= 0) servingSize = 1;
-		} catch (NumberFormatException ignored) {
-			servingSize = 1;
-		}
+		int servingSize = NumberUtil.parseInt(servingSizeField.getText(), 1);
+		if (servingSize <= 0) servingSize = 1;
 
 		// Call controller - this will trigger the presenter to update the view model
 		controller.execute(name, ingredients, steps, servingSize);

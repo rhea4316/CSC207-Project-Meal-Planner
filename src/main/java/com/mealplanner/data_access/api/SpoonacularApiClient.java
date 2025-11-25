@@ -4,9 +4,11 @@ package com.mealplanner.data_access.api;
 // Responsible: Everyone (API integration shared responsibility)
 
 import com.mealplanner.config.ApiConfig;
-import com.mealplanner.entity.DietaryRestriction;
 import com.mealplanner.entity.NutritionInfo;
 import com.mealplanner.entity.Recipe;
+import com.mealplanner.exception.ApiException;
+import com.mealplanner.util.StringUtil;
+import com.mealplanner.util.NumberUtil;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -46,7 +48,7 @@ public class SpoonacularApiClient {
         String baseUrl = ApiConfig.getSpoonacularBaseUrl();
         String apiKey = ApiConfig.getSpoonacularApiKey();
         
-        if (apiKey == null || apiKey.trim().isEmpty()) {
+        if (StringUtil.isNullOrEmpty(apiKey)) {
             throw new IOException("Spoonacular API key is not configured");
         }
         
@@ -89,7 +91,7 @@ public class SpoonacularApiClient {
         String baseUrl = ApiConfig.getSpoonacularBaseUrl();
         String apiKey = ApiConfig.getSpoonacularApiKey();
         
-        if (apiKey == null || apiKey.trim().isEmpty()) {
+        if (StringUtil.isNullOrEmpty(apiKey)) {
             throw new IOException("Spoonacular API key is not configured");
         }
         
@@ -108,12 +110,14 @@ public class SpoonacularApiClient {
      * @throws IOException if API call fails or recipe not found
      */
     public Recipe getRecipeById(String recipeId) throws IOException {
-        try {
-            int id = Integer.parseInt(recipeId);
-            return getRecipeById(id);
-        } catch (NumberFormatException e) {
-            throw new IOException("Invalid recipe ID format: " + recipeId, e);
+        if (StringUtil.isNullOrEmpty(recipeId)) {
+            throw new IOException("Recipe ID cannot be null or empty");
         }
+        int id = NumberUtil.parseInt(recipeId, -1);
+        if (id < 0) {
+            throw new IOException("Invalid recipe ID format: " + recipeId);
+        }
+        return getRecipeById(id);
     }
     
     /**
@@ -129,20 +133,21 @@ public class SpoonacularApiClient {
         String baseUrl = ApiConfig.getSpoonacularBaseUrl();
         String apiKey = ApiConfig.getSpoonacularApiKey();
         
-        if (apiKey == null || apiKey.trim().isEmpty()) {
+        if (StringUtil.isNullOrEmpty(apiKey)) {
             throw new IOException("Spoonacular API key is not configured");
         }
         
         // URL encode parameters
-        String encodedQuery = URLEncoder.encode(query.trim(), StandardCharsets.UTF_8);
+        String encodedQuery = URLEncoder.encode(StringUtil.safeTrim(query), StandardCharsets.UTF_8);
         
         StringBuilder urlBuilder = new StringBuilder(baseUrl);
         urlBuilder.append("/recipes/complexSearch?");
         urlBuilder.append("query=").append(encodedQuery);
         urlBuilder.append("&number=").append(numberOfRecipes);
         
-        if (includedIngredients != null && !includedIngredients.trim().isEmpty()) {
-            String encodedIngredients = URLEncoder.encode(includedIngredients.trim(), StandardCharsets.UTF_8);
+        String trimmedIngredients = StringUtil.safeTrim(includedIngredients);
+        if (!StringUtil.isNullOrEmpty(trimmedIngredients)) {
+            String encodedIngredients = URLEncoder.encode(trimmedIngredients, StandardCharsets.UTF_8);
             urlBuilder.append("&includeIngredients=").append(encodedIngredients);
         }
         
@@ -162,7 +167,7 @@ public class SpoonacularApiClient {
         String baseUrl = ApiConfig.getSpoonacularBaseUrl();
         String apiKey = ApiConfig.getSpoonacularApiKey();
         
-        if (apiKey == null || apiKey.trim().isEmpty()) {
+        if (StringUtil.isNullOrEmpty(apiKey)) {
             throw new IOException("Spoonacular API key is not configured");
         }
         
@@ -203,164 +208,28 @@ public class SpoonacularApiClient {
      * 
      * @param json JSONObject from API response
      * @return Recipe entity
+     * @throws IOException if parsing fails
      */
-    private Recipe parseRecipeFromJson(JSONObject json) {
-        String name = json.getString("title");
-        String recipeId = String.valueOf(json.getInt("id"));
-        
-        // Parse ingredients
-        List<String> ingredients = parseIngredientsFromJson(json.optJSONArray("extendedIngredients"));
-        
-        // Parse steps/instructions
-        String steps = parseStepsFromJson(json);
-        
-        // Parse serving size
-        int servingSize = json.optInt("servings", 1);
-        if (servingSize <= 0) {
-            servingSize = 1; // Default to 1 if invalid
+    private Recipe parseRecipeFromJson(JSONObject json) throws IOException {
+        try {
+            return ApiResponseParser.parseRecipe(json);
+        } catch (ApiException e) {
+            throw new IOException("Failed to parse recipe from JSON: " + e.getMessage(), e);
         }
-        
-        // Parse nutrition info
-        NutritionInfo nutritionInfo = null;
-        if (json.has("nutrition")) {
-            JSONObject nutritionJson = json.getJSONObject("nutrition");
-            nutritionInfo = parseNutritionFromJson(nutritionJson);
-        }
-        
-        // Parse cook time
-        Integer cookTimeMinutes = null;
-        if (json.has("readyInMinutes")) {
-            int readyTime = json.getInt("readyInMinutes");
-            if (readyTime > 0) {
-                cookTimeMinutes = readyTime;
-            }
-        }
-        
-        // Parse dietary restrictions
-        List<DietaryRestriction> dietaryRestrictions = parseDietaryRestrictions(json.optJSONArray("diets"));
-        
-        return new Recipe(name, ingredients, steps, servingSize, 
-                         nutritionInfo, cookTimeMinutes, dietaryRestrictions, recipeId);
-    }
-    
-    /**
-     * Parse ingredients from JSON array.
-     */
-    private List<String> parseIngredientsFromJson(JSONArray ingredientsArray) {
-        List<String> ingredients = new ArrayList<>();
-        if (ingredientsArray != null) {
-            for (int i = 0; i < ingredientsArray.length(); i++) {
-                JSONObject ingredient = ingredientsArray.getJSONObject(i);
-                String name = ingredient.optString("nameClean", ingredient.optString("name", ""));
-                if (!name.isEmpty()) {
-                    ingredients.add(name);
-                }
-            }
-        }
-        return ingredients;
-    }
-    
-    /**
-     * Parse cooking steps/instructions from JSON.
-     */
-    private String parseStepsFromJson(JSONObject json) {
-        // Try to get instructions first
-        if (json.has("instructions")) {
-            String instructions = json.optString("instructions", "");
-            if (!instructions.isEmpty()) {
-                return instructions;
-            }
-        }
-        
-        // Fall back to sourceUrl if instructions not available
-        if (json.has("sourceUrl")) {
-            return json.optString("sourceUrl", "");
-        }
-        
-        // Last resort: return empty string (will be validated by Recipe constructor)
-        return "See source URL for instructions";
-    }
-    
-    /**
-     * Parse dietary restrictions from JSON array.
-     */
-    private List<DietaryRestriction> parseDietaryRestrictions(JSONArray dietsArray) {
-        List<DietaryRestriction> restrictions = new ArrayList<>();
-        if (dietsArray != null) {
-            for (int i = 0; i < dietsArray.length(); i++) {
-                String diet = dietsArray.getString(i);
-                try {
-                    DietaryRestriction restriction = DietaryRestriction.fromString(diet);
-                    restrictions.add(restriction);
-                } catch (IllegalArgumentException e) {
-                    // Skip invalid dietary restrictions
-                }
-            }
-        }
-        return restrictions;
     }
     
     /**
      * Parse NutritionInfo from JSON object.
+     * 
+     * @param json JSONObject from API response
+     * @return NutritionInfo entity
+     * @throws IOException if parsing fails
      */
-    private NutritionInfo parseNutritionFromJson(JSONObject json) {
-        int calories = 0;
-        double protein = 0.0;
-        double carbs = 0.0;
-        double fat = 0.0;
-        
-        // Try different possible JSON structures
-        if (json.has("calories")) {
-            calories = json.optInt("calories", 0);
+    private NutritionInfo parseNutritionFromJson(JSONObject json) throws IOException {
+        try {
+            return ApiResponseParser.parseNutritionInfo(json);
+        } catch (ApiException e) {
+            throw new IOException("Failed to parse nutrition info from JSON: " + e.getMessage(), e);
         }
-        
-        if (json.has("protein")) {
-            protein = json.optDouble("protein", 0.0);
-        } else if (json.has("protein")) {
-            JSONObject proteinObj = json.optJSONObject("protein");
-            if (proteinObj != null) {
-                protein = proteinObj.optDouble("amount", 0.0);
-            }
-        }
-        
-        if (json.has("carbs")) {
-            carbs = json.optDouble("carbs", 0.0);
-        } else if (json.has("carbohydrates")) {
-            JSONObject carbsObj = json.optJSONObject("carbohydrates");
-            if (carbsObj != null) {
-                carbs = carbsObj.optDouble("amount", 0.0);
-            }
-        }
-        
-        if (json.has("fat")) {
-            fat = json.optDouble("fat", 0.0);
-        } else if (json.has("fat")) {
-            JSONObject fatObj = json.optJSONObject("fat");
-            if (fatObj != null) {
-                fat = fatObj.optDouble("amount", 0.0);
-            }
-        }
-        
-        // Try nutrients array structure (common in Spoonacular)
-        if (json.has("nutrients")) {
-            JSONArray nutrients = json.getJSONArray("nutrients");
-            for (int i = 0; i < nutrients.length(); i++) {
-                JSONObject nutrient = nutrients.getJSONObject(i);
-                String name = nutrient.optString("name", "").toLowerCase();
-                double amount = nutrient.optDouble("amount", 0.0);
-                
-                if (name.contains("calorie")) {
-                    calories = (int) Math.round(amount);
-                } else if (name.contains("protein")) {
-                    protein = amount;
-                } else if (name.contains("carbohydrate") || name.contains("carb")) {
-                    carbs = amount;
-                } else if (name.contains("fat")) {
-                    fat = amount;
-                }
-            }
-        }
-        
-        return new NutritionInfo(calories, protein, carbs, fat);
     }
 }

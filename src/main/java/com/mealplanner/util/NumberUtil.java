@@ -20,8 +20,11 @@ public class NumberUtil {
      * @return Rounded value
      */
     public static double round(double value, int decimalPlaces) {
-        // TODO: Implement rounding logic
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (decimalPlaces < 0) {
+            throw new IllegalArgumentException("Decimal places cannot be negative");
+        }
+        double multiplier = Math.pow(10, decimalPlaces);
+        return Math.round(value * multiplier) / multiplier;
     }
 
     /**
@@ -33,8 +36,7 @@ public class NumberUtil {
      * @return true if value is within range
      */
     public static boolean isInRange(double value, double min, double max) {
-        // TODO: Implement range check
-        throw new UnsupportedOperationException("Not yet implemented");
+        return value >= min && value <= max;
     }
 
     /**
@@ -46,8 +48,7 @@ public class NumberUtil {
      * @return Clamped value
      */
     public static double clamp(double value, double min, double max) {
-        // TODO: Implement clamping logic
-        throw new UnsupportedOperationException("Not yet implemented");
+        return Math.max(min, Math.min(value, max));
     }
 
     /**
@@ -57,8 +58,7 @@ public class NumberUtil {
      * @return Formatted string (e.g., "3.5")
      */
     public static String formatOneDecimal(double value) {
-        // TODO: Implement one decimal formatting
-        throw new UnsupportedOperationException("Not yet implemented");
+        return ONE_DECIMAL.format(value);
     }
 
     /**
@@ -68,8 +68,7 @@ public class NumberUtil {
      * @return Formatted string (e.g., "3.14")
      */
     public static String formatTwoDecimals(double value) {
-        // TODO: Implement two decimal formatting
-        throw new UnsupportedOperationException("Not yet implemented");
+        return TWO_DECIMALS.format(value);
     }
 
     /**
@@ -79,8 +78,7 @@ public class NumberUtil {
      * @return true if value has no fractional part
      */
     public static boolean isWholeNumber(double value) {
-        // TODO: Implement whole number check
-        throw new UnsupportedOperationException("Not yet implemented");
+        return Math.abs(value - Math.round(value)) < 0.0001;
     }
 
     /**
@@ -91,8 +89,19 @@ public class NumberUtil {
      * @return Fraction string or decimal
      */
     public static String formatAsFraction(double value) {
-        // TODO: Implement fraction formatting
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (Math.abs(value - 0.5) < 0.001) {
+            return "1/2";
+        } else if (Math.abs(value - 0.25) < 0.001) {
+            return "1/4";
+        } else if (Math.abs(value - 0.75) < 0.001) {
+            return "3/4";
+        } else if (Math.abs(value - 0.333) < 0.001 || Math.abs(value - 0.3333) < 0.001) {
+            return "1/3";
+        } else if (Math.abs(value - 0.666) < 0.001 || Math.abs(value - 0.6667) < 0.001) {
+            return "2/3";
+        } else {
+            return String.valueOf(value);
+        }
     }
 
     /**
@@ -103,8 +112,10 @@ public class NumberUtil {
      * @return Percentage (0-100+)
      */
     public static double calculatePercentage(double value, double total) {
-        // TODO: Implement percentage calculation
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (total == 0) {
+            return 0;
+        }
+        return (value / total) * 100;
     }
 
     /**
@@ -115,8 +126,14 @@ public class NumberUtil {
      * @return Parsed double or default
      */
     public static double parseDouble(String str, double defaultValue) {
-        // TODO: Implement double parsing with default
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (str == null || str.trim().isEmpty()) {
+            return defaultValue;
+        }
+        try {
+            return Double.parseDouble(str.trim());
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
     }
 
     /**
@@ -127,8 +144,14 @@ public class NumberUtil {
      * @return Parsed int or default
      */
     public static int parseInt(String str, int defaultValue) {
-        // TODO: Implement int parsing with default
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (str == null || str.trim().isEmpty()) {
+            return defaultValue;
+        }
+        try {
+            return Integer.parseInt(str.trim());
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
     }
 
     /**
@@ -140,8 +163,7 @@ public class NumberUtil {
      * @return true if values are within tolerance
      */
     public static boolean approximatelyEqual(double a, double b, double tolerance) {
-        // TODO: Implement approximate equality check
-        throw new UnsupportedOperationException("Not yet implemented");
+        return Math.abs(a - b) <= tolerance;
     }
 
     /**
@@ -151,8 +173,32 @@ public class NumberUtil {
      * @return Decimal value, or 0 if invalid
      */
     public static double fractionToDecimal(String fraction) {
-        // TODO: Implement fraction to decimal conversion
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (fraction == null || fraction.trim().isEmpty()) {
+            return 0;
+        }
+        
+        String trimmed = fraction.trim();
+        if (!trimmed.contains("/")) {
+            return 0;
+        }
+        
+        String[] parts = trimmed.split("/");
+        if (parts.length != 2) {
+            return 0;
+        }
+        
+        try {
+            double numerator = Double.parseDouble(parts[0].trim());
+            double denominator = Double.parseDouble(parts[1].trim());
+            
+            if (denominator == 0) {
+                return 0;
+            }
+            
+            return numerator / denominator;
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     private NumberUtil() {

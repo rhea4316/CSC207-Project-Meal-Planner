@@ -7,6 +7,7 @@ import com.mealplanner.entity.Recipe;
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.BrowseRecipeController;
 import com.mealplanner.interface_adapter.view_model.RecipeBrowseViewModel;
+import com.mealplanner.util.StringUtil;
 
 import javax.swing.*;
 import java.awt.*;
@@ -121,18 +122,18 @@ public class BrowseRecipeView extends JPanel implements PropertyChangeListener, 
     }
 
     private void performSearch() {
-        String query = queryTextField.getText().trim();
-        String ingredients = ingredientsTextField.getText().trim();
+        String query = StringUtil.safeTrim(queryTextField.getText());
+        String ingredients = StringUtil.safeTrim(ingredientsTextField.getText());
         int numberOfRecipes = (Integer) numberOfResultsSpinner.getValue();
 
-        if (query.isEmpty()) {
+        if (StringUtil.isNullOrEmpty(query)) {
             JOptionPane.showMessageDialog(this,
                     "Please enter a search query", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
         try {
-            if (ingredients.isEmpty()) {
+            if (StringUtil.isNullOrEmpty(ingredients)) {
                 browseRecipeController.execute(query, numberOfRecipes);
             } else {
                 browseRecipeController.execute(query, numberOfRecipes, ingredients);
@@ -159,7 +160,7 @@ public class BrowseRecipeView extends JPanel implements PropertyChangeListener, 
                     results.append("Ingredients: ").append(recipe.getIngredients()).append("\n");
                     results.append("Serving Size: ").append(recipe.getServingSize()).append("\n");
                     String steps = recipe.getSteps();
-                    if (steps != null && !steps.isEmpty()) {
+                    if (StringUtil.hasContent(steps)) {
                         results.append("Instructions: ").append(steps.length() > 100 ? 
                             steps.substring(0, 100) + "..." : steps).append("\n");
                     }

@@ -5,6 +5,7 @@ package com.mealplanner.use_case.browse_recipe;
 
 import com.mealplanner.config.ApiConfig;
 import com.mealplanner.entity.Recipe;
+import com.mealplanner.util.StringUtil;
 
 import java.io.IOException;
 import java.util.List;
@@ -30,7 +31,7 @@ public class BrowseRecipeInteractor implements BrowseRecipeInputBoundary {
             return;
         }
         
-        if (browseRecipeInputData.getQuery() == null || browseRecipeInputData.getQuery().trim().isEmpty()) {
+        if (StringUtil.isNullOrEmpty(browseRecipeInputData.getQuery())) {
             browseRecipePresenter.presentError("Search query cannot be empty");
             return;
         }

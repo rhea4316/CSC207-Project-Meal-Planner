@@ -9,6 +9,8 @@ import java.util.stream.Collectors;
 
 import com.mealplanner.use_case.store_recipe.StoreRecipeInputBoundary;
 import com.mealplanner.use_case.store_recipe.StoreRecipeInputData;
+import com.mealplanner.util.StringUtil;
+import com.mealplanner.util.NumberUtil;
 
 
  //Controller for storing new recipes. Converts raw form input into a use-case InputData object and calls the interactor.
@@ -37,14 +39,9 @@ public class StoreRecipeController {
 		List<String> ingredients = parseListFromString(ingredientsRaw);
 		List<String> steps = parseListFromString(stepsRaw);
 
-		int servingSize = 1;
-		if (servingSizeStr != null) {
-			try {
-				servingSize = Integer.parseInt(servingSizeStr.trim());
-				if (servingSize <= 0) servingSize = 1;
-			} catch (NumberFormatException ignored) {
-				// makes default 1
-			}
+		int servingSize = NumberUtil.parseInt(servingSizeStr, 1);
+		if (servingSize <= 0) {
+			servingSize = 1;
 		}
 
 		execute(name, ingredients, steps, servingSize);
@@ -53,8 +50,8 @@ public class StoreRecipeController {
 	private List<String> parseListFromString(String raw) {
 		if (raw == null) return List.of();
 		return Arrays.stream(raw.split("\\r?\\n|,"))
-				.map(String::trim)
-				.filter(s -> !s.isEmpty())
+				.map(StringUtil::safeTrim)
+				.filter(s -> !StringUtil.isNullOrEmpty(s))
 				.collect(Collectors.toList());
 	}
 
