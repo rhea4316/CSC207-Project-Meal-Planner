@@ -1,22 +1,27 @@
 package com.mealplanner.entity;
 import java.util.*;
+import java.util.UUID;
 // Core entity representing a user with saved recipes, meal schedule, and nutrition goals.
 // Responsible: Mona (primary for login/user management), Everyone (used across use cases)
 
 // TODO: Implement user class with methods for managing saved recipes and generating grocery lists
 
 public class User {
-    private String username;                            /// Username for identification
-    private String userId;                              /// User's ID (not sure if this is necessary)
-    private List<String> savedRecipeIds;              /// user's recipes by recipe ID
-    private List<Ingredient> groceryList;            /// user grocery list of ingredients
-    private Schedule mealSchedule;                          /// user meal schedule
-    private NutritionGoals nutritionGoals;                  ///user nutrition goals
+    private final String userId;                      /// User's ID (not sure if this is necessary)
+    private String username;                          /// Username
+    private final List<String> savedRecipeIds;             /// user's recipes by recipe ID
+    private final List<Ingredient> groceryList;            /// grocery list
+    private Schedule mealSchedule;                   /// meal schedule
+    private NutritionGoals nutritionGoals;           /// nutrition goals
 
 
-    public User(String username) {
-        this.username = requireNonBlank(username, "username");
+    public User(String username){
+        this(UUID.randomUUID().toString(), username);
+    }
+
+    public User(String userId, String username) {
         this.userId = requireNonBlank(userId, "userId");
+        this.username = requireNonBlank(username, "username");
         this.savedRecipeIds = new ArrayList<>();
         this.groceryList = new ArrayList<>();
         this.nutritionGoals = null;
