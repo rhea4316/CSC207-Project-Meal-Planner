@@ -6,6 +6,9 @@ package com.mealplanner.view;
 
 import com.mealplanner.entity.MealType;
 import com.mealplanner.entity.Schedule;
+import com.mealplanner.interface_adapter.ViewManagerModel;
+import com.mealplanner.interface_adapter.controller.AdjustServingSizeController;
+import com.mealplanner.interface_adapter.controller.ViewScheduleController;
 import com.mealplanner.interface_adapter.view_model.ScheduleViewModel;
 
 import javax.swing.*;
@@ -24,6 +27,8 @@ import java.util.Map;
 public class ScheduleView extends JPanel implements PropertyChangeListener {
 
     private final ScheduleViewModel scheduleViewModel;
+    private final ViewScheduleController controller;
+    private final ViewManagerModel viewManagerModel;
 
     private final JLabel titleLabel;
     private final JLabel messageLabel;
@@ -33,9 +38,11 @@ public class ScheduleView extends JPanel implements PropertyChangeListener {
     // To map table rows to dates
     private final List<LocalDate> rowDates = new ArrayList<>();
 
-    public ScheduleView(ScheduleViewModel scheduleViewModel) {
+    public ScheduleView(ScheduleViewModel scheduleViewModel, ViewScheduleController controller, ViewManagerModel viewManagerModel) {
         this.scheduleViewModel = scheduleViewModel;
         this.scheduleViewModel.addPropertyChangeListener(this);
+        this.controller = controller;
+        this.viewManagerModel = viewManagerModel;
 
         setLayout(new BorderLayout(10, 10));
 
