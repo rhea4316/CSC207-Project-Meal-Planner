@@ -5,5 +5,5 @@ package com.mealplanner.use_case.manage_meal_plan.add;
 // TODO: Define execute method that takes AddMealInputData (date, meal type, recipe) as parameter
 
 public interface AddMealInputBoundary {
-
+    void execute(AddMealInputData inputData);
 }
