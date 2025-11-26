@@ -1,6 +1,5 @@
 package com.mealplanner.use_case.manage_meal_plan.add;
 
-import com.mealplanner.entity.Recipe;
 import com.mealplanner.entity.MealType;
 import java.time.LocalDate;
 
@@ -11,9 +10,9 @@ import java.time.LocalDate;
 public class AddMealInputData {
     private final LocalDate date;
     private final MealType mealType;
-    private final Recipe recipe;
+    private final String recipe;
 
-    public AddMealInputData(LocalDate date, MealType mealType, Recipe recipe) {
+    public AddMealInputData(LocalDate date, MealType mealType, String recipe) {
         this.date = date;
         this.mealType = mealType;
         this.recipe = recipe;
@@ -27,7 +26,7 @@ public class AddMealInputData {
         return mealType;
     }
 
-    public Recipe getRecipe() {
+    public String getRecipe() {
         return recipe;
     }
 

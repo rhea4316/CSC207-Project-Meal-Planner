@@ -11,9 +11,9 @@ import java.time.LocalDate;
 public class EditMealInputData {
     private final LocalDate date;
     private final MealType mealType;
-    private final Recipe recipe;
+    private final String recipe;
 
-    public EditMealInputData(LocalDate date, MealType mealType, Recipe recipe) {
+    public EditMealInputData(LocalDate date, MealType mealType, String recipe) {
         this.date = date;
         this.mealType = mealType;
         this.recipe = recipe;
@@ -27,7 +27,7 @@ public class EditMealInputData {
         return mealType;
     }
 
-    public Recipe getRecipe() {
+    public String getRecipe() {
         return recipe;
     }
 }

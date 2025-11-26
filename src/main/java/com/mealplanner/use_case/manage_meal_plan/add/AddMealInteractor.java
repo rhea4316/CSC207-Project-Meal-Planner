@@ -45,6 +45,7 @@ public class AddMealInteractor implements AddMealInputBoundary {
         }
 
         Schedule schedule = dataAccess.getUserSchedule();
+        String recipeID = inputData.getRecipe();
 
         //Check if the slot is available
         if (schedule.hasMeal(date, mealType)) {
@@ -54,7 +55,7 @@ public class AddMealInteractor implements AddMealInputBoundary {
 
         //Add meal to schedule
         try {
-            schedule.addMeal(date, mealType, inputData.getRecipe().getRecipeId());
+            schedule.addMeal(date, mealType, recipeID);
 
         } catch (MealPlannerException e) {
             presenter.presentAddError(e.getMessage());

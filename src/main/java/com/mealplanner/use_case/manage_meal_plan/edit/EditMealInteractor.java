@@ -26,6 +26,7 @@ public class EditMealInteractor implements EditMealInputBoundary {
         LocalDate date = inputData.getDate();
         MealType mealType = inputData.getMealType();
         Schedule schedule = dataAccess.getUserSchedule();
+        String recipeID = inputData.getRecipe();
 
         if (!schedule.hasMeal(date, mealType)) {
             presenter.presentEditError("No meal exists for " + mealType + " on " + date + ".");
@@ -33,7 +34,7 @@ public class EditMealInteractor implements EditMealInputBoundary {
         }
 
         //Update with new recipe
-        schedule.updateMeal(date, mealType, inputData.getRecipe().getRecipeId());
+        schedule.updateMeal(date, mealType, recipeID);
 
         //Save schedule
         dataAccess.saveSchedule(schedule);
