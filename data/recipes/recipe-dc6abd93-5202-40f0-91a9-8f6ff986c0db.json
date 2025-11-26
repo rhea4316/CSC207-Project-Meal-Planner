@@ -1,0 +1,13 @@
+{
+  "name": "Pasta",
+  "ingredients": [
+    "500 g Pasta",
+    "200 g Sauce"
+  ],
+  "steps": [
+    "Boil"
+  ],
+  "servingSize": 2,
+  "dietaryRestrictions": [],
+  "recipeId": "recipe-dc6abd93-5202-40f0-91a9-8f6ff986c0db"
+}

@@ -9,12 +9,12 @@ public class RecipeNotFoundException extends MealPlannerException {
     private final String recipeId;
 
     public RecipeNotFoundException(String recipeId) {
-        super("Recipe not found with ID: " + recipeId);
+        super("Recipe not found with ID: " + (recipeId != null ? recipeId : "null"));
         this.recipeId = recipeId;
     }
 
     public RecipeNotFoundException(String message, String recipeId) {
-        super(message);
+        super(message != null ? message : "Recipe not found");
         this.recipeId = recipeId;
     }
 

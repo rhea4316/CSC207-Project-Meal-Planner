@@ -23,8 +23,7 @@ public class StringUtil {
      * @return true if null or blank
      */
     public static boolean isNullOrEmpty(String str) {
-        // TODO: Implement null/empty check
-        throw new UnsupportedOperationException("Not yet implemented");
+        return str == null || str.trim().isEmpty();
     }
 
     /**
@@ -34,8 +33,7 @@ public class StringUtil {
      * @return true if has content
      */
     public static boolean hasContent(String str) {
-        // TODO: Implement content check
-        throw new UnsupportedOperationException("Not yet implemented");
+        return !isNullOrEmpty(str);
     }
 
     /**
@@ -45,8 +43,7 @@ public class StringUtil {
      * @return Trimmed string, or empty string if null
      */
     public static String safeTrim(String str) {
-        // TODO: Implement safe trim
-        throw new UnsupportedOperationException("Not yet implemented");
+        return str == null ? "" : str.trim();
     }
 
     /**
@@ -56,8 +53,10 @@ public class StringUtil {
      * @return Capitalized string
      */
     public static String capitalize(String str) {
-        // TODO: Implement capitalization
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (str == null || str.isEmpty()) {
+            return str;
+        }
+        return str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase();
     }
 
     /**
@@ -67,8 +66,21 @@ public class StringUtil {
      * @return Title case string (e.g., "chicken pasta" -> "Chicken Pasta")
      */
     public static String toTitleCase(String str) {
-        // TODO: Implement title case conversion
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (str == null || str.isEmpty()) {
+            return str;
+        }
+        
+        String[] words = str.split("\\s+");
+        StringBuilder result = new StringBuilder();
+        
+        for (int i = 0; i < words.length; i++) {
+            if (i > 0) {
+                result.append(" ");
+            }
+            result.append(capitalize(words[i]));
+        }
+        
+        return result.toString();
     }
 
     /**
@@ -79,8 +91,10 @@ public class StringUtil {
      * @return Sanitized string
      */
     public static String sanitize(String str) {
-        // TODO: Implement string sanitization
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (str == null) {
+            return "";
+        }
+        return UNSAFE_CHARS.matcher(str).replaceAll("");
     }
 
     /**
@@ -90,8 +104,10 @@ public class StringUtil {
      * @return true if valid
      */
     public static boolean isAlphanumeric(String str) {
-        // TODO: Implement alphanumeric validation
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (str == null) {
+            return false;
+        }
+        return ALPHANUMERIC_PATTERN.matcher(str).matches();
     }
 
     /**
@@ -102,8 +118,10 @@ public class StringUtil {
      * @return true if valid
      */
     public static boolean isValidUsername(String username) {
-        // TODO: Implement username validation
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (username == null) {
+            return false;
+        }
+        return VALID_USERNAME_PATTERN.matcher(username).matches();
     }
 
     /**
@@ -113,8 +131,10 @@ public class StringUtil {
      * @return true if valid format
      */
     public static boolean isValidEmail(String email) {
-        // TODO: Implement email validation
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (email == null) {
+            return false;
+        }
+        return EMAIL_PATTERN.matcher(email).matches();
     }
 
     /**
@@ -125,8 +145,16 @@ public class StringUtil {
      * @return Truncated string
      */
     public static String truncate(String str, int maxLength) {
-        // TODO: Implement string truncation
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (str == null) {
+            return "";
+        }
+        if (str.length() <= maxLength) {
+            return str;
+        }
+        if (maxLength <= 3) {
+            return str.substring(0, maxLength);
+        }
+        return str.substring(0, maxLength - 3) + "...";
     }
 
     /**
@@ -138,8 +166,11 @@ public class StringUtil {
      * @return true if length is valid
      */
     public static boolean isValidLength(String str, int minLength, int maxLength) {
-        // TODO: Implement length validation
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (str == null) {
+            return false;
+        }
+        int length = str.length();
+        return length >= minLength && length <= maxLength;
     }
 
     /**
@@ -149,8 +180,10 @@ public class StringUtil {
      * @return String with normalized whitespace
      */
     public static String normalizeWhitespace(String str) {
-        // TODO: Implement whitespace normalization
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (str == null) {
+            return "";
+        }
+        return str.replaceAll("\\s+", " ");
     }
 
     /**
@@ -161,8 +194,21 @@ public class StringUtil {
      * @return Joined string
      */
     public static String join(String[] strings, String delimiter) {
-        // TODO: Implement string joining
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (strings == null || strings.length == 0) {
+            return "";
+        }
+        if (delimiter == null) {
+            delimiter = "";
+        }
+        
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < strings.length; i++) {
+            if (i > 0) {
+                result.append(delimiter);
+            }
+            result.append(strings[i] != null ? strings[i] : "");
+        }
+        return result.toString();
     }
 
     /**
@@ -174,8 +220,13 @@ public class StringUtil {
      * @return Pluralized word if needed
      */
     public static String pluralize(String word, int count) {
-        // TODO: Implement pluralization
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (word == null) {
+            return "";
+        }
+        if (count == 1) {
+            return word;
+        }
+        return word + "s";
     }
 
     /**
@@ -186,8 +237,30 @@ public class StringUtil {
      * @return Formatted list string
      */
     public static String formatList(String[] items) {
-        // TODO: Implement list formatting
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (items == null || items.length == 0) {
+            return "";
+        }
+        
+        String first = items[0] != null ? items[0] : "";
+        if (items.length == 1) {
+            return first;
+        }
+        
+        String second = items[1] != null ? items[1] : "";
+        if (items.length == 2) {
+            return first + " and " + second;
+        }
+        
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < items.length - 1; i++) {
+            if (i > 0) {
+                result.append(", ");
+            }
+            result.append(items[i] != null ? items[i] : "");
+        }
+        String last = items[items.length - 1] != null ? items[items.length - 1] : "";
+        result.append(", and ").append(last);
+        return result.toString();
     }
 
     /**
@@ -197,8 +270,33 @@ public class StringUtil {
      * @return Numeric value or 0 if not found
      */
     public static double extractNumber(String str) {
-        // TODO: Implement number extraction
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (str == null || str.isEmpty()) {
+            return 0;
+        }
+        
+        StringBuilder number = new StringBuilder();
+        boolean foundDecimal = false;
+        
+        for (char c : str.toCharArray()) {
+            if (Character.isDigit(c)) {
+                number.append(c);
+            } else if (c == '.' && !foundDecimal) {
+                number.append(c);
+                foundDecimal = true;
+            } else if (number.length() > 0) {
+                break;
+            }
+        }
+        
+        if (number.length() == 0) {
+            return 0;
+        }
+        
+        try {
+            return Double.parseDouble(number.toString());
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     /**
@@ -209,8 +307,15 @@ public class StringUtil {
      * @return Repeated string
      */
     public static String repeat(String str, int times) {
-        // TODO: Implement string repetition
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (str == null || times <= 0) {
+            return "";
+        }
+        
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < times; i++) {
+            result.append(str);
+        }
+        return result.toString();
     }
 
     /**
@@ -222,8 +327,15 @@ public class StringUtil {
      * @return Masked string
      */
     public static String mask(String str, int visibleChars) {
-        // TODO: Implement string masking
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (str == null || str.length() <= visibleChars * 2) {
+            return repeat("*", str != null ? str.length() : 0);
+        }
+        
+        String start = str.substring(0, visibleChars);
+        String end = str.substring(str.length() - visibleChars);
+        int middleLength = str.length() - (visibleChars * 2);
+        
+        return start + repeat("*", middleLength) + end;
     }
 
     private StringUtil() {

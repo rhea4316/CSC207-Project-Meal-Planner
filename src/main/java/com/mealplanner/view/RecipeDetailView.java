@@ -2,8 +2,11 @@ package com.mealplanner.view;
 
 import com.mealplanner.entity.NutritionInfo;
 import com.mealplanner.entity.Recipe;
+import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.AdjustServingSizeController;
 import com.mealplanner.interface_adapter.view_model.RecipeDetailViewModel;
+import com.mealplanner.util.StringUtil;
+import com.mealplanner.util.NumberUtil;
 
 import javax.swing.*;
 import java.awt.*;
@@ -19,6 +22,7 @@ import java.util.List;
 public class RecipeDetailView extends JPanel implements PropertyChangeListener, ActionListener {
     private final RecipeDetailViewModel viewModel;
     private final AdjustServingSizeController controller;
+    private final ViewManagerModel viewManagerModel;
 
     private JLabel recipeNameLabel;
     private JTextField servingSizeField;
@@ -28,12 +32,31 @@ public class RecipeDetailView extends JPanel implements PropertyChangeListener, 
     private JLabel errorLabel;
 
     public RecipeDetailView(RecipeDetailViewModel viewModel, AdjustServingSizeController controller) {
+        this(viewModel, controller, null);
+    }
+    
+    public RecipeDetailView(RecipeDetailViewModel viewModel, AdjustServingSizeController controller, ViewManagerModel viewManagerModel) {
+        if (viewModel == null) {
+            throw new IllegalArgumentException("ViewModel cannot be null");
+        }
+        if (controller == null) {
+            throw new IllegalArgumentException("Controller cannot be null");
+        }
+        
         this.viewModel = viewModel;
         this.controller = controller;
+        this.viewManagerModel = viewManagerModel;
 
         viewModel.addPropertyChangeListener(this);
 
         setLayout(new BorderLayout());
+        
+        // Create navigation panel
+        JPanel navPanel = createNavigationPanel();
+        if (navPanel != null) {
+            add(navPanel, BorderLayout.NORTH);
+        }
+        
         createComponents();
     }
 
@@ -41,7 +64,10 @@ public class RecipeDetailView extends JPanel implements PropertyChangeListener, 
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         recipeNameLabel = new JLabel("Recipe Name");
         topPanel.add(recipeNameLabel);
-        add(topPanel, BorderLayout.NORTH);
+        
+        // Add topPanel to center area, not NORTH (NORTH is for navigation)
+        JPanel contentPanel = new JPanel(new BorderLayout());
+        contentPanel.add(topPanel, BorderLayout.NORTH);
 
         JPanel centerPanel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
@@ -83,12 +109,34 @@ public class RecipeDetailView extends JPanel implements PropertyChangeListener, 
         nutritionArea.setEditable(false);
         centerPanel.add(new JScrollPane(nutritionArea), gbc);
 
-        add(centerPanel, BorderLayout.CENTER);
+        contentPanel.add(centerPanel, BorderLayout.CENTER);
 
         // Error label
         errorLabel = new JLabel();
         errorLabel.setForeground(Color.RED);
-        add(errorLabel, BorderLayout.SOUTH);
+        contentPanel.add(errorLabel, BorderLayout.SOUTH);
+        
+        add(contentPanel, BorderLayout.CENTER);
+    }
+    
+    private JPanel createNavigationPanel() {
+        if (viewManagerModel == null) {
+            return null;
+        }
+        
+        JPanel navPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        navPanel.setBorder(BorderFactory.createTitledBorder("Navigation"));
+        
+        JButton backButton = new JButton("Back to Browse");
+        backButton.addActionListener(e -> viewManagerModel.setActiveView("BrowseRecipeView"));
+        
+        JButton homeButton = new JButton("Home");
+        homeButton.addActionListener(e -> viewManagerModel.setActiveView("StoreRecipeView"));
+        
+        navPanel.add(backButton);
+        navPanel.add(homeButton);
+        
+        return navPanel;
     }
 
     @Override
@@ -99,28 +147,29 @@ public class RecipeDetailView extends JPanel implements PropertyChangeListener, 
     }
 
     private void performAdjust() {
-        String servingSizeText = servingSizeField.getText().trim();
-        if (servingSizeText.isEmpty()) {
+        String servingSizeText = StringUtil.safeTrim(servingSizeField.getText());
+        if (StringUtil.isNullOrEmpty(servingSizeText)) {
             JOptionPane.showMessageDialog(this, "Please enter a serving size", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        try {
-            int newServingSize = Integer.parseInt(servingSizeText);
-            Recipe recipe = viewModel.getRecipe();
-            if (recipe == null) {
-                JOptionPane.showMessageDialog(this, "No recipe selected", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            String recipeId = recipe.getRecipeId();
-            if (recipeId == null || recipeId.trim().isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Recipe ID is missing", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            controller.execute(recipeId, newServingSize);
-        } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this, "Invalid serving size. Please enter a number.", "Error", JOptionPane.ERROR_MESSAGE);
+        int newServingSize = NumberUtil.parseInt(servingSizeText, 0);
+        if (newServingSize <= 0) {
+            JOptionPane.showMessageDialog(this, "Invalid serving size. Please enter a positive number.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
         }
+        
+        Recipe recipe = viewModel.getRecipe();
+        if (recipe == null) {
+            JOptionPane.showMessageDialog(this, "No recipe selected", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        String recipeId = recipe.getRecipeId();
+        if (StringUtil.isNullOrEmpty(recipeId)) {
+            JOptionPane.showMessageDialog(this, "Recipe ID is missing", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        controller.execute(recipeId, newServingSize);
     }
 
     private void displayRecipe(Recipe recipe) {
@@ -172,11 +221,15 @@ public class RecipeDetailView extends JPanel implements PropertyChangeListener, 
                 break;
             case RecipeDetailViewModel.PROP_INGREDIENTS:
                 List<String> ingredients = viewModel.getIngredients();
-                StringBuilder ingredientsText = new StringBuilder();
-                for (String ingredient : ingredients) {
-                    ingredientsText.append(ingredient).append("\n");
+                if (ingredients != null) {
+                    StringBuilder ingredientsText = new StringBuilder();
+                    for (String ingredient : ingredients) {
+                        ingredientsText.append(ingredient).append("\n");
+                    }
+                    ingredientsArea.setText(ingredientsText.toString());
+                } else {
+                    ingredientsArea.setText("");
                 }
-                ingredientsArea.setText(ingredientsText.toString());
                 break;
             case RecipeDetailViewModel.PROP_NUTRITION:
                 NutritionInfo nutrition = viewModel.getNutrition();
@@ -193,7 +246,7 @@ public class RecipeDetailView extends JPanel implements PropertyChangeListener, 
                 break;
             case RecipeDetailViewModel.PROP_ERROR_MESSAGE:
                 String errorMessage = viewModel.getErrorMessage();
-                errorLabel.setText(errorMessage != null && !errorMessage.isEmpty() ? errorMessage : "");
+                errorLabel.setText(StringUtil.hasContent(errorMessage) ? errorMessage : "");
                 break;
         }
     }

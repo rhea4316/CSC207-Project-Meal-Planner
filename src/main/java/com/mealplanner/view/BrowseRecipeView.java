@@ -4,8 +4,10 @@ package com.mealplanner.view;
 // Responsible: Regina (functionality), Everyone (GUI implementation)
 
 import com.mealplanner.entity.Recipe;
+import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.BrowseRecipeController;
 import com.mealplanner.interface_adapter.view_model.RecipeBrowseViewModel;
+import com.mealplanner.util.StringUtil;
 
 import javax.swing.*;
 import java.awt.*;
@@ -18,6 +20,7 @@ import java.io.IOException;
 public class BrowseRecipeView extends JPanel implements PropertyChangeListener, ActionListener {
     private final RecipeBrowseViewModel recipeBrowseViewModel;
     private final BrowseRecipeController browseRecipeController;
+    private final ViewManagerModel viewManagerModel;
 
     private JPanel searchPanel;
     private JTextField queryTextField;
@@ -32,18 +35,42 @@ public class BrowseRecipeView extends JPanel implements PropertyChangeListener, 
     private JLabel errorLabel;
 
     public BrowseRecipeView(RecipeBrowseViewModel recipeBrowseViewModel, BrowseRecipeController browseRecipeController) {
+        this(recipeBrowseViewModel, browseRecipeController, null);
+    }
+    
+    public BrowseRecipeView(RecipeBrowseViewModel recipeBrowseViewModel, BrowseRecipeController browseRecipeController, ViewManagerModel viewManagerModel) {
+        if (recipeBrowseViewModel == null) {
+            throw new IllegalArgumentException("ViewModel cannot be null");
+        }
+        if (browseRecipeController == null) {
+            throw new IllegalArgumentException("Controller cannot be null");
+        }
+        
         this.recipeBrowseViewModel = recipeBrowseViewModel;
         this.browseRecipeController = browseRecipeController;
+        this.viewManagerModel = viewManagerModel;
 
         recipeBrowseViewModel.addPropertyChangeListener(this);
 
         setLayout(new BorderLayout());
+        
+        // Create navigation panel
+        JPanel navPanel = createNavigationPanel();
+        if (navPanel != null) {
+            add(navPanel, BorderLayout.NORTH);
+        }
+        
         createSearchPanel();
         createResultsPanel();
         createErrorLabel();
-        add(searchPanel, BorderLayout.NORTH);
-        add(resultsPanel, BorderLayout.CENTER);
-        add(errorLabel, BorderLayout.SOUTH);
+        
+        // Arrange layout properly
+        JPanel contentPanel = new JPanel(new BorderLayout());
+        contentPanel.add(searchPanel, BorderLayout.NORTH);
+        contentPanel.add(resultsPanel, BorderLayout.CENTER);
+        contentPanel.add(errorLabel, BorderLayout.SOUTH);
+        
+        add(contentPanel, BorderLayout.CENTER);
 
     }
 
@@ -95,18 +122,18 @@ public class BrowseRecipeView extends JPanel implements PropertyChangeListener, 
     }
 
     private void performSearch() {
-        String query = queryTextField.getText().trim();
-        String ingredients = ingredientsTextField.getText().trim();
+        String query = StringUtil.safeTrim(queryTextField.getText());
+        String ingredients = StringUtil.safeTrim(ingredientsTextField.getText());
         int numberOfRecipes = (Integer) numberOfResultsSpinner.getValue();
 
-        if (query.isEmpty()) {
+        if (StringUtil.isNullOrEmpty(query)) {
             JOptionPane.showMessageDialog(this,
                     "Please enter a search query", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
         try {
-            if (ingredients.isEmpty()) {
+            if (StringUtil.isNullOrEmpty(ingredients)) {
                 browseRecipeController.execute(query, numberOfRecipes);
             } else {
                 browseRecipeController.execute(query, numberOfRecipes, ingredients);
@@ -117,23 +144,32 @@ public class BrowseRecipeView extends JPanel implements PropertyChangeListener, 
     }
 
     private void displayRecipes(java.util.List<Recipe> recipes) {
-        String results = "";
+        if (recipes == null) {
+            resultsTextArea.setText("No recipes available.");
+            return;
+        }
+        
+        StringBuilder results = new StringBuilder();
 
         if (recipes.isEmpty()) {
-            results += "No recipes found.";
-
+            results.append("No recipes found.");
         } else {
             for (Recipe recipe : recipes) {
-                Recipe curr = recipe;
-                results += "Recipe: " + recipe.getName() + "\n";
-                results += "Ingredients: " + curr.getIngredients() + "\n";
-                results += "Serving Size: " + curr.getServingSize() + "\n";
-                results += "Full Recipe URL: " + curr.getSteps() + "\n";
-                results += "\n" + "-".repeat(50) + "\n";
+                if (recipe != null) {
+                    results.append("Recipe: ").append(recipe.getName()).append("\n");
+                    results.append("Ingredients: ").append(recipe.getIngredients()).append("\n");
+                    results.append("Serving Size: ").append(recipe.getServingSize()).append("\n");
+                    String steps = recipe.getSteps();
+                    if (StringUtil.hasContent(steps)) {
+                        results.append("Instructions: ").append(steps.length() > 100 ? 
+                            steps.substring(0, 100) + "..." : steps).append("\n");
+                    }
+                    results.append("\n").append("-".repeat(50)).append("\n");
+                }
             }
         }
 
-        resultsTextArea.setText(results);
+        resultsTextArea.setText(results.toString());
         resultsTextArea.setCaretPosition(0);
     }
 
@@ -146,10 +182,35 @@ public class BrowseRecipeView extends JPanel implements PropertyChangeListener, 
                 break;
             case "errorMessage":
                 resultsTextArea.setText("");
-                errorLabel.setText(recipeBrowseViewModel.getErrorMessage());
+                String errorMsg = recipeBrowseViewModel.getErrorMessage();
+                errorLabel.setText(errorMsg != null ? errorMsg : "");
                 break;
         }
 
+    }
+    
+    private JPanel createNavigationPanel() {
+        if (viewManagerModel == null) {
+            return null;
+        }
+        
+        JPanel navPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        navPanel.setBorder(BorderFactory.createTitledBorder("Navigation"));
+        
+        JButton createButton = new JButton("Create Recipe");
+        createButton.addActionListener(e -> viewManagerModel.setActiveView("StoreRecipeView"));
+        
+        JButton searchButton = new JButton("Search by Ingredients");
+        searchButton.addActionListener(e -> viewManagerModel.setActiveView("SearchByIngredientsView"));
+        
+        JButton homeButton = new JButton("Home");
+        homeButton.addActionListener(e -> viewManagerModel.setActiveView("StoreRecipeView"));
+        
+        navPanel.add(createButton);
+        navPanel.add(searchButton);
+        navPanel.add(homeButton);
+        
+        return navPanel;
     }
 }
 

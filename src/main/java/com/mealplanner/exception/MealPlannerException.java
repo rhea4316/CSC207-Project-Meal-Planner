@@ -8,10 +8,10 @@ package com.mealplanner.exception;
 public class MealPlannerException extends Exception {
 
     public MealPlannerException(String message) {
-        super(message);
+        super(message != null ? message : "An error occurred");
     }
 
     public MealPlannerException(String message, Throwable cause) {
-        super(message, cause);
+        super(message != null ? message : "An error occurred", cause);
     }
 }

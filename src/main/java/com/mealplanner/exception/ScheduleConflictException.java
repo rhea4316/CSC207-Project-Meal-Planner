@@ -10,13 +10,14 @@ public class ScheduleConflictException extends MealPlannerException {
     private final String mealType;
 
     public ScheduleConflictException(String date, String mealType) {
-        super("Meal slot already occupied for " + mealType + " on " + date);
+        super("Meal slot already occupied for " + (mealType != null ? mealType : "unknown") 
+                + " on " + (date != null ? date : "unknown date"));
         this.date = date;
         this.mealType = mealType;
     }
 
     public ScheduleConflictException(String message, String date, String mealType) {
-        super(message);
+        super(message != null ? message : "Schedule conflict occurred");
         this.date = date;
         this.mealType = mealType;
     }

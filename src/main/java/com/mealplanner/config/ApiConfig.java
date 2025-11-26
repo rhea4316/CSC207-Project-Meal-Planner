@@ -56,8 +56,8 @@ public class ApiConfig {
      * @return true if API key is set, false otherwise
      */
     public static boolean isSpoonacularConfigured() {
-        // TODO: Implement Spoonacular configuration check
-        throw new UnsupportedOperationException("Not yet implemented");
+        String apiKey = getSpoonacularApiKey();
+        return apiKey != null && !apiKey.trim().isEmpty();
     }
 
     // Edamam API Configuration
@@ -104,7 +104,9 @@ public class ApiConfig {
      * @return true if both app ID and key are set, false otherwise
      */
     public static boolean isEdamamConfigured() {
-        // TODO: Implement Edamam configuration check
-        throw new UnsupportedOperationException("Not yet implemented");
+        String appId = getEdamamAppId();
+        String appKey = getEdamamAppKey();
+        return appId != null && !appId.trim().isEmpty() 
+                && appKey != null && !appKey.trim().isEmpty();
     }
 }

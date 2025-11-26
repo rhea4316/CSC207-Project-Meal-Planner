@@ -2,10 +2,12 @@ package com.mealplanner.view;
 
 // Swing view for creating and storing new recipes - displays recipe creation form.
 // Responsible: Aaryan (functionality), Everyone (GUI implementation)
-// TODO: Create JPanel with form fields for name, ingredients, steps - call StoreRecipeController on save button click
 import com.mealplanner.entity.Unit;
+import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.StoreRecipeController;
 import com.mealplanner.interface_adapter.view_model.RecipeStoreViewModel;
+import com.mealplanner.util.StringUtil;
+import com.mealplanner.util.NumberUtil;
 
 import javax.swing.*;
 import java.awt.*;
@@ -39,9 +41,27 @@ public class StoreRecipeView extends JPanel {
 	private final JButton saveButton = new JButton("Save Recipe");
 
 	private final JLabel statusLabel = new JLabel(" ");
+	
+	private final ViewManagerModel viewManagerModel;
 
 	public StoreRecipeView(StoreRecipeController controller, RecipeStoreViewModel viewModel) {
+		this(controller, viewModel, null);
+	}
+	
+	public StoreRecipeView(StoreRecipeController controller, RecipeStoreViewModel viewModel, ViewManagerModel viewManagerModel) {
 		super(new BorderLayout());
+		
+		if (controller == null) {
+			throw new IllegalArgumentException("Controller cannot be null");
+		}
+		
+		this.viewManagerModel = viewManagerModel;
+
+		// Create navigation panel
+		JPanel navPanel = createNavigationPanel();
+		if (navPanel != null) {
+			this.add(navPanel, BorderLayout.NORTH);
+		}
 
 		JPanel form = new JPanel(new GridBagLayout());
 		GridBagConstraints gbc = new GridBagConstraints();
@@ -128,15 +148,15 @@ public class StoreRecipeView extends JPanel {
 	}
 
 	private void onAddIngredient(ActionEvent e) {
-		String qty = ingredientQtyField.getText().trim();
+		String qty = StringUtil.safeTrim(ingredientQtyField.getText());
 		Unit unit = (Unit) unitCombo.getSelectedItem();
-		String name = ingredientNameField.getText().trim();
-		if (name.isEmpty()) {
+		String name = StringUtil.safeTrim(ingredientNameField.getText());
+		if (StringUtil.isNullOrEmpty(name)) {
 			JOptionPane.showMessageDialog(this, "Ingredient name cannot be empty", "Validation", JOptionPane.WARNING_MESSAGE);
 			return;
 		}
 
-		String entry = String.format("%s %s %s", qty.isEmpty() ? "" : qty, unit != null ? unit.getAbbreviation() : "", name).trim();
+		String entry = StringUtil.safeTrim(String.format("%s %s %s", StringUtil.isNullOrEmpty(qty) ? "" : qty, unit != null ? unit.getAbbreviation() : "", name));
 		ingredientListModel.addElement(entry);
 
 		// Clear small inputs
@@ -145,7 +165,7 @@ public class StoreRecipeView extends JPanel {
 	}
 
 	private void onSave(StoreRecipeController controller, RecipeStoreViewModel viewModel) {
-		String name = nameField.getText().trim();
+		String name = StringUtil.safeTrim(nameField.getText());
 		List<String> ingredients = new ArrayList<>();
 		for (int i = 0; i < ingredientListModel.size(); i++) {
 			ingredients.add(ingredientListModel.get(i));
@@ -154,27 +174,48 @@ public class StoreRecipeView extends JPanel {
 		List<String> steps = new ArrayList<>();
 		if (stepsRaw != null && !stepsRaw.isBlank()) {
 			for (String s : stepsRaw.split("\\r?\\n")) {
-				if (!s.trim().isEmpty()) steps.add(s.trim());
+				String trimmed = StringUtil.safeTrim(s);
+				if (!StringUtil.isNullOrEmpty(trimmed)) steps.add(trimmed);
 			}
 		}
 
-		int servingSize = 1;
-		try {
-			servingSize = Integer.parseInt(servingSizeField.getText().trim());
-			if (servingSize <= 0) servingSize = 1;
-		} catch (NumberFormatException ignored) {
-			servingSize = 1;
-		}
+		int servingSize = NumberUtil.parseInt(servingSizeField.getText(), 1);
+		if (servingSize <= 0) servingSize = 1;
 
-		// Call controller
+		// Call controller - this will trigger the presenter to update the view model
 		controller.execute(name, ingredients, steps, servingSize);
 
-		// Give immediate UI feedback; presenter may later update viewModel with authoritative messages
-		if (viewModel != null) {
-			viewModel.setSuccessMessage("Save requested — processing...");
-		} else {
-			statusLabel.setText("Save requested — processing...");
+		// Clear form after save is initiated
+		clearForm();
+	}
+
+	private void clearForm() {
+		nameField.setText("");
+		ingredientListModel.clear();
+		ingredientQtyField.setText("");
+		ingredientNameField.setText("");
+		stepsArea.setText("");
+		servingSizeField.setText("1");
+	}
+	
+	private JPanel createNavigationPanel() {
+		if (viewManagerModel == null) {
+			return null;
 		}
+		
+		JPanel navPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+		navPanel.setBorder(BorderFactory.createTitledBorder("Navigation"));
+		
+		JButton browseButton = new JButton("Browse Recipes");
+		browseButton.addActionListener(e -> viewManagerModel.setActiveView("BrowseRecipeView"));
+		
+		JButton searchButton = new JButton("Search by Ingredients");
+		searchButton.addActionListener(e -> viewManagerModel.setActiveView("SearchByIngredientsView"));
+		
+		navPanel.add(browseButton);
+		navPanel.add(searchButton);
+		
+		return navPanel;
 	}
 
 }

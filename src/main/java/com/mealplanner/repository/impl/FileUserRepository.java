@@ -1,5 +1,7 @@
 package com.mealplanner.repository.impl;
 
+import com.mealplanner.entity.NutritionGoals;
+import com.mealplanner.entity.Schedule;
 import com.mealplanner.entity.User;
 import com.mealplanner.exception.DataAccessException;
 import com.mealplanner.repository.UserRepository;
@@ -68,6 +70,10 @@ public class FileUserRepository implements UserRepository {
         String[] lines = content.split("\\R");
         String userid = null;
         String username = null;
+        String password = "";
+        NutritionGoals nutritionGoals = NutritionGoals.createDefault();
+        Schedule mealSchedule = new Schedule("default schedule", "default user");
+
 
         for (String line : lines) {
             int idx = line.indexOf('=');
@@ -81,13 +87,22 @@ public class FileUserRepository implements UserRepository {
                 userid = value;
             } else if (key.equals("username")){
                 username = value;
+            } else if (key.equals("password")){
+                password = value;
+            } else if  (key.equals("nutritionGoalsCalories")){
+                int dailyCalories = Integer.parseInt(value);
+                nutritionGoals = new NutritionGoals(dailyCalories, 150, 200, 70);
+
+            }else if (key.equals("scheduleId")){
+                String scheduleId = value;
+                mealSchedule = new Schedule(scheduleId, userid);
             }
         }
         if (userid == null || username == null){
             throw new IllegalArgumentException("Invalid user or username format.");
         }
 
-        return new User(userid, username);
+        return new User(userid, username, password, nutritionGoals, mealSchedule);
     }
 
     @Override

@@ -43,8 +43,39 @@ public class IngredientConverter {
      * @throws IllegalArgumentException if units are not compatible
      */
     public static double convert(double quantity, Unit fromUnit, Unit toUnit) {
-        // TODO: Implement unit conversion
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (fromUnit == null || toUnit == null) {
+            throw new IllegalArgumentException("Units cannot be null");
+        }
+        
+        if (fromUnit == toUnit) {
+            return quantity;
+        }
+        
+        if (!fromUnit.isConvertibleTo(toUnit)) {
+            throw new IllegalArgumentException("Cannot convert between incompatible units");
+        }
+        
+        Unit.UnitType type = fromUnit.getType();
+        
+        if (type == Unit.UnitType.WEIGHT) {
+            Double fromGrams = WEIGHT_TO_GRAMS.get(fromUnit);
+            Double toGrams = WEIGHT_TO_GRAMS.get(toUnit);
+            if (fromGrams == null || toGrams == null) {
+                throw new IllegalArgumentException("Unit not supported for weight conversion");
+            }
+            double grams = quantity * fromGrams;
+            return grams / toGrams;
+        } else if (type == Unit.UnitType.VOLUME) {
+            Double fromMl = VOLUME_TO_ML.get(fromUnit);
+            Double toMl = VOLUME_TO_ML.get(toUnit);
+            if (fromMl == null || toMl == null) {
+                throw new IllegalArgumentException("Unit not supported for volume conversion");
+            }
+            double ml = quantity * fromMl;
+            return ml / toMl;
+        } else {
+            return quantity;
+        }
     }
 
     /**
@@ -57,8 +88,10 @@ public class IngredientConverter {
      * @return Scaled quantity
      */
     public static double scaleQuantity(double originalQuantity, Unit unit, double multiplier) {
-        // TODO: Implement quantity scaling
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (multiplier < 0) {
+            throw new IllegalArgumentException("Multiplier cannot be negative");
+        }
+        return originalQuantity * multiplier;
     }
 
     /**
@@ -70,8 +103,37 @@ public class IngredientConverter {
      * @return Array [normalizedQuantity, normalizedUnit]
      */
     public static Object[] normalizeUnit(double quantity, Unit unit) {
-        // TODO: Implement unit normalization
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (unit == null) {
+            throw new IllegalArgumentException("Unit cannot be null");
+        }
+        
+        Unit.UnitType type = unit.getType();
+        
+        if (type == Unit.UnitType.WEIGHT) {
+            Double gramsPerUnit = WEIGHT_TO_GRAMS.get(unit);
+            if (gramsPerUnit == null) {
+                return new Object[]{quantity, unit};
+            }
+            double grams = quantity * gramsPerUnit;
+            if (grams >= 1000) {
+                return new Object[]{grams / 1000.0, Unit.KILOGRAMS};
+            } else {
+                return new Object[]{grams, Unit.GRAMS};
+            }
+        } else if (type == Unit.UnitType.VOLUME) {
+            Double mlPerUnit = VOLUME_TO_ML.get(unit);
+            if (mlPerUnit == null) {
+                return new Object[]{quantity, unit};
+            }
+            double ml = quantity * mlPerUnit;
+            if (ml >= 1000) {
+                return new Object[]{ml / 1000.0, Unit.LITERS};
+            } else {
+                return new Object[]{ml, Unit.MILLILITERS};
+            }
+        } else {
+            return new Object[]{quantity, unit};
+        }
     }
 
     /**
@@ -82,8 +144,15 @@ public class IngredientConverter {
      * @return Formatted string (e.g., "250g", "1.5 cups", "3 eggs")
      */
     public static String formatQuantity(double quantity, Unit unit) {
-        // TODO: Implement quantity formatting
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (unit == null) {
+            throw new IllegalArgumentException("Unit cannot be null");
+        }
+        
+        if (quantity == Math.floor(quantity)) {
+            return String.format("%d %s", (int) quantity, unit.getAbbreviation());
+        } else {
+            return String.format("%.2f %s", quantity, unit.getAbbreviation());
+        }
     }
 
     /**
@@ -95,8 +164,26 @@ public class IngredientConverter {
      * @return true if quantity seems reasonable
      */
     public static boolean isReasonableQuantity(double quantity, Unit unit) {
-        // TODO: Implement quantity validation
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (quantity <= 0) {
+            return false;
+        }
+        
+        if (unit == null) {
+            return false;
+        }
+        
+        Unit.UnitType type = unit.getType();
+        double maxValue = 10000.0;
+        
+        if (type == Unit.UnitType.WEIGHT) {
+            double grams = quantity * WEIGHT_TO_GRAMS.getOrDefault(unit, 1.0);
+            return grams <= maxValue;
+        } else if (type == Unit.UnitType.VOLUME) {
+            double ml = quantity * VOLUME_TO_ML.getOrDefault(unit, 1.0);
+            return ml <= maxValue;
+        } else {
+            return quantity <= maxValue;
+        }
     }
 
     /**
@@ -108,8 +195,12 @@ public class IngredientConverter {
      * @return Suggested unit for better readability
      */
     public static Unit suggestBestUnit(double quantity, Unit currentUnit) {
-        // TODO: Implement unit suggestion
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (currentUnit == null) {
+            throw new IllegalArgumentException("Unit cannot be null");
+        }
+        
+        Object[] normalized = normalizeUnit(quantity, currentUnit);
+        return (Unit) normalized[1];
     }
 
     /**
@@ -119,8 +210,37 @@ public class IngredientConverter {
      * @return Array [quantity, unit] or null if invalid
      */
     public static Object[] parseQuantityString(String quantityStr) {
-        // TODO: Implement quantity string parsing
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (quantityStr == null || quantityStr.trim().isEmpty()) {
+            return null;
+        }
+        
+        String trimmed = quantityStr.trim();
+        
+        int lastDigitIndex = -1;
+        for (int i = 0; i < trimmed.length(); i++) {
+            if (Character.isDigit(trimmed.charAt(i)) || trimmed.charAt(i) == '.' || trimmed.charAt(i) == '-') {
+                lastDigitIndex = i;
+            }
+        }
+        
+        if (lastDigitIndex < 0) {
+            return null;
+        }
+        
+        String numberStr = trimmed.substring(0, lastDigitIndex + 1).trim();
+        String unitStr = trimmed.substring(lastDigitIndex + 1).trim();
+        
+        if (unitStr.isEmpty()) {
+            return null;
+        }
+        
+        try {
+            double quantity = Double.parseDouble(numberStr);
+            Unit unit = Unit.fromString(unitStr);
+            return new Object[]{quantity, unit};
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private IngredientConverter() {
