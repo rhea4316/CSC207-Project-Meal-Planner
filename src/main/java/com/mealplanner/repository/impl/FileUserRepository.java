@@ -36,7 +36,7 @@ public class FileUserRepository implements UserRepository {
     @Override
     public void save(User user) throws DataAccessException {
         // TODO: Implement save - serialize user to JSON file
-        logger.debug("Saving user: {}", user.getUserId());
+//        logger.debug("Saving user: {}", user.getUserId());
         throw new UnsupportedOperationException("Not yet implemented");
     }
 

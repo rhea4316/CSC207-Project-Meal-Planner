@@ -2,6 +2,7 @@ package com.mealplanner.data_access.database;
 
 import com.mealplanner.data_access.api.SpoonacularApiClient;
 import com.mealplanner.entity.Recipe;
+import com.mealplanner.exception.RecipeNotFoundException;
 import com.mealplanner.use_case.browse_recipe.BrowseRecipeDataAccessInterface;
 import com.mealplanner.use_case.browse_recipe.BrowseRecipeInputData;
 import org.json.JSONArray;
@@ -23,7 +24,7 @@ public class BrowseRecipeAPIParser implements BrowseRecipeDataAccessInterface {
 
 
     @Override
-    public List<Recipe> searchRecipes(BrowseRecipeInputData inputData) throws IOException {
+    public List<Recipe> searchRecipes(BrowseRecipeInputData inputData) throws IOException, RecipeNotFoundException {
         if (inputData == null) {
             throw new IllegalArgumentException("Input data cannot be null");
         }
@@ -44,6 +45,10 @@ public class BrowseRecipeAPIParser implements BrowseRecipeDataAccessInterface {
         JSONObject jsonBody = new JSONObject(apiResponse);
         JSONArray jsonArray = jsonBody.getJSONArray("results");
 
+        if (jsonArray.isEmpty()) {
+            throw new RecipeNotFoundException("Recipes not found with given query and ingredients", null);
+        }
+
         for (int i = 0; i < jsonArray.length(); i++) {
             JSONObject currentRecipe = jsonArray.getJSONObject(i);
             int currentRecipeId = currentRecipe.getInt("id");
@@ -51,6 +56,10 @@ public class BrowseRecipeAPIParser implements BrowseRecipeDataAccessInterface {
             // Fetch full recipe information using SpoonacularApiClient
             Recipe recipe = apiClient.getRecipeById(currentRecipeId);
             recipes.add(recipe);
+        }
+
+        if (recipes.isEmpty()) {
+            throw new RecipeNotFoundException("Found recipes but failed to receive details for all of them", null);
         }
         return recipes;
     }
