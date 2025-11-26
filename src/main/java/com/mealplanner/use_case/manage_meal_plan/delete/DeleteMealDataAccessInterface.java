@@ -4,6 +4,9 @@ package com.mealplanner.use_case.manage_meal_plan.delete;
 // Responsible: Grace (interface), Everyone (implementation)
 // TODO: Define methods to get user schedule and save updated schedule
 
-public interface DeleteMealDataAccessInterface {
+import com.mealplanner.entity.Schedule;
 
+public interface DeleteMealDataAccessInterface {
+    Schedule getUserSchedule();
+    void saveSchedule(Schedule schedule);
 }

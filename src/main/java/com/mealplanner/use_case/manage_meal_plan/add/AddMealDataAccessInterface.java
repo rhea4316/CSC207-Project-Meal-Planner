@@ -4,6 +4,9 @@ package com.mealplanner.use_case.manage_meal_plan.add;
 // Responsible: Grace (interface), Everyone (implementation via FileScheduleDataAccessObject)
 // TODO: Define methods to get user schedule and save updated schedule
 
-public interface AddMealDataAccessInterface {
+import com.mealplanner.entity.Schedule;
 
+public interface AddMealDataAccessInterface {
+    Schedule getUserSchedule();
+    void saveSchedule(Schedule schedule);
 }
