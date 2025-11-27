@@ -44,7 +44,7 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
         this.currentWeekStart = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
 
         setPadding(new Insets(20));
-        setStyle("-fx-background-color: #F5F5F5;");
+        getStyleClass().add("bg-light-gray");
 
         createHeader();
         createGrid();
@@ -82,7 +82,7 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
         });
 
         dateRangeLabel = new Label();
-        dateRangeLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+        dateRangeLabel.getStyleClass().add("date-range-label");
 
         navPanel.getChildren().addAll(prevBtn, dateRangeLabel, nextBtn);
         headerPanel.setCenter(navPanel);
@@ -94,7 +94,7 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
         gridPane = new GridPane();
         gridPane.setHgap(1);
         gridPane.setVgap(1);
-        gridPane.setStyle("-fx-background-color: #E0E0E0; -fx-border-color: #E0E0E0;"); // Gap color
+        gridPane.getStyleClass().add("grid-gap");
         
         mealSlots = new MealSlotPanel[3][7]; 
 
@@ -208,29 +208,27 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
             setSpacing(5);
             
             contentLabel = new Label("+");
-            contentLabel.setStyle("-fx-font-size: 20px; -fx-text-fill: #CCCCCC; -fx-font-weight: bold;");
+            contentLabel.getStyleClass().add("meal-slot-empty");
             
             calLabel = new Label("");
-            calLabel.setStyle("-fx-font-size: 10px; -fx-text-fill: gray;");
+            calLabel.getStyleClass().add("meal-slot-cal");
 
             getChildren().addAll(contentLabel, calLabel);
 
             setOnMouseClicked(e -> handleSlotClick());
-            
-            // Hover effect via CSS pseudo-class is easier, but inline works too
-            setOnMouseEntered(e -> setStyle("-fx-background-color: #F5F5F5; -fx-border-color: #E0E0E0;"));
-            setOnMouseExited(e -> setStyle("-fx-background-color: white; -fx-border-color: #E0E0E0;"));
         }
 
         public void setMeal(String recipeName, String calories) {
             contentLabel.setText(recipeName);
-            contentLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: black; -fx-wrap-text: true; -fx-text-alignment: center;");
+            contentLabel.getStyleClass().remove("meal-slot-empty");
+            contentLabel.getStyleClass().add("meal-slot-filled");
             calLabel.setText(calories);
         }
 
         public void clear() {
             contentLabel.setText("+");
-            contentLabel.setStyle("-fx-font-size: 20px; -fx-text-fill: #CCCCCC; -fx-font-weight: bold;");
+            contentLabel.getStyleClass().remove("meal-slot-filled");
+            contentLabel.getStyleClass().add("meal-slot-empty");
             calLabel.setText("");
         }
 

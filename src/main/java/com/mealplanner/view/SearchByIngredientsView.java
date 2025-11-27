@@ -42,7 +42,7 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         viewModel.addPropertyChangeListener(this);
 
         setPadding(new Insets(20));
-        setStyle("-fx-background-color: white;");
+        getStyleClass().add("bg-white");
 
         // Title
         Label titleLabel = new Label("Search by Ingredients");
@@ -61,7 +61,7 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         
         // Error Label
         errorLabel = new Label("");
-        errorLabel.setStyle("-fx-text-fill: red;");
+        errorLabel.getStyleClass().add("error-label");
         setBottom(errorLabel);
     }
 
@@ -93,20 +93,20 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         listPanel = new VBox(15);
         ScrollPane scrollPane = new ScrollPane(listPanel);
         scrollPane.setFitToWidth(true);
-        scrollPane.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
+        scrollPane.getStyleClass().add("scroll-pane-transparent");
 
         // 2. Loading View
         loadingPanel = new VBox();
         loadingPanel.setAlignment(Pos.CENTER);
         Label loadingLabel = new Label("Loading...");
-        loadingLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: #4CAF50; -fx-font-weight: bold;");
+        loadingLabel.getStyleClass().add("loading-label");
         loadingPanel.getChildren().add(loadingLabel);
 
         // 3. Empty View
         emptyPanel = new VBox();
         emptyPanel.setAlignment(Pos.CENTER);
         Label emptyLabel = new Label("No results found.");
-        emptyLabel.setStyle("-fx-text-fill: gray; -fx-font-size: 16px;");
+        emptyLabel.getStyleClass().add("empty-label");
         emptyPanel.getChildren().add(emptyLabel);
 
         resultsContainer.getChildren().addAll(emptyPanel, loadingPanel, scrollPane);
@@ -162,20 +162,20 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         // Placeholder Image
         Region imgPlaceholder = new Region();
         imgPlaceholder.setPrefSize(80, 80);
-        imgPlaceholder.setStyle("-fx-background-color: #E0E0E0; -fx-background-radius: 5;");
+        imgPlaceholder.getStyleClass().add("image-panel");
         card.getChildren().add(imgPlaceholder);
 
         // Info
         VBox infoBox = new VBox(5);
         Label title = new Label(recipe.getName());
-        title.setStyle("-fx-font-weight: bold; -fx-font-size: 16px;");
+        title.getStyleClass().add("recipe-card-title");
         
         String summary = "Ingredients: " + recipe.getIngredients().size();
         if (recipe.getNutritionInfo() != null) {
             summary += " | " + recipe.getNutritionInfo().getCalories() + " kcal";
         }
         Label subTitle = new Label(summary);
-        subTitle.setStyle("-fx-text-fill: gray; -fx-font-size: 12px;");
+        subTitle.getStyleClass().add("recipe-card-subtitle");
         
         infoBox.getChildren().addAll(title, subTitle);
         HBox.setHgrow(infoBox, Priority.ALWAYS);

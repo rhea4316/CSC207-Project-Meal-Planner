@@ -33,7 +33,7 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         this.scheduleViewModel.addPropertyChangeListener(this);
         
         setPadding(new Insets(20));
-        setStyle("-fx-background-color: #F5F5F5;");
+        getStyleClass().add("bg-light-gray");
 
         // Title
         Label titleLabel = new Label("Dashboard");
@@ -89,23 +89,23 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
     private VBox createMealCard(String mealType, String mealName) {
         VBox card = new VBox(10);
         card.getStyleClass().add("card-panel"); // Nested card look
-        card.setStyle("-fx-background-color: #FFFFFF; -fx-border-color: #E0E0E0; -fx-border-radius: 10;");
         card.setPrefWidth(200);
         card.setAlignment(Pos.CENTER);
         
         Label typeLabel = new Label(mealType);
-        typeLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #4CAF50; -fx-font-size: 14px;");
+        typeLabel.getStyleClass().add("meal-card-title");
         
         Label nameLabel = new Label(mealName);
         nameLabel.setWrapText(true);
-        nameLabel.setStyle("-fx-font-size: 14px;");
+        nameLabel.getStyleClass().add("meal-card-name");
 
         Button viewBtn = new Button("View Recipe");
         viewBtn.getStyleClass().add("modern-button");
         viewBtn.setOnAction(e -> viewManagerModel.setActiveView(ViewManager.BROWSE_RECIPE_VIEW));
         
         if (mealName.equals("Not Planned")) {
-             nameLabel.setStyle("-fx-text-fill: gray; -fx-font-size: 14px;");
+             nameLabel.getStyleClass().remove("meal-card-name");
+             nameLabel.getStyleClass().add("meal-card-name-empty");
              viewBtn.setText("Plan Meal");
              viewBtn.getStyleClass().add("action-button");
              viewBtn.setOnAction(e -> viewManagerModel.setActiveView(ViewManager.SCHEDULE_VIEW));
@@ -119,7 +119,7 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         VBox panel = new VBox(10);
         
         progressLabel = new Label("Calories: 0 / 2000 kcal");
-        progressLabel.setStyle("-fx-font-size: 16px;");
+        progressLabel.setStyle("-fx-font-size: 16px;"); // Keep inline for dynamic content
         
         progressBar = new ProgressBar(0);
         progressBar.getStyleClass().add("progress-bar");

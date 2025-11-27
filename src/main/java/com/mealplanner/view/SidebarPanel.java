@@ -37,8 +37,7 @@ public class SidebarPanel extends VBox {
         getChildren().add(spacer);
         
         Label userLabel = new Label("Logged in as User");
-        userLabel.getStyleClass().add("sidebar-item");
-        userLabel.setStyle("-fx-text-fill: gray; -fx-font-size: 14px;");
+        userLabel.getStyleClass().add("sidebar-user-label");
         getChildren().add(userLabel);
     }
 

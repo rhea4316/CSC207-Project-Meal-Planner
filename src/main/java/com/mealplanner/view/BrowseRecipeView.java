@@ -40,7 +40,7 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
         viewModel.addPropertyChangeListener(this);
 
         setPadding(new Insets(20));
-        setStyle("-fx-background-color: white;");
+        getStyleClass().add("bg-white");
 
         // Title
         Label titleLabel = new Label("Browse Recipes");
@@ -55,7 +55,7 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
         
         // Error
         errorLabel = new Label("");
-        errorLabel.setStyle("-fx-text-fill: red;");
+        errorLabel.getStyleClass().add("error-label");
         setBottom(errorLabel);
     }
 

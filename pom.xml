@@ -169,6 +169,26 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <!-- JavaFX Maven Plugin for running JavaFX applications -->
+            <plugin>
+                <groupId>org.openjfx</groupId>
+                <artifactId>javafx-maven-plugin</artifactId>
+                <version>0.0.8</version>
+                <configuration>
+                    <mainClass>com.mealplanner.app.Main</mainClass>
+                </configuration>
+            </plugin>
+
+            <!-- Maven Exec Plugin for running Java applications -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                    <mainClass>com.mealplanner.app.Main</mainClass>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>

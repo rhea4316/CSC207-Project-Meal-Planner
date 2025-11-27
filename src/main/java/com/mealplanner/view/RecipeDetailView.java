@@ -39,7 +39,7 @@ public class RecipeDetailView extends BorderPane implements PropertyChangeListen
         viewModel.addPropertyChangeListener(this);
 
         setPadding(new Insets(20));
-        setStyle("-fx-background-color: white;");
+        getStyleClass().add("bg-white");
         
         createHeader();
         createMainContent();
@@ -82,7 +82,7 @@ public class RecipeDetailView extends BorderPane implements PropertyChangeListen
         
         // Image Placeholder
         Region imagePanel = new Region();
-        imagePanel.setStyle("-fx-background-color: #E0E0E0; -fx-border-color: #CCCCCC;");
+        imagePanel.getStyleClass().add("image-panel");
         imagePanel.setPrefHeight(250);
         leftPanel.getChildren().add(imagePanel);
 
@@ -94,7 +94,7 @@ public class RecipeDetailView extends BorderPane implements PropertyChangeListen
         nutritionArea = new TextArea();
         nutritionArea.setEditable(false);
         nutritionArea.setPrefRowCount(6);
-        nutritionArea.setStyle("-fx-font-family: 'Consolas'; -fx-control-inner-background: #FAFAFA;");
+        nutritionArea.getStyleClass().add("nutrition-area");
         
         infoPanel.getChildren().addAll(nutritionTitle, nutritionArea);
         leftPanel.getChildren().add(infoPanel);
@@ -117,7 +117,7 @@ public class RecipeDetailView extends BorderPane implements PropertyChangeListen
         minusBtn.setOnAction(e -> adjustServingSize(-1));
         
         servingSizeValueLabel = new Label("1");
-        servingSizeValueLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-padding: 0 10;");
+        servingSizeValueLabel.getStyleClass().add("serving-size-label");
         
         Button plusBtn = new Button("+");
         plusBtn.getStyleClass().add("secondary-button");
@@ -161,7 +161,7 @@ public class RecipeDetailView extends BorderPane implements PropertyChangeListen
         
         // Error Label
         errorLabel = new Label(" ");
-        errorLabel.setStyle("-fx-text-fill: red;");
+        errorLabel.getStyleClass().add("error-label");
         setBottom(errorLabel);
     }
 
