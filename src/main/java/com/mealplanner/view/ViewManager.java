@@ -15,6 +15,7 @@ import java.util.Map;
 
 public class ViewManager extends StackPane implements PropertyChangeListener {
     public static final String LOGIN_VIEW = "LoginView";
+    public static final String SIGNUP_VIEW = "SignupView";
     public static final String DASHBOARD_VIEW = "DashboardView";
     public static final String BROWSE_RECIPE_VIEW = "BrowseRecipeView";
     public static final String RECIPE_DETAIL_VIEW = "RecipeDetailView";

@@ -4,11 +4,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 
 import java.util.Arrays;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
-
-import java.util.Arrays;
 
 /**
  * Test class for MealPlan entity.

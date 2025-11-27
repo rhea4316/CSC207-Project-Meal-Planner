@@ -1,9 +1,8 @@
 package com.mealplanner.app;
 
-import java.awt.BorderLayout;
-
-import javax.swing.JFrame;
-import javax.swing.SwingUtilities;
+import javafx.application.Application;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
 
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.StoreRecipeController;
@@ -14,49 +13,48 @@ import com.mealplanner.use_case.store_recipe.StoreRecipeInteractor;
 import com.mealplanner.view.StoreRecipeView;
 
 /**
- * Small demo application that wires the store-recipe flow and shows the Swing UI.
+ * Small demo application that wires the store-recipe flow and shows the JavaFX UI.
  */
-public class StoreRecipeDemo {
+public class StoreRecipeDemo extends Application {
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            try {
-                createAndShowGui();
-            } catch (Exception e) {
-                System.err.println("Error starting demo: " + e.getMessage());
-                e.printStackTrace();
-            }
-        });
+        launch(args);
     }
 
-    private static void createAndShowGui() {
-        // ViewManagerModel (for navigation consistency)
-        ViewManagerModel viewManagerModel = new ViewManagerModel();
+    @Override
+    public void start(Stage primaryStage) {
+        try {
+            // ViewManagerModel (for navigation consistency)
+            ViewManagerModel viewManagerModel = new ViewManagerModel();
 
-        // ViewModel
-        RecipeStoreViewModel viewModel = new RecipeStoreViewModel();
+            // ViewModel
+            RecipeStoreViewModel viewModel = new RecipeStoreViewModel();
 
-        // Presenter
-        StoreRecipePresenter presenter = new StoreRecipePresenter(viewModel);
+            // Presenter
+            StoreRecipePresenter presenter = new StoreRecipePresenter(viewModel);
 
-        // Repository - using FileRecipeRepository to persist to disk
-        FileRecipeRepository repo = new FileRecipeRepository();
+            // Repository - using FileRecipeRepository to persist to disk
+            FileRecipeRepository repo = new FileRecipeRepository();
 
-        // Interactor (uses RecipeRepository implementation)
-        StoreRecipeInteractor interactor = new StoreRecipeInteractor(presenter, repo);
+            // Interactor (uses RecipeRepository implementation)
+            StoreRecipeInteractor interactor = new StoreRecipeInteractor(presenter, repo);
 
-        // Controller
-        StoreRecipeController controller = new StoreRecipeController(interactor);
+            // Controller
+            StoreRecipeController controller = new StoreRecipeController(interactor);
 
-        // View (with ViewManagerModel for navigation)
-        StoreRecipeView view = new StoreRecipeView(controller, viewModel, viewManagerModel);
+            // View (with ViewManagerModel for navigation)
+            StoreRecipeView view = new StoreRecipeView(controller, viewModel, viewManagerModel);
 
-        JFrame frame = new JFrame("Store Recipe Demo");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.getContentPane().add(view, BorderLayout.CENTER);
-        frame.pack();
-        frame.setLocationRelativeTo(null);
-        frame.setVisible(true);
+            // Scene Setup
+            Scene scene = new Scene(view, 800, 600);
+            
+            primaryStage.setTitle("Store Recipe Demo");
+            primaryStage.setScene(scene);
+            primaryStage.show();
+        } catch (Exception e) {
+            System.err.println("Error starting demo: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
 }

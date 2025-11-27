@@ -2,7 +2,6 @@ package com.mealplanner.interface_adapter.presenter;
 
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.view_model.LoginViewModel;
-import com.mealplanner.use_case.login.LoginOutputData;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
@@ -18,16 +17,17 @@ import static org.mockito.Mockito.*;
 public class LoginPresenterTest {
 
     private LoginPresenter presenter;
-    private LoginViewModel viewModel;
-    private ViewManagerModel viewManagerModel;
 
     @Mock
-    private com.mealplanner.interface_adapter.view_model.LoginViewModel viewModel;
+    private LoginViewModel viewModel;
+
+    @Mock
+    private ViewManagerModel viewManagerModel;
 
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        presenter = new LoginPresenter(viewModel);
+        presenter = new LoginPresenter(viewModel, viewManagerModel);
     }
 
     @Test

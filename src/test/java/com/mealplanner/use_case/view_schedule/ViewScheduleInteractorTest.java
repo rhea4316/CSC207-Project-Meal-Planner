@@ -1,8 +1,5 @@
 package com.mealplanner.use_case.view_schedule;
 
-import com.mealplanner.entity.Schedule;
-import com.mealplanner.entity.User;
-import com.mealplanner.exception.UserNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;

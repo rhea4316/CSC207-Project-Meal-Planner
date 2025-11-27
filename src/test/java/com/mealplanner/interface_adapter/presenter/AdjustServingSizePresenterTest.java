@@ -1,9 +1,6 @@
 package com.mealplanner.interface_adapter.presenter;
 
-import com.mealplanner.entity.NutritionInfo;
-import com.mealplanner.entity.Recipe;
 import com.mealplanner.interface_adapter.view_model.RecipeDetailViewModel;
-import com.mealplanner.use_case.adjust_serving_size.AdjustServingSizeOutputData;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
@@ -19,11 +16,9 @@ import static org.mockito.Mockito.*;
 public class AdjustServingSizePresenterTest {
 
     private AdjustServingSizePresenter presenter;
-    private RecipeDetailViewModel viewModel;
-    private Recipe originalRecipe;
 
     @Mock
-    private com.mealplanner.interface_adapter.view_model.RecipeDetailViewModel viewModel;
+    private RecipeDetailViewModel viewModel;
 
     @BeforeEach
     public void setUp() {

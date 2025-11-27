@@ -4,14 +4,8 @@ import com.mealplanner.entity.Recipe;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
 import static org.mockito.Mockito.*;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 /**
  * Test class for BrowseRecipeInteractor.

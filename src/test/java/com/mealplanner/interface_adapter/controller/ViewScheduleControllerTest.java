@@ -1,8 +1,6 @@
 package com.mealplanner.interface_adapter.controller;
 
-import com.mealplanner.entity.Schedule;
 import com.mealplanner.use_case.view_schedule.ViewScheduleInputBoundary;
-import com.mealplanner.use_case.view_schedule.ViewScheduleInputData;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;

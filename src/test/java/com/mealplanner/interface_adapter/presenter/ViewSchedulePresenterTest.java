@@ -1,8 +1,6 @@
 package com.mealplanner.interface_adapter.presenter;
 
-import com.mealplanner.entity.Schedule;
 import com.mealplanner.interface_adapter.view_model.ScheduleViewModel;
-import com.mealplanner.use_case.view_schedule.ViewScheduleOutputData;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
@@ -18,10 +16,9 @@ import static org.mockito.Mockito.*;
 public class ViewSchedulePresenterTest {
 
     private ViewSchedulePresenter presenter;
-    private ScheduleViewModel viewModel;
 
     @Mock
-    private com.mealplanner.interface_adapter.view_model.ScheduleViewModel viewModel;
+    private ScheduleViewModel viewModel;
 
     @BeforeEach
     public void setUp() {

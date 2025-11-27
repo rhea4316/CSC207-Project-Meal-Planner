@@ -7,13 +7,6 @@ import org.mockito.MockitoAnnotations;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import com.mealplanner.entity.Schedule;
-import com.mealplanner.entity.MealType;
-import com.mealplanner.use_case.manage_meal_plan.delete.DeleteMealInputData;
-import com.mealplanner.use_case.manage_meal_plan.delete.DeleteMealOutputData;
-import com.mealplanner.exception.ScheduleConflictException;
-import java.time.LocalDate;
-
 /**
  * Test class for DeleteMealInteractor.
  * Tests deleting meals from schedule.

@@ -1,18 +1,12 @@
 package com.mealplanner.interface_adapter.presenter;
 
-import com.mealplanner.entity.Recipe;
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.view_model.RecipeSearchViewModel;
-import com.mealplanner.use_case.search_by_ingredients.SearchByIngredientsOutputData;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import static org.mockito.Mockito.*;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 /**
  * Test class for SearchByIngredientsPresenter.
@@ -23,14 +17,12 @@ import java.util.List;
 public class SearchByIngredientsPresenterTest {
 
     private SearchByIngredientsPresenter presenter;
+
+    @Mock
     private RecipeSearchViewModel viewModel;
-    private ViewManagerModel viewManager;
 
     @Mock
-    private com.mealplanner.interface_adapter.view_model.RecipeSearchViewModel viewModel;
-
-    @Mock
-    private com.mealplanner.interface_adapter.ViewManagerModel viewManagerModel;
+    private ViewManagerModel viewManagerModel;
 
     @BeforeEach
     public void setUp() {

@@ -30,17 +30,19 @@ public class LoginControllerTest {
     @Test
     public void testLoginWithValidCredentials() {
         String username = "testuser";
+        String password = "password123";
         
-        controller.execute(username);
+        controller.execute(username, password);
         
         verify(interactor).execute(argThat(inputData -> 
-            inputData.getUsername().equals(username)
+            inputData.getUsername().equals(username) &&
+            inputData.getPassword().equals(password)
         ));
     }
 
     @Test
     public void testLoginWithEmptyUsername() {
-        controller.execute("");
+        controller.execute("", "password");
         
         verify(interactor).execute(argThat(inputData -> 
             inputData.getUsername().equals("")
@@ -50,15 +52,18 @@ public class LoginControllerTest {
     @Test
     public void testLoginWithEmptyPassword() {
         String username = "testuser";
-        controller.execute(username);
+        controller.execute(username, "");
         
-        verify(interactor).execute(any());
+        verify(interactor).execute(argThat(inputData -> 
+            inputData.getUsername().equals(username) &&
+            inputData.getPassword().equals("")
+        ));
     }
 
     @Test
     public void testLoginWithNullInput() {
         assertThrows(NullPointerException.class, () -> {
-            controller.execute(null);
+            controller.execute(null, "password");
         });
     }
 }

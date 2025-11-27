@@ -31,7 +31,7 @@ public class LoginInteractorTest {
 
     @Test
     public void testLoginSuccess() throws UserNotFoundException {
-        LoginInputData inputData = new LoginInputData("testuser");
+        LoginInputData inputData = new LoginInputData("testuser", "password");
         com.mealplanner.entity.User user = new com.mealplanner.entity.User("user-1", "testuser", "password");
         
         when(dataAccess.getUserByUsername("testuser")).thenReturn(user);
@@ -47,7 +47,7 @@ public class LoginInteractorTest {
 
     @Test
     public void testLoginInvalidUsername() throws UserNotFoundException {
-        LoginInputData inputData = new LoginInputData("nonexistent");
+        LoginInputData inputData = new LoginInputData("nonexistent", "password");
         
         when(dataAccess.getUserByUsername("nonexistent")).thenThrow(new UserNotFoundException("User not found"));
         
@@ -59,7 +59,7 @@ public class LoginInteractorTest {
 
     @Test
     public void testLoginInvalidPassword() throws UserNotFoundException {
-        LoginInputData inputData = new LoginInputData("testuser");
+        LoginInputData inputData = new LoginInputData("testuser", "wrongpassword");
         
         when(dataAccess.getUserByUsername("testuser")).thenThrow(new UserNotFoundException("User not found"));
         
@@ -70,7 +70,7 @@ public class LoginInteractorTest {
 
     @Test
     public void testLoginEmptyUsername() {
-        LoginInputData inputData = new LoginInputData("");
+        LoginInputData inputData = new LoginInputData("", "password");
         
         interactor.execute(inputData);
         
@@ -79,7 +79,7 @@ public class LoginInteractorTest {
 
     @Test
     public void testLoginEmptyPassword() {
-        LoginInputData inputData = new LoginInputData("   ");
+        LoginInputData inputData = new LoginInputData("testuser", "   ");
         
         interactor.execute(inputData);
         
@@ -88,7 +88,7 @@ public class LoginInteractorTest {
 
     @Test
     public void testDataAccessFailure() throws UserNotFoundException {
-        LoginInputData inputData = new LoginInputData("testuser");
+        LoginInputData inputData = new LoginInputData("testuser", "password");
         
         when(dataAccess.getUserByUsername("testuser")).thenThrow(new RuntimeException("Database error"));
         
@@ -99,7 +99,7 @@ public class LoginInteractorTest {
 
     @Test
     public void testPasswordSecurity() throws UserNotFoundException {
-        LoginInputData inputData = new LoginInputData("testuser");
+        LoginInputData inputData = new LoginInputData("testuser", "password");
         com.mealplanner.entity.User user = new com.mealplanner.entity.User("user-1", "testuser", "password");
         
         when(dataAccess.getUserByUsername("testuser")).thenReturn(user);

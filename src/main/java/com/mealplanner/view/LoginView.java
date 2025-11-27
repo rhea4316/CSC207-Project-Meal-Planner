@@ -1,8 +1,8 @@
 package com.mealplanner.view;
 
 import com.mealplanner.interface_adapter.ViewManagerModel;
-import com.mealplanner.interface_adapter.controller.SignupController;
-import com.mealplanner.interface_adapter.view_model.SignupViewModel;
+import com.mealplanner.interface_adapter.controller.LoginController;
+import com.mealplanner.interface_adapter.view_model.LoginViewModel;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -17,27 +17,25 @@ import javafx.scene.layout.VBox;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 
-public class SignupView extends BorderPane implements PropertyChangeListener {
-    private final SignupViewModel signupViewModel;
-    private final SignupController signupController;
+public class LoginView extends BorderPane implements PropertyChangeListener {
+    private final LoginViewModel loginViewModel;
+    private final LoginController loginController;
     private final ViewManagerModel viewManagerModel;
 
     private TextField usernameField;
     private PasswordField passwordField;
-    private PasswordField confirmPasswordField;
     private Label errorLabel;
     private Label statusLabel;
 
-    public SignupView(SignupViewModel signupViewModel, SignupController signupController, ViewManagerModel viewManagerModel) {
-        if (signupViewModel == null) throw new IllegalArgumentException("SignupViewModel cannot be null");
-        if (signupController == null) throw new IllegalArgumentException("SignupController cannot be null");
+    public LoginView(LoginViewModel loginViewModel, LoginController loginController, ViewManagerModel viewManagerModel) {
+        if (loginViewModel == null) throw new IllegalArgumentException("LoginViewModel cannot be null");
+        if (loginController == null) throw new IllegalArgumentException("LoginController cannot be null");
         
-        this.signupViewModel = signupViewModel;
-        this.signupController = signupController;
-        // Stored for navigation (e.g., back to login)
+        this.loginViewModel = loginViewModel;
+        this.loginController = loginController;
         this.viewManagerModel = viewManagerModel;
 
-        this.signupViewModel.addPropertyChangeListener(this);
+        this.loginViewModel.addPropertyChangeListener(this);
 
         setPadding(new Insets(40));
         setStyle("-fx-background-color: white;");
@@ -47,8 +45,8 @@ public class SignupView extends BorderPane implements PropertyChangeListener {
         centerBox.setMaxWidth(400);
 
         // Title
-        Label titleLabel = new Label("Create Account");
-        titleLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #333333;");
+        Label titleLabel = new Label("Login");
+        titleLabel.getStyleClass().add("title-label");
         
         // Form
         GridPane formGrid = new GridPane();
@@ -58,33 +56,31 @@ public class SignupView extends BorderPane implements PropertyChangeListener {
 
         formGrid.add(new Label("Username:"), 0, 0);
         usernameField = new TextField();
+        usernameField.getStyleClass().add("text-field");
         formGrid.add(usernameField, 1, 0);
 
         formGrid.add(new Label("Password:"), 0, 1);
         passwordField = new PasswordField();
+        passwordField.getStyleClass().add("text-field");
         formGrid.add(passwordField, 1, 1);
 
-        formGrid.add(new Label("Confirm Password:"), 0, 2);
-        confirmPasswordField = new PasswordField();
-        formGrid.add(confirmPasswordField, 1, 2);
-
         // Buttons
-        Button signupButton = new Button("Sign Up");
-        signupButton.getStyleClass().add("modern-button");
-        signupButton.setOnAction(e -> performSignup());
-        signupButton.setMaxWidth(Double.MAX_VALUE);
+        Button loginButton = new Button("Login");
+        loginButton.getStyleClass().add("modern-button");
+        loginButton.setOnAction(e -> performLogin());
+        loginButton.setMaxWidth(Double.MAX_VALUE);
 
-        Button backButton = new Button("Back to Login");
-        backButton.getStyleClass().add("secondary-button");
-        backButton.setOnAction(e -> {
+        Button signupButton = new Button("Sign Up");
+        signupButton.getStyleClass().add("secondary-button");
+        signupButton.setOnAction(e -> {
             if (this.viewManagerModel != null) {
-                this.viewManagerModel.setActiveView(ViewManager.LOGIN_VIEW);
+                this.viewManagerModel.setActiveView(ViewManager.SIGNUP_VIEW);
             }
         });
-        backButton.setMaxWidth(Double.MAX_VALUE);
+        signupButton.setMaxWidth(Double.MAX_VALUE);
 
         VBox buttonBox = new VBox(10);
-        buttonBox.getChildren().addAll(signupButton, backButton);
+        buttonBox.getChildren().addAll(loginButton, signupButton);
 
         // Status
         statusLabel = new Label("Please enter your username and password");
@@ -97,10 +93,9 @@ public class SignupView extends BorderPane implements PropertyChangeListener {
         setCenter(centerBox);
     }
 
-    private void performSignup() {
+    private void performLogin() {
         String username = usernameField.getText();
         String password = passwordField.getText();
-        String confirm = confirmPasswordField.getText();
 
         if (username == null || username.isBlank()) {
             errorLabel.setText("Please enter a username");
@@ -110,32 +105,29 @@ public class SignupView extends BorderPane implements PropertyChangeListener {
             errorLabel.setText("Please enter a password");
             return;
         }
-        if (!password.equals(confirm)) {
-            errorLabel.setText("Passwords do not match");
-            return;
-        }
 
         errorLabel.setText("");
-        signupController.execute(username.trim(), password);
+        loginController.execute(username.trim(), password);
     }
 
     @Override
     public void propertyChange(PropertyChangeEvent evt) {
         Platform.runLater(() -> {
-            if ("signup".equals(evt.getPropertyName())) {
-                String error = signupViewModel.getError();
-                String registeredUser = signupViewModel.getRegisteredUser();
+            if ("login".equals(evt.getPropertyName())) {
+                String error = loginViewModel.getError();
+                String loggedInUser = loginViewModel.getLoggedInUser();
 
                 if (error != null && !error.isEmpty()) {
                     errorLabel.setText(error);
                     statusLabel.setText("");
-                } else if (registeredUser != null && !registeredUser.isEmpty()) {
+                } else if (loggedInUser != null && !loggedInUser.isEmpty()) {
                     errorLabel.setText("");
-                    statusLabel.setText("Success! Welcome, " + registeredUser + "!");
+                    statusLabel.setText("Welcome, " + loggedInUser + "!");
                     statusLabel.setStyle("-fx-text-fill: green;");
-                    // Optional: Auto-redirect to login or dashboard
+                    // Navigation is handled by LoginPresenter
                 }
             }
         });
     }
 }
+

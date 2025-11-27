@@ -9,9 +9,6 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.time.LocalDate;
-import java.util.Map;
-
 /**
  * Test class for Schedule entity.
  * Tests meal scheduling, conflict detection, and schedule modifications.
@@ -21,8 +18,6 @@ import java.util.Map;
 public class ScheduleTest {
 
     private Schedule schedule;
-    private LocalDate today;
-    private LocalDate tomorrow;
 
     @BeforeEach
     public void setUp() {

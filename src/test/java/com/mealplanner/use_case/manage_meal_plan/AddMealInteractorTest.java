@@ -7,13 +7,6 @@ import org.mockito.MockitoAnnotations;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import com.mealplanner.entity.Schedule;
-import com.mealplanner.entity.MealType;
-import com.mealplanner.use_case.manage_meal_plan.add.AddMealInputData;
-import com.mealplanner.use_case.manage_meal_plan.add.AddMealOutputData;
-import com.mealplanner.exception.ScheduleConflictException;
-import java.time.LocalDate;
-
 /**
  * Test class for AddMealInteractor.
  * Tests adding meals to schedule with conflict detection.

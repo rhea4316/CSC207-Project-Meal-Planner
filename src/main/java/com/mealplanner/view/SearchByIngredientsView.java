@@ -18,6 +18,7 @@ import java.util.List;
 public class SearchByIngredientsView extends BorderPane implements PropertyChangeListener {
     private final RecipeSearchViewModel viewModel;
     private final SearchByIngredientsController controller;
+    @SuppressWarnings("unused")
     private final ViewManagerModel viewManagerModel;
 
     private TextArea ingredientsTextArea;

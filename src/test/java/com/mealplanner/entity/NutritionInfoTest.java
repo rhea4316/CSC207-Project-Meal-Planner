@@ -58,7 +58,7 @@ public class NutritionInfoTest {
         assertEquals(15.0, nutritionInfo.getFat());
         
         NutritionInfo original = new NutritionInfo(500, 20.0, 60.0, 15.0);
-        NutritionInfo scaled = original.scale(2.0);
+        original.scale(2.0);
         assertEquals(500, original.getCalories());
         assertEquals(20.0, original.getProtein());
     }

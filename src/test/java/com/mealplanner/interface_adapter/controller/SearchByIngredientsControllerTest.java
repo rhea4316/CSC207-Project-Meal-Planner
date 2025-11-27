@@ -7,10 +7,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import static org.mockito.Mockito.*;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
 /**
  * Test class for SearchByIngredientsController.
  * Tests controller input validation and interactor invocation.

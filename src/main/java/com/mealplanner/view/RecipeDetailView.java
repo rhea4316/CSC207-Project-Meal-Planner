@@ -5,7 +5,6 @@ import com.mealplanner.entity.Recipe;
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.AdjustServingSizeController;
 import com.mealplanner.interface_adapter.view_model.RecipeDetailViewModel;
-import com.mealplanner.util.StringUtil;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;

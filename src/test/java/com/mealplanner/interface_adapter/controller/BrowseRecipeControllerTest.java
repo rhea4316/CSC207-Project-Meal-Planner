@@ -1,17 +1,12 @@
 package com.mealplanner.interface_adapter.controller;
 
-import com.mealplanner.use_case.browse_recipe.BrowseRecipeOutputData;
+import com.mealplanner.use_case.browse_recipe.BrowseRecipeInputBoundary;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.io.IOException;
-import java.util.ArrayList;
-
 import static org.mockito.Mockito.*;
-
-import java.io.IOException;
 
 /**
  * Test class for BrowseRecipeController.

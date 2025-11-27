@@ -19,6 +19,7 @@ import java.util.List;
 public class BrowseRecipeView extends BorderPane implements PropertyChangeListener {
     private final RecipeBrowseViewModel viewModel;
     private final BrowseRecipeController controller;
+    @SuppressWarnings("unused")
     private final ViewManagerModel viewManagerModel;
 
     private TextField queryField;

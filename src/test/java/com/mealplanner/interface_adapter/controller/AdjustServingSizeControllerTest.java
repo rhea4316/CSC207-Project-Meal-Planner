@@ -7,7 +7,6 @@ import org.mockito.MockitoAnnotations;
 import static org.mockito.Mockito.*;
 
 import com.mealplanner.use_case.adjust_serving_size.AdjustServingSizeInputBoundary;
-import com.mealplanner.use_case.adjust_serving_size.AdjustServingSizeInputData;
 
 /**
  * Test class for AdjustServingSizeController.

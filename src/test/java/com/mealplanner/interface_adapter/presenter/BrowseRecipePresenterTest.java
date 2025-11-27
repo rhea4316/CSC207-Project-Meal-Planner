@@ -8,7 +8,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Test class for BrowseRecipePresenter.
@@ -19,18 +22,12 @@ import static org.mockito.Mockito.*;
 public class BrowseRecipePresenterTest {
 
     private BrowseRecipePresenter presenter;
-    private RecipeBrowseViewModel viewModel;
-    private ViewManagerModel viewManager;
-
-    private RecipeBrowseViewModel viewModel;
-
-    private ViewManagerModel viewManager;
 
     @Mock
-    private com.mealplanner.interface_adapter.view_model.RecipeBrowseViewModel viewModel;
+    private RecipeBrowseViewModel viewModel;
 
     @Mock
-    private com.mealplanner.interface_adapter.ViewManagerModel viewManager;
+    private ViewManagerModel viewManager;
 
     @BeforeEach
     public void setUp() {
