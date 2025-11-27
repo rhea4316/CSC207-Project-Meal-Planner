@@ -79,13 +79,6 @@ public class FileScheduleDataAccessObject implements ViewScheduleDataAccessInter
         return null;
     }
 
-    @Override
-    public Schedule getScheduleByUserID(String userID) {
-        return null;
-    }
-
-    // ---------- helper DTO + conversions ----------
-
     /**
      * JSON-friendly representation:
      * dates and meal types are stored as Strings.

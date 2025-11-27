@@ -7,7 +7,6 @@ package com.mealplanner.view;
 import com.mealplanner.entity.MealType;
 import com.mealplanner.entity.Schedule;
 import com.mealplanner.interface_adapter.ViewManagerModel;
-import com.mealplanner.interface_adapter.controller.AdjustServingSizeController;
 import com.mealplanner.interface_adapter.controller.ViewScheduleController;
 import com.mealplanner.interface_adapter.view_model.ScheduleViewModel;
 
