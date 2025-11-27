@@ -1,10 +1,14 @@
 package com.mealplanner.interface_adapter.controller;
 
-import com.mealplanner.use_case.browse_recipe.BrowseRecipeInputBoundary;
+import com.mealplanner.use_case.browse_recipe.BrowseRecipeOutputData;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+
+import java.io.IOException;
+import java.util.ArrayList;
+
 import static org.mockito.Mockito.*;
 
 import java.io.IOException;
@@ -14,6 +18,7 @@ import java.io.IOException;
  * Tests controller input validation and interactor invocation.
  *
  * Responsible: Regina (primary)
+ *
  */
 public class BrowseRecipeControllerTest {
 
@@ -30,35 +35,30 @@ public class BrowseRecipeControllerTest {
 
     @Test
     public void testBrowseRecipes() throws IOException {
-        // Arrange
         String query = "pasta";
-        int numberOfRecipes = 5;
+        int numberOfRecipes = 1;
+        String ingredients = "tomato";
 
-        // Act
-        controller.execute(query, numberOfRecipes);
-
-        // Assert
-        verify(interactor).execute(argThat(inputData -> 
-            inputData.getQuery().equals(query) &&
-            inputData.getNumberOfRecipesInt() == numberOfRecipes
+        controller.execute(query, numberOfRecipes, ingredients);
+        verify(interactor).execute(argThat(inputData ->
+                inputData != null &&
+                query.equals(inputData.getQuery()) &&
+                numberOfRecipes == inputData.getNumberOfRecipesInt() &&
+                ingredients.equals(inputData.getIncludedIngredients())
         ));
     }
 
     @Test
-    public void testViewRecipeDetails() throws IOException {
-        // Arrange
-        String query = "chicken";
-        int numberOfRecipes = 10;
-        String ingredients = "chicken, rice";
+    public void testBrowseRecipesWithoutIngredients() throws IOException {
+        String query = "pasta";
+        int numberOfRecipes = 3;
 
-        // Act
-        controller.execute(query, numberOfRecipes, ingredients);
-
-        // Assert
-        verify(interactor).execute(argThat(inputData -> 
-            inputData.getQuery().equals(query) &&
-            inputData.getNumberOfRecipesInt() == numberOfRecipes &&
-            inputData.getIncludedIngredients().equals(ingredients)
+        controller.execute(query, numberOfRecipes);
+        verify(interactor).execute(argThat(inputData ->
+                inputData != null &&
+                query.equals(inputData.getQuery()) &&
+                numberOfRecipes == inputData.getNumberOfRecipesInt() &&
+                inputData.getIncludedIngredients() == null
         ));
     }
 
@@ -67,9 +67,10 @@ public class BrowseRecipeControllerTest {
         // Arrange
         String query = "";
         int numberOfRecipes = 5;
+        String ingredients = "chicken";
 
         // Act
-        controller.execute(query, numberOfRecipes);
+        controller.execute(query, numberOfRecipes, ingredients);
 
         // Assert
         verify(interactor, never()).execute(any());
@@ -80,9 +81,10 @@ public class BrowseRecipeControllerTest {
         // Arrange
         String query = null;
         int numberOfRecipes = 5;
+        String ingredients = "chicken";
 
         // Act
-        controller.execute(query, numberOfRecipes);
+        controller.execute(query, numberOfRecipes, ingredients);
 
         // Assert
         verify(interactor, never()).execute(any());

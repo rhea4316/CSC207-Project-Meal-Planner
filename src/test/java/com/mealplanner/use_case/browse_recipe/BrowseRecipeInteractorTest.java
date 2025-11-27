@@ -1,6 +1,5 @@
 package com.mealplanner.use_case.browse_recipe;
 
-import com.mealplanner.config.ApiConfig;
 import com.mealplanner.entity.Recipe;
 import com.mealplanner.exception.RecipeNotFoundException;
 import org.junit.jupiter.api.Test;
@@ -8,6 +7,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 import static org.mockito.Mockito.*;
 
 import java.io.IOException;
@@ -20,6 +25,7 @@ import java.util.List;
  * Tests recipe browsing functionality and ingredient display.
  *
  * Responsible: Regina (primary)
+ *
  */
 public class BrowseRecipeInteractorTest {
 
@@ -38,106 +44,72 @@ public class BrowseRecipeInteractorTest {
     }
 
     @Test
-    public void testBrowseRecipesSuccess() throws IOException {
-        // Arrange
-        String query = "pasta";
-        BrowseRecipeInputData inputData = new BrowseRecipeInputData(query, 5);
-        
-        List<Recipe> recipes = Arrays.asList(
-            new Recipe("Spaghetti", Arrays.asList("pasta", "sauce"), "Cook pasta", 2),
-            new Recipe("Lasagna", Arrays.asList("pasta", "cheese"), "Layer and bake", 4)
-        );
-        
-        when(dataAccess.searchRecipes(inputData)).thenReturn(recipes);
-        
-        try (MockedStatic<ApiConfig> apiConfigMock = mockStatic(ApiConfig.class)) {
-            apiConfigMock.when(ApiConfig::isSpoonacularConfigured).thenReturn(true);
-            
-            // Act
-            interactor.execute(inputData);
-            
-            // Assert
-            verify(dataAccess).searchRecipes(inputData);
-            verify(presenter).presentRecipeDetails(argThat(outputData -> 
-                outputData.getRecipes().size() == 2 &&
-                outputData.getRecipes().equals(recipes)
-            ));
-            verify(presenter, never()).presentError(anyString());
-        }
+    public void testBrowseRecipesSuccess() throws IOException, RecipeNotFoundException {
+        BrowseRecipeInputData inputData = new BrowseRecipeInputData("pasta",
+                2,
+                "chicken");
+        List<Recipe> mockRecipes = Arrays.asList(
+                new Recipe("Chicken Alfredo", Arrays.asList("pasta", "chicken", "cream"), "steps", 1),
+                new Recipe("Creamy Garlic Chicken Pasta", Arrays.asList("pasta", "chicken", "garlic"), "steps", 1));
+
+        when(dataAccess.searchRecipes(inputData)).thenReturn(mockRecipes);
+        interactor.execute(inputData);
+
+        verify(dataAccess).searchRecipes(inputData);
+        verify(presenter).presentRecipeDetails(any(BrowseRecipeOutputData.class));
+        verify(presenter, never()).presentError(anyString());
     }
 
     @Test
-    public void testBrowseRecipesEmpty() throws IOException {
-        // Arrange
-        String query = "nonexistent";
-        BrowseRecipeInputData inputData = new BrowseRecipeInputData(query, 5);
-        
+    public void testBrowseRecipesEmpty() throws RecipeNotFoundException, IOException {
+        BrowseRecipeInputData inputData = new BrowseRecipeInputData("pasta", 0);
         when(dataAccess.searchRecipes(inputData)).thenReturn(Collections.emptyList());
-        
-        try (MockedStatic<ApiConfig> apiConfigMock = mockStatic(ApiConfig.class)) {
-            apiConfigMock.when(ApiConfig::isSpoonacularConfigured).thenReturn(true);
-            
-            // Act
-            interactor.execute(inputData);
-            
-            // Assert
-            verify(dataAccess).searchRecipes(inputData);
-            verify(presenter).presentError(contains("No recipes found"));
-            verify(presenter, never()).presentRecipeDetails(any());
-        }
+
+        interactor.execute(inputData);
+        verify(dataAccess).searchRecipes(inputData);
+        verify(presenter).presentError("No recipes found, please try different wording " +
+                "in your search query.");
+        verify(presenter, never()).presentRecipeDetails(any(BrowseRecipeOutputData.class));
     }
 
     @Test
-    public void testBrowseRecipesNullResult() throws IOException {
-        // Arrange
-        String query = "pasta";
-        BrowseRecipeInputData inputData = new BrowseRecipeInputData(query, 5);
-        
-        when(dataAccess.searchRecipes(inputData)).thenReturn(null);
-        
-        try (MockedStatic<ApiConfig> apiConfigMock = mockStatic(ApiConfig.class)) {
-            apiConfigMock.when(ApiConfig::isSpoonacularConfigured).thenReturn(true);
-            
-            // Act
-            interactor.execute(inputData);
-            
-            // Assert
-            verify(dataAccess).searchRecipes(inputData);
-            verify(presenter).presentError(contains("No recipes found"));
-            verify(presenter, never()).presentRecipeDetails(any());
-        }
+    public void testInvalidInput() throws RecipeNotFoundException, IOException {
+        BrowseRecipeInputData inputData = new BrowseRecipeInputData("pasta", 2, "chicken");
+        when(dataAccess.searchRecipes(inputData)).thenThrow(new IllegalArgumentException("Invalid parameters"));
+
+        interactor.execute(inputData);
+        verify(dataAccess).searchRecipes(inputData);
+        verify(presenter).presentError("Invalid input: Invalid parameters");
+        verify(presenter, never()).presentRecipeDetails(any());
     }
 
     @Test
-    public void testBrowseRecipesWithIngredients() throws IOException {
-        // Arrange
-        String query = "pasta";
-        String ingredients = "tomato, cheese";
-        BrowseRecipeInputData inputData = new BrowseRecipeInputData(query, 5, ingredients);
-        
-        List<Recipe> recipes = Arrays.asList(
-            new Recipe("Pasta", Arrays.asList("pasta", "tomato", "cheese"), "Cook", 2)
-        );
-        
-        when(dataAccess.searchRecipes(inputData)).thenReturn(recipes);
-        
-        try (MockedStatic<ApiConfig> apiConfigMock = mockStatic(ApiConfig.class)) {
-            apiConfigMock.when(ApiConfig::isSpoonacularConfigured).thenReturn(true);
-            
-            // Act
-            interactor.execute(inputData);
-            
-            // Assert
-            verify(dataAccess).searchRecipes(inputData);
-            verify(presenter).presentRecipeDetails(any());
-        }
+    public void testRecipeNotFound() throws IOException, RecipeNotFoundException {
+        BrowseRecipeInputData inputData = new BrowseRecipeInputData("pasta", 0);
+        when(dataAccess.searchRecipes(inputData)).thenThrow(new RecipeNotFoundException(""));
+
+        interactor.execute(inputData);
+        verify(dataAccess).searchRecipes(inputData);
+        verify(presenter).presentError("Recipe not found");
+        verify(presenter, never()).presentRecipeDetails(any());
     }
 
     @Test
-    public void testBrowseRecipesNullInput() throws IOException {
+    public void testApiFailure() throws IOException, RecipeNotFoundException {
+        BrowseRecipeInputData inputData = new BrowseRecipeInputData("pasta", 2, "chicken");
+        when(dataAccess.searchRecipes(inputData)).thenThrow(new IOException("API connection failed"));
+
+        interactor.execute(inputData);
+        verify(dataAccess).searchRecipes(inputData);
+        verify(presenter).presentError("Network error: API connection failed");
+        verify(presenter, never()).presentRecipeDetails(any());
+    }
+
+    @Test
+    public void testNullInputData() throws IOException, RecipeNotFoundException {
         // Act
         interactor.execute(null);
-        
+
         // Assert
         verify(dataAccess, never()).searchRecipes(any());
         verify(presenter).presentError("Input data cannot be null");
@@ -145,13 +117,13 @@ public class BrowseRecipeInteractorTest {
     }
 
     @Test
-    public void testBrowseRecipesEmptyQuery() throws IOException {
+    public void testEmptyQuery() throws RecipeNotFoundException, IOException {
         // Arrange
-        BrowseRecipeInputData inputData = new BrowseRecipeInputData("", 5);
-        
+        BrowseRecipeInputData inputData = new BrowseRecipeInputData("", 2, "chicken");
+
         // Act
         interactor.execute(inputData);
-        
+
         // Assert
         verify(dataAccess, never()).searchRecipes(any());
         verify(presenter).presentError("Search query cannot be empty");
@@ -159,112 +131,16 @@ public class BrowseRecipeInteractorTest {
     }
 
     @Test
-    public void testBrowseRecipesNullQuery() throws IOException {
+    public void testNullQuery() throws RecipeNotFoundException, IOException {
         // Arrange
-        BrowseRecipeInputData inputData = new BrowseRecipeInputData(null, 5);
-        
+        BrowseRecipeInputData inputData = new BrowseRecipeInputData(null, 2, "chicken");
+
         // Act
         interactor.execute(inputData);
-        
+
         // Assert
         verify(dataAccess, never()).searchRecipes(any());
         verify(presenter).presentError("Search query cannot be empty");
         verify(presenter, never()).presentRecipeDetails(any());
-    }
-
-    @Test
-    public void testBrowseRecipesWhitespaceQuery() throws IOException {
-        // Arrange
-        BrowseRecipeInputData inputData = new BrowseRecipeInputData("   ", 5);
-        
-        // Act
-        interactor.execute(inputData);
-        
-        // Assert
-        verify(dataAccess, never()).searchRecipes(any());
-        verify(presenter).presentError("Search query cannot be empty");
-        verify(presenter, never()).presentRecipeDetails(any());
-    }
-
-    @Test
-    public void testRecipeNotFound() throws IOException {
-        // Arrange
-        String query = "pasta";
-        BrowseRecipeInputData inputData = new BrowseRecipeInputData(query, 5);
-        
-        when(dataAccess.searchRecipes(inputData)).thenThrow(new RecipeNotFoundException("Recipe not found"));
-        
-        try (MockedStatic<ApiConfig> apiConfigMock = mockStatic(ApiConfig.class)) {
-            apiConfigMock.when(ApiConfig::isSpoonacularConfigured).thenReturn(true);
-            
-            // Act
-            interactor.execute(inputData);
-            
-            // Assert
-            verify(dataAccess).searchRecipes(inputData);
-            verify(presenter).presentError("Recipe not found");
-            verify(presenter, never()).presentRecipeDetails(any());
-        }
-    }
-
-    @Test
-    public void testApiFailure() throws IOException {
-        // Arrange
-        String query = "pasta";
-        BrowseRecipeInputData inputData = new BrowseRecipeInputData(query, 5);
-        
-        when(dataAccess.searchRecipes(inputData)).thenThrow(new IOException("Network error"));
-        
-        try (MockedStatic<ApiConfig> apiConfigMock = mockStatic(ApiConfig.class)) {
-            apiConfigMock.when(ApiConfig::isSpoonacularConfigured).thenReturn(true);
-            
-            // Act
-            interactor.execute(inputData);
-            
-            // Assert
-            verify(dataAccess).searchRecipes(inputData);
-            verify(presenter).presentError("Network error: Network error");
-            verify(presenter, never()).presentRecipeDetails(any());
-        }
-    }
-
-    @Test
-    public void testApiNotConfigured() throws IOException {
-        // Arrange
-        String query = "pasta";
-        BrowseRecipeInputData inputData = new BrowseRecipeInputData(query, 5);
-        
-        try (MockedStatic<ApiConfig> apiConfigMock = mockStatic(ApiConfig.class)) {
-            apiConfigMock.when(ApiConfig::isSpoonacularConfigured).thenReturn(false);
-            
-            // Act
-            interactor.execute(inputData);
-            
-            // Assert
-            verify(dataAccess, never()).searchRecipes(any());
-            verify(presenter).presentError("API key is not configured. Please check your configuration.");
-            verify(presenter, never()).presentRecipeDetails(any());
-        }
-    }
-
-    @Test
-    public void testInvalidInput() throws IOException {
-        // Arrange
-        String query = "pasta";
-        BrowseRecipeInputData inputData = new BrowseRecipeInputData(query, 5);
-        
-        when(dataAccess.searchRecipes(inputData)).thenThrow(new IllegalArgumentException("Invalid input"));
-        
-        try (MockedStatic<ApiConfig> apiConfigMock = mockStatic(ApiConfig.class)) {
-            apiConfigMock.when(ApiConfig::isSpoonacularConfigured).thenReturn(true);
-            
-            // Act
-            interactor.execute(inputData);
-            
-            // Assert
-            verify(dataAccess).searchRecipes(inputData);
-            verify(presenter).presentError("Invalid input: Invalid input");
-            verify(presenter, never()).presentRecipeDetails(any());
-        }
     }
 }

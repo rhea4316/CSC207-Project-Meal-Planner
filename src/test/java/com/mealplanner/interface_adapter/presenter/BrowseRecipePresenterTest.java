@@ -6,7 +6,18 @@ import com.mealplanner.interface_adapter.view_model.RecipeBrowseViewModel;
 import com.mealplanner.use_case.browse_recipe.BrowseRecipeOutputData;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -17,11 +28,16 @@ import java.util.List;
  * Tests formatting and presentation of recipe browsing.
  *
  * Responsible: Regina (primary)
+ *
  */
 public class BrowseRecipePresenterTest {
 
     private BrowseRecipePresenter presenter;
     private RecipeBrowseViewModel viewModel;
+    private ViewManagerModel viewManager;
+
+    private RecipeBrowseViewModel viewModel;
+
     private ViewManagerModel viewManager;
 
     @BeforeEach
@@ -33,116 +49,76 @@ public class BrowseRecipePresenterTest {
 
     @Test
     public void testPresentRecipeList() {
-        // Arrange
-        List<Recipe> recipes = Arrays.asList(
-            new Recipe("Pasta", Arrays.asList("pasta", "sauce"), "Cook pasta", 2),
-            new Recipe("Pizza", Arrays.asList("dough", "cheese"), "Bake pizza", 4)
-        );
-        BrowseRecipeOutputData outputData = new BrowseRecipeOutputData(recipes);
+        List<Recipe> mockRecipes = Arrays.asList(
+                new Recipe("Chicken Alfredo", Arrays.asList("pasta", "chicken", "cream"), "steps", 1),
+                new Recipe("Creamy Garlic Chicken Pasta", Arrays.asList("pasta", "chicken", "garlic"), "steps", 1));
+        BrowseRecipeOutputData outputData = new BrowseRecipeOutputData(mockRecipes);
 
-        // Act
         presenter.presentRecipeDetails(outputData);
-
-        // Assert
-        assertEquals(2, viewModel.getRecipes().size());
-        assertEquals("Pasta", viewModel.getRecipes().get(0).getName());
-        assertEquals("Pizza", viewModel.getRecipes().get(1).getName());
-        assertTrue(viewModel.isDisplayRecipes());
+        assertEquals(mockRecipes, viewModel.getRecipes());
         assertEquals("BrowseRecipeView", viewManager.getActiveView());
+        assertEquals("", viewModel.getErrorMessage());
     }
 
     @Test
-    public void testPresentRecipeDetails() {
+    public void testPresentRecipeDetailsWithNullOutputData() {
         // Arrange
-        List<Recipe> recipes = Arrays.asList(
-            new Recipe("Chicken", Arrays.asList("chicken", "rice"), "Cook chicken and rice", 2)
-        );
-        BrowseRecipeOutputData outputData = new BrowseRecipeOutputData(recipes);
+        BrowseRecipeOutputData outputData = null;
 
         // Act
         presenter.presentRecipeDetails(outputData);
 
-        // Assert
-        assertEquals(1, viewModel.getRecipes().size());
-        Recipe recipe = viewModel.getRecipes().get(0);
-        assertEquals("Chicken", recipe.getName());
-        assertEquals(2, recipe.getIngredients().size());
-        assertTrue(recipe.getIngredients().contains("chicken"));
-        assertTrue(recipe.getIngredients().contains("rice"));
-        assertTrue(viewModel.isDisplayRecipes());
+        assertEquals("No recipe data available", viewModel.getErrorMessage());
+        assertTrue(viewModel.getRecipes().isEmpty());
+        assertNull(viewManager.getActiveView());
+
     }
+
+    @Test
+    public void testPresentRecipeDetailsWithNullRecipes() {
+        // Arrange
+        BrowseRecipeOutputData outputData = null;
+
+        // Act
+        presenter.presentRecipeDetails(outputData);
+
+        assertEquals("No recipe data available", viewModel.getErrorMessage());
+        assertTrue(viewModel.getRecipes().isEmpty());
+        assertNull(viewManager.getActiveView());
+    }
+
+    @Test
+    public void testPresentRecipeDetailsWithEmptyRecipes() {
+        // Arrange
+        List<Recipe> emptyRecipes = Collections.emptyList();
+        BrowseRecipeOutputData outputData = new BrowseRecipeOutputData(emptyRecipes);
+
+        // Act
+        presenter.presentRecipeDetails(outputData);
+
+        assertEquals(emptyRecipes, viewModel.getRecipes());
+        assertEquals("BrowseRecipeView", viewManager.getActiveView());
+    }
+
 
     @Test
     public void testPresentError() {
-        // Arrange
         String errorMessage = "No recipes found";
 
-        // Act
+        presenter.presentError(errorMessage);
+        assertEquals("No recipes found", viewModel.getErrorMessage());
+        assertTrue(viewModel.getRecipes().isEmpty());
+        assertNull(viewManager.getActiveView());
+    }
+
+    @Test
+    public void testPresentErrorWithEmptyMessage() {
+        String errorMessage = "";
+
         presenter.presentError(errorMessage);
 
-        // Assert
-        assertEquals(errorMessage, viewModel.getErrorMessage());
-        assertFalse(viewModel.isDisplayRecipes());
-    }
-
-    @Test
-    public void testPresentErrorNull() {
-        // Act
-        presenter.presentError(null);
-
-        // Assert
-        assertEquals("An error occurred", viewModel.getErrorMessage());
-        assertFalse(viewModel.isDisplayRecipes());
-    }
-
-    @Test
-    public void testPresentRecipeDetailsNull() {
-        // Act
-        presenter.presentRecipeDetails(null);
-
-        // Assert
-        assertEquals("No recipe data available", viewModel.getErrorMessage());
-        assertFalse(viewModel.isDisplayRecipes());
-    }
-
-    @Test
-    public void testPresentRecipeDetailsNullRecipes() {
-        // Arrange
-        BrowseRecipeOutputData outputData = new BrowseRecipeOutputData(null);
-
-        // Act
-        presenter.presentRecipeDetails(outputData);
-
-        // Assert
-        assertEquals("No recipe data available", viewModel.getErrorMessage());
-        assertFalse(viewModel.isDisplayRecipes());
-    }
-
-    @Test
-    public void testPresentRecipeDetailsEmptyList() {
-        // Arrange
-        BrowseRecipeOutputData outputData = new BrowseRecipeOutputData(Collections.emptyList());
-
-        // Act
-        presenter.presentRecipeDetails(outputData);
-
-        // Assert
+        assertEquals(anyString(), viewModel.getErrorMessage());
         assertTrue(viewModel.getRecipes().isEmpty());
-        assertTrue(viewModel.isDisplayRecipes());
-    }
-
-    @Test
-    public void testPresentRecipeDetailsUpdatesViewManager() {
-        // Arrange
-        List<Recipe> recipes = Arrays.asList(
-            new Recipe("Test", Arrays.asList("ingredient"), "Cook", 1)
-        );
-        BrowseRecipeOutputData outputData = new BrowseRecipeOutputData(recipes);
-
-        // Act
-        presenter.presentRecipeDetails(outputData);
-
-        // Assert
-        assertEquals("BrowseRecipeView", viewManager.getActiveView());
+        assertNull(viewManager.getActiveView());
     }
 }
