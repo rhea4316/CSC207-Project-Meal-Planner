@@ -42,7 +42,7 @@ public class Recipe {
      * Constructs a new Recipe with only required fields.
      */
     public Recipe(String name, List<String> ingredients, String steps, int servingSize) {
-        this(name, ingredients, steps, servingSize, null, null, null);
+        this(name, ingredients, steps, servingSize, null, null, null, null);
     }
 
     private void validateInputs(String name, List<String> ingredients,
@@ -163,9 +163,10 @@ public class Recipe {
 
     @Override
     public String toString() {
+        int stepsCount = steps != null ? steps.split("\\n").length : 0;
         return String.format("%s (Serves %d)%s\n%d ingredients, %d steps",
                 name, servingSize,
                 cookTimeMinutes != null ? String.format("\nCook: %d min", cookTimeMinutes) : "",
-                ingredients.size(), steps);
+                ingredients.size(), stepsCount);
     }
 }

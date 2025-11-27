@@ -51,11 +51,14 @@ public class StoreRecipeInteractor implements StoreRecipeInputBoundary {
 		// Generate a unique recipe ID
 		String recipeId = "recipe-" + UUID.randomUUID().toString();
 
+		// Convert steps list to string
+		String stepsString = String.join("\n", inputData.getSteps());
+
 		// Create Recipe entity (nutrition calculation and optional fields omitted here)
 		Recipe recipe = new Recipe(
 				inputData.getName(),
 				inputData.getIngredients(),
-				inputData.getSteps(),
+				stepsString,
 				inputData.getServingSize(),
 				null, // nutritionInfo
 				null, // cookTimeMinutes

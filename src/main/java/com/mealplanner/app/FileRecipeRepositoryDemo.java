@@ -31,7 +31,7 @@ public class FileRecipeRepositoryDemo {
             Recipe recipe1 = new Recipe(
                     "Pasta Carbonara",
                     Arrays.asList("400g spaghetti", "200g pancetta", "4 eggs", "100g parmesan", "Black pepper"),
-                    Arrays.asList("Boil pasta", "Cook pancetta", "Mix eggs and cheese", "Combine all", "Serve hot"),
+                    "Boil pasta\nCook pancetta\nMix eggs and cheese\nCombine all\nServe hot",
                     4,
                     null,
                     30,
@@ -46,7 +46,7 @@ public class FileRecipeRepositoryDemo {
             Recipe recipe2 = new Recipe(
                     "Caesar Salad",
                     Arrays.asList("Romaine lettuce", "Caesar dressing", "Parmesan", "Croutons"),
-                    Arrays.asList("Wash lettuce", "Add dressing", "Top with parmesan and croutons"),
+                    "Wash lettuce\nAdd dressing\nTop with parmesan and croutons",
                     2,
                     null,
                     10,
@@ -66,7 +66,7 @@ public class FileRecipeRepositoryDemo {
                 Recipe r = found.get();
                 System.out.println("Found: " + r.getName());
                 System.out.println("Ingredients: " + r.getIngredients().size());
-                System.out.println("Steps: " + r.getSteps().size() + "\n");
+                System.out.println("Steps: " + r.getSteps().split("\\n").length + "\n");
             }
 
             // Find all recipes
