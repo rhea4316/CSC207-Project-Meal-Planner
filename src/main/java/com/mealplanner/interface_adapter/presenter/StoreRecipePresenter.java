@@ -40,8 +40,9 @@ public class StoreRecipePresenter implements StoreRecipeOutputBoundary {
 		}
 
 		var recipe = outputData.getSavedRecipe();
-		// Count steps by splitting on newlines
-		int stepCount = recipe.getSteps().split("\n").length;
+		String stepsString = recipe.getSteps();
+		int stepCount = stepsString != null ? stepsString.split("\n").length : 0;
+		
 		String msg = String.format("Saved recipe '%s' (serves %d) — %d ingredients, %d step(s).",
 				recipe.getName(), recipe.getServingSize(), recipe.getIngredients().size(), stepCount);
 		viewModel.setSuccessMessage(msg);

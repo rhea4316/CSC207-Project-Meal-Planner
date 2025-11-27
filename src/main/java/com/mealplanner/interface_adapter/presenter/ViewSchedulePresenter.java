@@ -19,8 +19,9 @@ public class ViewSchedulePresenter implements ViewScheduleOutputBoundary {
 
     @Override
     public void presentSchedule(ViewScheduleOutputData outputData){
-        scheduleViewModel.setSchedule(outputData.getSchedule());
-        scheduleViewModel.setUsername(outputData.getUsername());
+        if (outputData.getUsername() != null) {scheduleViewModel.setUsername(outputData.getUsername());}
+        if (outputData.getSchedule() != null) {scheduleViewModel.setSchedule(outputData.getSchedule());}
+
         scheduleViewModel.setError(null);
 
         scheduleViewModel.firePropertyChanged();
