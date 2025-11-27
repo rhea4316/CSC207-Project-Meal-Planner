@@ -5,6 +5,10 @@ import com.mealplanner.entity.Schedule;
 import com.mealplanner.entity.User;
 import com.mealplanner.exception.DataAccessException;
 import com.mealplanner.exception.UserNotFoundException;
+import com.mealplanner.interface_adapter.ViewManagerModel;
+import com.mealplanner.use_case.manage_meal_plan.add.AddMealDataAccessInterface;
+import com.mealplanner.use_case.manage_meal_plan.delete.DeleteMealDataAccessInterface;
+import com.mealplanner.use_case.manage_meal_plan.edit.EditMealDataAccessInterface;
 import com.mealplanner.use_case.view_schedule.ViewScheduleDataAccessInterface;
 
 import java.io.File;
@@ -21,19 +25,26 @@ import java.util.Objects;
 // Data access object for schedule persistence - reads/writes schedule data to JSON files.
 // Responsible: Grace (primary for meal plan), Mona (view schedule), Everyone (database)
 
-public class FileScheduleDataAccessObject implements ViewScheduleDataAccessInterface {
+public class FileScheduleDataAccessObject implements ViewScheduleDataAccessInterface,
+        AddMealDataAccessInterface, EditMealDataAccessInterface, DeleteMealDataAccessInterface {
     private static final String SCHEDULE_DIR = "data/schedules";
     private static final String FILE_EXTENSION = ".json";
 
     private final Gson gson;
     private final FileUserDataAccessObject userDataAccess;
+    private final ViewManagerModel viewManagerModel;
 
     public FileScheduleDataAccessObject() {
-        this(new FileUserDataAccessObject());
+        this(new FileUserDataAccessObject(), null);
     }
 
     public FileScheduleDataAccessObject(FileUserDataAccessObject userDataAccess) {
+        this(userDataAccess, null);
+    }
+
+    public FileScheduleDataAccessObject(FileUserDataAccessObject userDataAccess, ViewManagerModel viewManagerModel) {
         this.userDataAccess = Objects.requireNonNull(userDataAccess, "FileUserDataAccessObject cannot be null");
+        this.viewManagerModel = viewManagerModel;
         this.gson = JsonConverter.getGson();
         ensureDirectoryExists();
     }
@@ -190,6 +201,38 @@ public class FileScheduleDataAccessObject implements ViewScheduleDataAccessInter
             throw new UserNotFoundException(username);
         }
         return userDataAccess.getUserByUsername(username);
+    }
+
+    // Implementation of AddMealDataAccessInterface, EditMealDataAccessInterface, DeleteMealDataAccessInterface
+    @Override
+    public Schedule getUserSchedule() {
+        if (viewManagerModel == null) {
+            throw new DataAccessException("ViewManagerModel is not set. Cannot determine current user.");
+        }
+
+        String currentUserId = viewManagerModel.getCurrentUserId();
+        String currentUsername = viewManagerModel.getCurrentUsername();
+
+        if (currentUserId != null && !currentUserId.trim().isEmpty()) {
+            Schedule schedule = findScheduleByUserId(currentUserId);
+            if (schedule != null) {
+                return schedule;
+            }
+        }
+
+        if (currentUsername != null && !currentUsername.trim().isEmpty()) {
+            Schedule schedule = loadScheduleByUsername(currentUsername);
+            if (schedule != null) {
+                return schedule;
+            }
+        }
+
+        // If no schedule found, create a new one for the current user
+        if (currentUserId != null && !currentUserId.trim().isEmpty()) {
+            return new Schedule(java.util.UUID.randomUUID().toString(), currentUserId, new HashMap<>());
+        }
+
+        throw new DataAccessException("Cannot determine current user. Please log in first.");
     }
 
     /**

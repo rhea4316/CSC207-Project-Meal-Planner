@@ -2,7 +2,6 @@ package com.mealplanner.view;
 
 // Swing view for viewing user's saved meal schedule - displays weekly meal plan.
 // Responsible: Mona (functionality), Everyone (GUI implementation)
-// Note: Adjust later because I can't test it
 
 import com.mealplanner.entity.MealType;
 import com.mealplanner.entity.Schedule;
@@ -27,6 +26,7 @@ public class ScheduleView extends JPanel implements PropertyChangeListener {
 
     private final ScheduleViewModel scheduleViewModel;
     private final ViewScheduleController controller;
+    @SuppressWarnings("unused")
     private final ViewManagerModel viewManagerModel;
 
     private final JLabel titleLabel;

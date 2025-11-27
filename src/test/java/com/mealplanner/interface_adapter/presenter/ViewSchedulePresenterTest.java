@@ -1,5 +1,8 @@
 package com.mealplanner.interface_adapter.presenter;
 
+import com.mealplanner.entity.Schedule;
+import com.mealplanner.interface_adapter.view_model.ScheduleViewModel;
+import com.mealplanner.use_case.view_schedule.ViewScheduleOutputData;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import static org.junit.jupiter.api.Assertions.*;
@@ -9,38 +12,125 @@ import static org.junit.jupiter.api.Assertions.*;
  * Tests formatting and presentation of meal schedules.
  *
  * Responsible: Mona (primary)
- * TODO: Implement tests once ViewSchedulePresenter is implemented
  */
 public class ViewSchedulePresenterTest {
 
     private ViewSchedulePresenter presenter;
+    private ScheduleViewModel viewModel;
 
     @BeforeEach
     public void setUp() {
-        // TODO: Initialize presenter with view model
+        viewModel = new ScheduleViewModel();
+        presenter = new ViewSchedulePresenter(viewModel);
     }
 
     @Test
     public void testPresentSchedule() {
-        // TODO: Test presenting meal schedule
-        // TODO: Verify all meals are displayed
+        // Arrange
+        String username = "testuser";
+        Schedule schedule = new Schedule("schedule1", "user123");
+        ViewScheduleOutputData outputData = new ViewScheduleOutputData(username, schedule);
+
+        // Act
+        presenter.presentSchedule(outputData);
+
+        // Assert
+        assertEquals(username, viewModel.getUsername());
+        assertEquals(schedule, viewModel.getSchedule());
+        assertNull(viewModel.getError());
     }
 
     @Test
     public void testPresentEmptySchedule() {
-        // TODO: Test presenting empty schedule
-        // TODO: Verify appropriate message
+        // Arrange
+        String username = "testuser";
+        Schedule emptySchedule = new Schedule("schedule1", "user123");
+        ViewScheduleOutputData outputData = new ViewScheduleOutputData(username, emptySchedule);
+
+        // Act
+        presenter.presentSchedule(outputData);
+
+        // Assert
+        assertEquals(username, viewModel.getUsername());
+        assertEquals(emptySchedule, viewModel.getSchedule());
+        assertNull(viewModel.getError());
     }
 
     @Test
     public void testFormatMealDetails() {
-        // TODO: Test formatting meal details
-        // TODO: Verify recipe info is included
+        // Arrange
+        String username = "testuser";
+        Schedule schedule = new Schedule("schedule1", "user123");
+        ViewScheduleOutputData outputData = new ViewScheduleOutputData(username, schedule);
+
+        // Act
+        presenter.presentSchedule(outputData);
+
+        // Assert
+        Schedule retrievedSchedule = viewModel.getSchedule();
+        assertNotNull(retrievedSchedule);
+        assertEquals("schedule1", retrievedSchedule.getScheduleId());
+        assertEquals("user123", retrievedSchedule.getUserId());
     }
 
     @Test
     public void testPresentError() {
-        // TODO: Test presenting error message
-        // TODO: Verify error is displayed
+        // Arrange
+        String errorMessage = "User not found";
+
+        // Act
+        presenter.presentError(errorMessage);
+
+        // Assert
+        assertEquals(errorMessage, viewModel.getError());
+        assertNull(viewModel.getSchedule());
+    }
+
+    @Test
+    public void testPresentErrorNull() {
+        // Act
+        presenter.presentError(null);
+
+        // Assert
+        assertEquals("An error occurred", viewModel.getError());
+        assertNull(viewModel.getSchedule());
+    }
+
+    @Test
+    public void testPresentScheduleNull() {
+        // Act
+        presenter.presentSchedule(null);
+
+        // Assert
+        assertEquals("Schedule data is missing", viewModel.getError());
+    }
+
+    @Test
+    public void testPresentScheduleWithNullUsername() {
+        // Arrange
+        Schedule schedule = new Schedule("schedule1", "user123");
+        ViewScheduleOutputData outputData = new ViewScheduleOutputData(null, schedule);
+
+        // Act
+        presenter.presentSchedule(outputData);
+
+        // Assert
+        assertNull(viewModel.getUsername());
+        assertEquals(schedule, viewModel.getSchedule());
+        assertNull(viewModel.getError());
+    }
+
+    @Test
+    public void testPresentScheduleWithNullSchedule() {
+        // Arrange
+        ViewScheduleOutputData outputData = new ViewScheduleOutputData("testuser", null);
+
+        // Act
+        presenter.presentSchedule(outputData);
+
+        // Assert
+        assertEquals("testuser", viewModel.getUsername());
+        assertNull(viewModel.getSchedule());
+        assertNull(viewModel.getError());
     }
 }

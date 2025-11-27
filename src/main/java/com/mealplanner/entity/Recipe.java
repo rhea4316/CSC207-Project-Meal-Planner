@@ -1,5 +1,6 @@
 package com.mealplanner.entity;
 
+import com.mealplanner.util.IngredientParser;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -94,9 +95,8 @@ public class Recipe {
     }
 
     private String scaleIngredientQuantity(String ingredient, double scaleFactor) {
-        // Simple scaling: append scale factor to ingredient string
-        // Note: Full implementation would require parsing quantities from strings
-        return String.format("%s (scaled by %.2f)", ingredient, scaleFactor);
+        // Use IngredientParser to parse and scale the ingredient
+        return IngredientParser.scaleIngredient(ingredient, scaleFactor);
     }
 
     // Getters

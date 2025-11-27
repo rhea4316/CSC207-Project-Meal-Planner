@@ -6,41 +6,115 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import static org.mockito.Mockito.*;
 
+import com.mealplanner.use_case.adjust_serving_size.AdjustServingSizeInputBoundary;
+import com.mealplanner.use_case.adjust_serving_size.AdjustServingSizeInputData;
+
 /**
  * Test class for AdjustServingSizeController.
  * Tests controller input validation and interactor invocation.
  *
  * Responsible: Eden (primary)
- * TODO: Implement tests once AdjustServingSizeController is implemented
  */
 public class AdjustServingSizeControllerTest {
 
     private AdjustServingSizeController controller;
 
     @Mock
-    private com.mealplanner.use_case.adjust_serving_size.AdjustServingSizeInputBoundary interactor;
+    private AdjustServingSizeInputBoundary interactor;
 
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        // TODO: Initialize controller with mocked interactor
+        controller = new AdjustServingSizeController(interactor);
     }
 
     @Test
     public void testAdjustServingSizeWithValidInput() {
-        // TODO: Test adjusting serving size with valid input
-        // TODO: Verify interactor is called with correct data
+        // Arrange
+        String recipeId = "recipe123";
+        int newServingSize = 4;
+
+        // Act
+        controller.execute(recipeId, newServingSize);
+
+        // Assert
+        verify(interactor).execute(argThat(inputData -> 
+            inputData.getRecipeId().equals(recipeId) &&
+            inputData.getNewServingSize() == newServingSize
+        ));
     }
 
     @Test
     public void testAdjustServingSizeWithInvalidSize() {
-        // TODO: Test adjusting with invalid serving size
-        // TODO: Verify error handling
+        // Arrange
+        String recipeId = "recipe123";
+        int invalidServingSize = -1;
+
+        // Act
+        controller.execute(recipeId, invalidServingSize);
+
+        // Assert
+        verify(interactor).execute(argThat(inputData -> 
+            inputData.getRecipeId().equals(recipeId) &&
+            inputData.getNewServingSize() == invalidServingSize
+        ));
     }
 
     @Test
     public void testAdjustServingSizeWithZero() {
-        // TODO: Test adjusting with zero serving size
-        // TODO: Verify error handling
+        // Arrange
+        String recipeId = "recipe123";
+        int zeroServingSize = 0;
+
+        // Act
+        controller.execute(recipeId, zeroServingSize);
+
+        // Assert
+        verify(interactor).execute(argThat(inputData -> 
+            inputData.getRecipeId().equals(recipeId) &&
+            inputData.getNewServingSize() == zeroServingSize
+        ));
+    }
+
+    @Test
+    public void testAdjustServingSizeWithEmptyRecipeId() {
+        // Arrange
+        String emptyRecipeId = "";
+        int newServingSize = 4;
+
+        // Act
+        controller.execute(emptyRecipeId, newServingSize);
+
+        // Assert
+        verify(interactor, never()).execute(any(AdjustServingSizeInputData.class));
+    }
+
+    @Test
+    public void testAdjustServingSizeWithNullRecipeId() {
+        // Arrange
+        String nullRecipeId = null;
+        int newServingSize = 4;
+
+        // Act
+        controller.execute(nullRecipeId, newServingSize);
+
+        // Assert
+        verify(interactor, never()).execute(any(AdjustServingSizeInputData.class));
+    }
+
+    @Test
+    public void testAdjustServingSizeWithLargeServingSize() {
+        // Arrange
+        String recipeId = "recipe123";
+        int largeServingSize = 100;
+
+        // Act
+        controller.execute(recipeId, largeServingSize);
+
+        // Assert
+        verify(interactor).execute(argThat(inputData -> 
+            inputData.getRecipeId().equals(recipeId) &&
+            inputData.getNewServingSize() == largeServingSize
+        ));
     }
 }

@@ -2,13 +2,14 @@ package com.mealplanner.interface_adapter;
 
 // Manages which view is currently active and handles view navigation.
 // Responsible: Everyone (GUI)
-// TODO: Implement view state management with property change support to notify ViewManager of view switches
 
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 
 public class ViewManagerModel {
     private String activeView;
+    private String currentUserId;
+    private String currentUsername;
     private final PropertyChangeSupport support = new PropertyChangeSupport(this);
 
     public String getActiveView() {
@@ -19,6 +20,26 @@ public class ViewManagerModel {
         String oldView = this.activeView;
         this.activeView = activeView;
         support.firePropertyChange("view", oldView, activeView);
+    }
+
+    public String getCurrentUserId() {
+        return currentUserId;
+    }
+
+    public void setCurrentUserId(String currentUserId) {
+        String oldUserId = this.currentUserId;
+        this.currentUserId = currentUserId;
+        support.firePropertyChange("currentUserId", oldUserId, currentUserId);
+    }
+
+    public String getCurrentUsername() {
+        return currentUsername;
+    }
+
+    public void setCurrentUsername(String currentUsername) {
+        String oldUsername = this.currentUsername;
+        this.currentUsername = currentUsername;
+        support.firePropertyChange("currentUsername", oldUsername, currentUsername);
     }
 
     public void addPropertyChangeListener(PropertyChangeListener listener) {

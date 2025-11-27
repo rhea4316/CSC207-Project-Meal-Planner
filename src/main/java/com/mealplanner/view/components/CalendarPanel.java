@@ -9,7 +9,6 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Map;
 
 // Reusable Swing component for displaying weekly calendar with meal slots.
 // Responsible: Grace (primary), Everyone (GUI implementation)

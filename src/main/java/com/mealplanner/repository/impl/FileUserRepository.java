@@ -5,10 +5,10 @@ import com.mealplanner.entity.Schedule;
 import com.mealplanner.entity.User;
 import com.mealplanner.exception.DataAccessException;
 import com.mealplanner.repository.UserRepository;
+import com.mealplanner.util.PasswordUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
@@ -32,6 +32,7 @@ public class FileUserRepository implements UserRepository {
 
     private Path dataDir;
 
+    @SuppressWarnings("unused")
     private final String dataDirectory;
 
 
@@ -61,8 +62,15 @@ public class FileUserRepository implements UserRepository {
 
     private String serializeUser(User user){
         StringBuilder sb = new StringBuilder();
-        sb.append("userId=").append(user.getUsername()).append("\n");
+        sb.append("userId=").append(user.getUserId()).append("\n");
         sb.append("username=").append(user.getUsername()).append("\n");
+        sb.append("password=").append(user.getPassword()).append("\n");
+        if (user.getNutritionGoals() != null) {
+            sb.append("nutritionGoalsCalories=").append(user.getNutritionGoals().getDailyCalories()).append("\n");
+        }
+        if (user.getMealSchedule() != null) {
+            sb.append("scheduleId=").append(user.getMealSchedule().getScheduleId()).append("\n");
+        }
         return sb.toString();
     }
 
@@ -112,7 +120,25 @@ public class FileUserRepository implements UserRepository {
         Path filepath = getUserFilePath(user.getUserId());
 
         try {
-            String content = serializeUser(user);
+            // Hash password if it's not already hashed (check if it contains the delimiter)
+            User userToSave = user;
+            String password = user.getPassword();
+            if (password != null && !password.contains(":")) {
+                // Password is plain text, hash it
+                String hashedPassword = PasswordUtil.hashPassword(password);
+                // Create a new User with hashed password
+                userToSave = new User(user.getUserId(), user.getUsername(), hashedPassword,
+                        user.getNutritionGoals(), user.getMealSchedule());
+                // Copy saved recipe IDs and grocery list
+                for (String recipeId : user.getSavedRecipeIds()) {
+                    userToSave.addSavedRecipeId(recipeId);
+                }
+                for (com.mealplanner.entity.Ingredient ingredient : user.getGroceryList()) {
+                    userToSave.addToGroceryList(ingredient);
+                }
+            }
+            
+            String content = serializeUser(userToSave);
             Files.writeString(filepath, content, StandardCharsets.UTF_8, StandardOpenOption.CREATE,
                     StandardOpenOption.TRUNCATE_EXISTING);
 
@@ -245,7 +271,7 @@ public class FileUserRepository implements UserRepository {
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(dataDir,
                 "*" + File_Extension)){
             int count = 0;
-            for (Path ignored: stream) {
+            for (@SuppressWarnings("unused") Path ignored: stream) {
                 count++;
             }
             return count;

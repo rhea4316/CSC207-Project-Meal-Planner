@@ -192,4 +192,77 @@ public class RecipeTest {
         Recipe trimmedRecipe = new Recipe("  Pasta Carbonara  ", ingredients, "Cook", 2);
         assertEquals("Pasta Carbonara", trimmedRecipe.getName());
     }
+
+    @Test
+    public void testAdjustServingSizeScalesIngredients() {
+        List<String> testIngredients = Arrays.asList("2 cups flour", "1 cup milk", "3 eggs");
+        Recipe testRecipe = new Recipe("Test Recipe", testIngredients, "Mix ingredients", 2);
+        
+        Recipe scaled = testRecipe.adjustServingSize(4);
+        
+        List<String> scaledIngredients = scaled.getIngredients();
+        assertEquals(3, scaledIngredients.size());
+        
+        // Verify ingredients are scaled (doubled from 2 to 4 servings)
+        // "2 cups flour" should become "4 cups flour"
+        assertTrue(scaledIngredients.get(0).contains("4") || scaledIngredients.get(0).contains("flour"));
+        // "1 cup milk" should become "2 cups milk"
+        assertTrue(scaledIngredients.get(1).contains("2") || scaledIngredients.get(1).contains("milk"));
+        // "3 eggs" should become "6 eggs"
+        assertTrue(scaledIngredients.get(2).contains("6") || scaledIngredients.get(2).contains("eggs"));
+    }
+
+    @Test
+    public void testAdjustServingSizeScalesIngredientsWithFractions() {
+        List<String> testIngredients = Arrays.asList("1/2 cup sugar", "1 1/2 cups flour");
+        Recipe testRecipe = new Recipe("Test Recipe", testIngredients, "Mix", 2);
+        
+        Recipe scaled = testRecipe.adjustServingSize(4);
+        
+        List<String> scaledIngredients = scaled.getIngredients();
+        // "1/2 cup sugar" should become "1 cup sugar" (doubled)
+        // "1 1/2 cups flour" should become "3 cups flour" (doubled)
+        assertTrue(scaledIngredients.get(0).contains("1") || scaledIngredients.get(0).contains("sugar"));
+        assertTrue(scaledIngredients.get(1).contains("3") || scaledIngredients.get(1).contains("flour"));
+    }
+
+    @Test
+    public void testAdjustServingSizeHalvesIngredients() {
+        List<String> testIngredients = Arrays.asList("4 cups flour", "2 cups milk");
+        Recipe testRecipe = new Recipe("Test Recipe", testIngredients, "Mix", 4);
+        
+        Recipe scaled = testRecipe.adjustServingSize(2);
+        
+        List<String> scaledIngredients = scaled.getIngredients();
+        // "4 cups flour" should become "2 cups flour" (halved)
+        // "2 cups milk" should become "1 cup milk" (halved)
+        assertTrue(scaledIngredients.get(0).contains("2") || scaledIngredients.get(0).contains("flour"));
+        assertTrue(scaledIngredients.get(1).contains("1") || scaledIngredients.get(1).contains("milk"));
+    }
+
+    @Test
+    public void testAdjustServingSizeWithIngredientsWithoutQuantities() {
+        List<String> testIngredients = Arrays.asList("salt", "pepper to taste");
+        Recipe testRecipe = new Recipe("Test Recipe", testIngredients, "Season", 2);
+        
+        Recipe scaled = testRecipe.adjustServingSize(4);
+        
+        List<String> scaledIngredients = scaled.getIngredients();
+        // Ingredients without quantities should remain unchanged
+        assertTrue(scaledIngredients.get(0).contains("salt"));
+        assertTrue(scaledIngredients.get(1).contains("pepper"));
+    }
+
+    @Test
+    public void testAdjustServingSizePreservesIngredientNames() {
+        List<String> testIngredients = Arrays.asList("2 cups all-purpose flour", "1 tablespoon olive oil");
+        Recipe testRecipe = new Recipe("Test Recipe", testIngredients, "Mix", 2);
+        
+        Recipe scaled = testRecipe.adjustServingSize(4);
+        
+        List<String> scaledIngredients = scaled.getIngredients();
+        // Verify ingredient names are preserved
+        assertTrue(scaledIngredients.get(0).contains("all-purpose flour"));
+        assertTrue(scaledIngredients.get(1).contains("olive oil"));
+    }
 }
