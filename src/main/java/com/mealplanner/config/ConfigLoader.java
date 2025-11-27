@@ -1,5 +1,7 @@
 package com.mealplanner.config;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -53,7 +55,19 @@ public class ConfigLoader {
      * Attempts to load API keys from external config file or environment variables.
      */
     private static void loadExternalApiKeys() {
-        // Try to load from config/api_keys.properties file if it exists
+        // First, try to load from project root config/api_keys.properties file
+        try {
+            File configFile = new File("config/api_keys.properties");
+            if (configFile.exists() && configFile.isFile()) {
+                try (FileInputStream input = new FileInputStream(configFile)) {
+                    properties.load(input);
+                }
+            }
+        } catch (IOException e) {
+            // Ignore - try other sources
+        }
+        
+        // Also try to load from resources/config/api_keys.properties
         try (InputStream input = ConfigLoader.class.getResourceAsStream("/config/api_keys.properties")) {
             if (input != null) {
                 properties.load(input);
@@ -61,6 +75,50 @@ public class ConfigLoader {
         } catch (IOException e) {
             // Ignore - API keys are optional
         }
+        
+        // Override with environment variables if they exist
+        String spoonacularKey = System.getenv("SPOONACULAR_API_KEY");
+        if (spoonacularKey != null && !spoonacularKey.trim().isEmpty()) {
+            properties.setProperty("spoonacular.api.key", spoonacularKey);
+        }
+        
+        String edamamAppId = System.getenv("EDAMAM_APP_ID");
+        if (edamamAppId != null && !edamamAppId.trim().isEmpty()) {
+            properties.setProperty("edamam.app.id", edamamAppId);
+        }
+        
+        String edamamAppKey = System.getenv("EDAMAM_APP_KEY");
+        if (edamamAppKey != null && !edamamAppKey.trim().isEmpty()) {
+            properties.setProperty("edamam.app.key", edamamAppKey);
+        }
+        
+        // Resolve environment variable placeholders in properties
+        resolveEnvironmentVariables();
+    }
+    
+    /**
+     * Resolves environment variable placeholders in property values.
+     * Replaces ${VAR_NAME} with actual environment variable values.
+     */
+    private static void resolveEnvironmentVariables() {
+        Properties resolved = new Properties();
+        for (String key : properties.stringPropertyNames()) {
+            String value = properties.getProperty(key);
+            if (value != null && value.startsWith("${") && value.endsWith("}")) {
+                String envVarName = value.substring(2, value.length() - 1);
+                String envValue = System.getenv(envVarName);
+                if (envValue != null && !envValue.trim().isEmpty()) {
+                    resolved.setProperty(key, envValue);
+                } else {
+                    // Keep original value if env var not found
+                    resolved.setProperty(key, value);
+                }
+            } else {
+                resolved.setProperty(key, value);
+            }
+        }
+        properties.clear();
+        properties.putAll(resolved);
     }
 
     /**

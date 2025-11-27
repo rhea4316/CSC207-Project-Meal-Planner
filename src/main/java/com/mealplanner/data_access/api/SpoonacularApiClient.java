@@ -187,14 +187,30 @@ public class SpoonacularApiClient {
      */
     private String makeRequest(String url) throws IOException {
         if (!ApiConfig.isSpoonacularConfigured()) {
-            throw new IOException("Spoonacular API key is not configured");
+            throw new IOException("Spoonacular API key is not configured. " +
+                    "Please set it in config/api_keys.properties or as environment variable SPOONACULAR_API_KEY");
         }
         
         Request request = new Request.Builder().url(url).build();
         
         try (Response response = client.newCall(request).execute()) {
             if (!response.isSuccessful()) {
-                throw new IOException("API request failed with code: " + response.code());
+                int code = response.code();
+                String errorMessage = "API request failed with code: " + code;
+                
+                if (code == 401) {
+                    errorMessage += " (Unauthorized). " +
+                            "This usually means your API key is invalid, expired, or not set correctly. " +
+                            "Please check your Spoonacular API key in config/api_keys.properties or environment variable SPOONACULAR_API_KEY";
+                } else if (code == 402) {
+                    errorMessage += " (Payment Required). " +
+                            "Your API quota may have been exceeded. Please check your Spoonacular account.";
+                } else if (code == 429) {
+                    errorMessage += " (Too Many Requests). " +
+                            "You have exceeded the rate limit. Please wait before making more requests.";
+                }
+                
+                throw new IOException(errorMessage);
             }
             if (response.body() == null) {
                 throw new IOException("API response body is null");

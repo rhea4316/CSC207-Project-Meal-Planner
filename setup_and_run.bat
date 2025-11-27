@@ -1,58 +1,66 @@
 @echo off
-setlocal
+setlocal enabledelayedexpansion
 
 REM ==========================================
 REM Meal Planner Setup & Run Script (Windows)
 REM ==========================================
 
-echo [INFO] Checking for Java...
+echo [INFO] Starting Meal Planner setup script...
+echo.
+
+echo [INFO] Step 1: Checking for Java...
 java -version >nul 2>&1
-if %errorlevel% neq 0 (
+if !errorlevel! neq 0 (
     echo [ERROR] Java is not installed or not in PATH.
     echo Please install Java 11 or higher.
     pause
     exit /b 1
 )
+echo [OK] Java found.
 
-echo [INFO] Checking for Maven...
-mvn -version >nul 2>&1
-if %errorlevel% neq 0 (
-    echo [WARN] Maven is not in PATH.
-    echo Attempting to use Maven Wrapper (mvnw)...
-    
-    if not exist "mvnw.cmd" (
-        echo [ERROR] Maven Wrapper not found.
-        echo Please install Maven or ensure mvnw is in the project root.
-        pause
-        exit /b 1
-    )
-    set MVN_CMD=mvnw.cmd
+echo [INFO] Step 2: Checking for Maven...
+set "MVN_CMD=mvn"
+if exist "mvnw.cmd" (
+    set "MVN_CMD=mvnw.cmd"
+    echo [OK] Using Maven Wrapper.
 ) else (
-    set MVN_CMD=mvn
+    echo [OK] Will use Maven from PATH.
 )
 
-echo [INFO] Checking dependencies...
+echo [INFO] Step 3: Checking dependencies...
 if not exist "target\meal-planner-1.0-SNAPSHOT.jar" (
-    echo [INFO] Building project and installing dependencies...
-    call %MVN_CMD% clean package
-    if %errorlevel% neq 0 (
+    echo [INFO] JAR file not found. Building project...
+    echo [INFO] This may take a few minutes on first run...
+    call "%MVN_CMD%" clean package -DskipTests
+    if !errorlevel! neq 0 (
         echo [ERROR] Build failed. Please check the errors above.
         pause
         exit /b 1
     )
+    echo [OK] Build completed successfully.
 ) else (
-    echo [INFO] Project already built. Skipping build.
+    echo [OK] JAR file found. Skipping build.
+)
+
+REM Verify JAR file exists after build
+if not exist "target\meal-planner-1.0-SNAPSHOT.jar" (
+    echo [ERROR] JAR file not found: target\meal-planner-1.0-SNAPSHOT.jar
+    echo Build may have failed. Please check the errors above.
+    pause
+    exit /b 1
 )
 
 echo.
-echo [INFO] Starting Meal Planner...
+echo [INFO] Step 4: Starting Meal Planner...
 echo.
 
 REM Run the fat JAR created by maven-shade-plugin
-java -jar target\meal-planner-1.0-SNAPSHOT.jar
+REM Use start command to run in a separate window so the batch file doesn't block
+echo [INFO] Launching application in a new window...
+start "Meal Planner" java -jar "target\meal-planner-1.0-SNAPSHOT.jar"
 
-if %errorlevel% neq 0 (
-    echo [ERROR] Application exited with error.
-    pause
-)
+echo [INFO] Application launch command executed.
+echo [INFO] The Meal Planner window should appear shortly.
+echo [INFO] If the window does not appear, check for error messages above.
+echo [INFO] You can close this window now.
 

@@ -95,14 +95,30 @@ public class EdamamApiClient {
      */
     private String makeRequest(String url) throws IOException {
         if (!ApiConfig.isEdamamConfigured()) {
-            throw new IOException("Edamam API is not configured (missing app ID or key)");
+            throw new IOException("Edamam API is not configured (missing app ID or key). " +
+                    "Please set EDAMAM_APP_ID and EDAMAM_APP_KEY in config/api_keys.properties or as environment variables");
         }
         
         Request request = new Request.Builder().url(url).build();
         
         try (Response response = client.newCall(request).execute()) {
             if (!response.isSuccessful()) {
-                throw new IOException("API request failed with code: " + response.code());
+                int code = response.code();
+                String errorMessage = "API request failed with code: " + code;
+                
+                if (code == 401) {
+                    errorMessage += " (Unauthorized). " +
+                            "This usually means your API credentials are invalid, expired, or not set correctly. " +
+                            "Please check your Edamam App ID and App Key in config/api_keys.properties or environment variables EDAMAM_APP_ID and EDAMAM_APP_KEY";
+                } else if (code == 402) {
+                    errorMessage += " (Payment Required). " +
+                            "Your API quota may have been exceeded. Please check your Edamam account.";
+                } else if (code == 429) {
+                    errorMessage += " (Too Many Requests). " +
+                            "You have exceeded the rate limit. Please wait before making more requests.";
+                }
+                
+                throw new IOException(errorMessage);
             }
             if (response.body() == null) {
                 throw new IOException("API response body is null");

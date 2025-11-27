@@ -4,6 +4,8 @@
 # Meal Planner Setup & Run Script (Mac/Linux)
 # ==========================================
 
+set -e  # Exit on error
+
 echo "[INFO] Checking for Java..."
 if ! command -v java &> /dev/null; then
     echo "[ERROR] Java is not installed or not in PATH."
@@ -26,7 +28,8 @@ fi
 echo "[INFO] Checking dependencies..."
 if [ ! -f "target/meal-planner-1.0-SNAPSHOT.jar" ]; then
     echo "[INFO] Building project and installing dependencies..."
-    $MVN_CMD clean package
+    echo "[INFO] This may take a few minutes on first run..."
+    $MVN_CMD clean package -DskipTests
     if [ $? -ne 0 ]; then
         echo "[ERROR] Build failed. Please check the errors above."
         exit 1
@@ -35,10 +38,25 @@ else
     echo "[INFO] Project already built. Skipping build."
 fi
 
+# Verify JAR file exists after build
+if [ ! -f "target/meal-planner-1.0-SNAPSHOT.jar" ]; then
+    echo "[ERROR] JAR file not found: target/meal-planner-1.0-SNAPSHOT.jar"
+    echo "Build may have failed. Please check the errors above."
+    exit 1
+fi
+
 echo ""
 echo "[INFO] Starting Meal Planner..."
 echo ""
 
 # Run the fat JAR created by maven-shade-plugin
 java -jar target/meal-planner-1.0-SNAPSHOT.jar
+
+# Check exit status
+if [ $? -ne 0 ]; then
+    echo ""
+    echo "[ERROR] Application exited with an error."
+    echo "Please check the error messages above."
+    exit 1
+fi
 
