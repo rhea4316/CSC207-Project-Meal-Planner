@@ -9,7 +9,6 @@ import java.util.Objects;
 
 public class MealPlan {
     private final Map<MealType, Recipe> meals;
-    private int servingSize;
 
     public MealPlan(Recipe breakfast, Recipe lunch, Recipe dinner) {
         if (breakfast == null || lunch == null || dinner == null) {
@@ -19,15 +18,9 @@ public class MealPlan {
         meals.put(MealType.BREAKFAST, breakfast);
         meals.put(MealType.LUNCH, lunch);
         meals.put(MealType.DINNER, dinner);
-
-        servingSize = breakfast.getServingSize() + lunch.getServingSize() + dinner.getServingSize();
     }
 
     // Getters
-    public int getServingSize() {
-        return servingSize;
-    }
-
     public Recipe getBreakfast() {return meals.get(MealType.BREAKFAST);}
 
     public Recipe getLunch() {return meals.get(MealType.LUNCH);}
@@ -43,9 +36,6 @@ public class MealPlan {
             throw new IllegalArgumentException("Breakfast cannot be null");
         }
         meals.put(MealType.BREAKFAST, breakfast);
-        servingSize = breakfast.getServingSize() +
-                meals.get(MealType.LUNCH).getServingSize() +
-                meals.get(MealType.DINNER).getServingSize();
     }
 
     public void setLunch(Recipe lunch) {
@@ -53,9 +43,6 @@ public class MealPlan {
             throw new IllegalArgumentException("Lunch cannot be null");
         }
         meals.put(MealType.LUNCH, lunch);
-        servingSize = meals.get(MealType.BREAKFAST).getServingSize() +
-                lunch.getServingSize() +
-                meals.get(MealType.DINNER).getServingSize();
     }
 
     public void setDinner(Recipe dinner) {
@@ -63,9 +50,6 @@ public class MealPlan {
             throw new IllegalArgumentException("Dinner cannot be null");
         }
         meals.put(MealType.DINNER, dinner);
-        servingSize = meals.get(MealType.BREAKFAST).getServingSize() +
-                meals.get(MealType.LUNCH).getServingSize() +
-                dinner.getServingSize();
     }
 
 
@@ -103,6 +87,18 @@ public class MealPlan {
         return new NutritionInfo(calories, proteins, carbs, fats);
     }
 
+    /**
+     * Returns the total serving size, which is the sum of all meal serving sizes.
+     * @return total serving size
+     */
+    public int getServingSize() {
+        Recipe breakfast = meals.get(MealType.BREAKFAST);
+        Recipe lunch = meals.get(MealType.LUNCH);
+        Recipe dinner = meals.get(MealType.DINNER);
+        
+        return breakfast.getServingSize() + lunch.getServingSize() + dinner.getServingSize();
+    }
+
 
     @Override
     public boolean equals(Object o) {
@@ -117,7 +113,7 @@ public class MealPlan {
 
     @Override
     public int hashCode() {
-        return Objects.hash(meals, servingSize);
+        return Objects.hash(meals);
     }
 
     @Override

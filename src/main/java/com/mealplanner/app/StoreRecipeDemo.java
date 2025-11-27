@@ -5,6 +5,7 @@ import java.awt.BorderLayout;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
+import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.StoreRecipeController;
 import com.mealplanner.interface_adapter.presenter.StoreRecipePresenter;
 import com.mealplanner.interface_adapter.view_model.RecipeStoreViewModel;
@@ -22,12 +23,16 @@ public class StoreRecipeDemo {
             try {
                 createAndShowGui();
             } catch (Exception e) {
+                System.err.println("Error starting demo: " + e.getMessage());
                 e.printStackTrace();
             }
         });
     }
 
     private static void createAndShowGui() {
+        // ViewManagerModel (for navigation consistency)
+        ViewManagerModel viewManagerModel = new ViewManagerModel();
+
         // ViewModel
         RecipeStoreViewModel viewModel = new RecipeStoreViewModel();
 
@@ -43,8 +48,8 @@ public class StoreRecipeDemo {
         // Controller
         StoreRecipeController controller = new StoreRecipeController(interactor);
 
-        // View
-        StoreRecipeView view = new StoreRecipeView(controller, viewModel);
+        // View (with ViewManagerModel for navigation)
+        StoreRecipeView view = new StoreRecipeView(controller, viewModel, viewManagerModel);
 
         JFrame frame = new JFrame("Store Recipe Demo");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

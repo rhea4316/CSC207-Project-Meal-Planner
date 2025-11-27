@@ -19,6 +19,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Test class for BrowseRecipePresenter.
  * Tests formatting and presentation of recipe browsing.
@@ -29,6 +33,8 @@ import static org.mockito.Mockito.*;
 public class BrowseRecipePresenterTest {
 
     private BrowseRecipePresenter presenter;
+    private RecipeBrowseViewModel viewModel;
+    private ViewManagerModel viewManager;
 
     private RecipeBrowseViewModel viewModel;
 

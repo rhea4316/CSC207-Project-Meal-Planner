@@ -11,6 +11,8 @@ import java.util.ArrayList;
 
 import static org.mockito.Mockito.*;
 
+import java.io.IOException;
+
 /**
  * Test class for BrowseRecipeController.
  * Tests controller input validation and interactor invocation.
@@ -23,7 +25,7 @@ public class BrowseRecipeControllerTest {
     private BrowseRecipeController controller;
 
     @Mock
-    private com.mealplanner.use_case.browse_recipe.BrowseRecipeInputBoundary interactor;
+    private BrowseRecipeInputBoundary interactor;
 
     @BeforeEach
     public void setUp() {

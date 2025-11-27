@@ -13,25 +13,67 @@ public class MealTypeTest {
 
     @Test
     public void testEnumValues() {
-        // TODO: Test that all expected values exist
-        // TODO: Verify BREAKFAST, LUNCH, DINNER
+        MealType[] mealTypes = MealType.values();
+        assertEquals(3, mealTypes.length, "Should have exactly 3 meal types");
+
+        // Verify BREAKFAST, LUNCH, DINNER
+        assertNotNull(MealType.BREAKFAST);
+        assertNotNull(MealType.LUNCH);
+        assertNotNull(MealType.DINNER);
     }
 
     @Test
     public void testFromString() {
-        // TODO: Test parsing valid strings (case-insensitive)
-        // TODO: Test parsing "breakfast", "BREAKFAST", "Breakfast"
-        // TODO: Test parsing invalid string throws exception
+        // Test parsing valid strings (case-insensitive)
+        assertEquals(MealType.BREAKFAST, MealType.fromString("breakfast"));
+        assertEquals(MealType.LUNCH, MealType.fromString("lunch"));
+        assertEquals(MealType.DINNER, MealType.fromString("dinner"));
+
+        // Test parsing "breakfast", "BREAKFAST", "Breakfast"
+        assertEquals(MealType.BREAKFAST, MealType.fromString("breakfast"));
+        assertEquals(MealType.BREAKFAST, MealType.fromString("BREAKFAST"));
+        assertEquals(MealType.BREAKFAST, MealType.fromString("Breakfast"));
+        assertEquals(MealType.BREAKFAST, MealType.fromString("BrEaKfAsT"));
+
+        // Test other meal types
+        assertEquals(MealType.LUNCH, MealType.fromString("LUNCH"));
+        assertEquals(MealType.LUNCH, MealType.fromString("Lunch"));
+        assertEquals(MealType.DINNER, MealType.fromString("DINNER"));
+        assertEquals(MealType.DINNER, MealType.fromString("Dinner"));
+
+        // Test parsing invalid string throws exception
+        assertThrows(IllegalArgumentException.class, () -> {
+            MealType.fromString("snack");
+        });
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            MealType.fromString("brunch");
+        });
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            MealType.fromString("invalid");
+        });
     }
 
     @Test
     public void testGetDisplayName() {
-        // TODO: Test display names are properly formatted
-        // TODO: Verify "Breakfast" not "BREAKFAST"
+        // Test display names are properly formatted
+        assertEquals("Breakfast", MealType.BREAKFAST.getDisplayName());
+        assertEquals("Lunch", MealType.LUNCH.getDisplayName());
+        assertEquals("Dinner", MealType.DINNER.getDisplayName());
+
+        // Verify "Breakfast" not "BREAKFAST"
+        assertNotEquals("BREAKFAST", MealType.BREAKFAST.getDisplayName());
+        assertNotEquals("breakfast", MealType.BREAKFAST.getDisplayName());
+        assertNotEquals("LUNCH", MealType.LUNCH.getDisplayName());
+        assertNotEquals("DINNER", MealType.DINNER.getDisplayName());
     }
 
     @Test
     public void testToString() {
-        // TODO: Test toString returns expected format
+        // Test toString returns expected format
+        assertEquals("Breakfast", MealType.BREAKFAST.toString());
+        assertEquals("Lunch", MealType.LUNCH.toString());
+        assertEquals("Dinner", MealType.DINNER.toString());
     }
 }

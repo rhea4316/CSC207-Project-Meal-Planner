@@ -1,26 +1,30 @@
 package com.mealplanner.use_case.view_schedule;
 
-import com.mealplanner.data_access.database.FileScheduleDataAccessObject;
 import com.mealplanner.entity.Schedule;
 import com.mealplanner.entity.User;
 import com.mealplanner.exception.UserNotFoundException;
+import java.util.Objects;
 
 // Main business logic for retrieving and displaying user's meal schedule.
 // Responsible: Mona
-// done: Implement execute method: retrieve user's schedule from data access, format for display, pass to presenter
 
 public class ViewScheduleInteractor implements ViewScheduleInputBoundary {
 
-    private final FileScheduleDataAccessObject dataAccess;
+    private final ViewScheduleDataAccessInterface dataAccess;
     private final ViewScheduleOutputBoundary presenter;
 
-    public ViewScheduleInteractor(FileScheduleDataAccessObject dataAccess, ViewScheduleOutputBoundary presenter) {
-        this.dataAccess = dataAccess;
-        this.presenter = presenter;
+    public ViewScheduleInteractor(ViewScheduleDataAccessInterface dataAccess, ViewScheduleOutputBoundary presenter) {
+        this.dataAccess = Objects.requireNonNull(dataAccess, "Data access cannot be null");
+        this.presenter = Objects.requireNonNull(presenter, "Presenter cannot be null");
     }
 
     @Override
     public void execute(ViewScheduleInputData inputData) {
+        if (inputData == null) {
+            presenter.presentError("Input data cannot be null");
+            return;
+        }
+
         String username = inputData.getUsername();
 
         if (username == null || username.trim().isEmpty()) {
@@ -47,24 +51,57 @@ public class ViewScheduleInteractor implements ViewScheduleInputBoundary {
         } catch (UserNotFoundException e) {
             presenter.presentError("Username not found");
         } catch (Exception e) {
-            presenter.presentError("Unexpected error");
-
+            presenter.presentError("Unexpected error: " + e.getMessage());
         }
     }
     @Override
     public void saveSchedule(ViewScheduleInputData inputData) {
+        if (inputData == null) {
+            presenter.presentError("Input data cannot be null");
+            return;
+        }
+
         Schedule schedule = inputData.getSchedule();
         if (schedule == null) {
             presenter.presentError("Schedule cannot be empty");
             return;
         }
-        dataAccess.saveSchedule(schedule);
+
+        try {
+            dataAccess.saveSchedule(schedule);
+        } catch (Exception e) {
+            presenter.presentError("Failed to save schedule: " + e.getMessage());
+        }
     }
 
     @Override
     public void loadSchedule(ViewScheduleInputData inputData) {
-        Schedule schedule = dataAccess.loadSchedule(inputData.getUsername());
-        ViewScheduleOutputData outputData = new ViewScheduleOutputData(null,schedule);
-        presenter.presentSchedule(outputData);
+        if (inputData == null) {
+            presenter.presentError("Input data cannot be null");
+            return;
+        }
+
+        String username = inputData.getUsername();
+        
+        if (username == null || username.trim().isEmpty()) {
+            presenter.presentError("Username cannot be empty");
+            return;
+        }
+        
+        username = username.trim();
+        
+        try {
+            Schedule schedule = dataAccess.loadScheduleByUsername(username);
+            
+            if (schedule == null) {
+                presenter.presentError("No Schedule found for user");
+                return;
+            }
+            
+            ViewScheduleOutputData outputData = new ViewScheduleOutputData(username, schedule);
+            presenter.presentSchedule(outputData);
+        } catch (Exception e) {
+            presenter.presentError("Failed to load schedule: " + e.getMessage());
+        }
     }
 }

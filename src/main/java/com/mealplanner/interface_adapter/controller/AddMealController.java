@@ -8,7 +8,6 @@ import com.mealplanner.use_case.manage_meal_plan.add.AddMealInputBoundary;
 
 // Controller for adding meals to schedule - receives meal slot data and calls interactor.
 // Responsible: Grace
-// TODO: Implement execute method that converts date, meal type, and recipe selection to InputData and calls add meal interactor
 
 public class AddMealController {
     private final AddMealInputBoundary interactor;

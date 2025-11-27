@@ -33,8 +33,6 @@ public class BrowseRecipePresenter implements BrowseRecipeOutputBoundary {
 
     @Override
     public void presentError(String errorMessage) {
-        if (browseRecipeViewModel != null) {
-            browseRecipeViewModel.setErrorMessage(errorMessage != null ? errorMessage : "An error occurred");
-        }
+        browseRecipeViewModel.setErrorMessage(errorMessage != null ? errorMessage : "An error occurred");
     }
 }

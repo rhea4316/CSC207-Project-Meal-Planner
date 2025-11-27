@@ -8,7 +8,9 @@ import com.mealplanner.data_access.api.SpoonacularApiClient;
 import com.mealplanner.data_access.database.AdjustServingSizeDataAccessObject;
 import com.mealplanner.data_access.database.BrowseRecipeAPIParser;
 import com.mealplanner.data_access.database.FileScheduleDataAccessObject;
+import com.mealplanner.data_access.database.FileUserDataAccessObject;
 import com.mealplanner.data_access.database.SearchByIngredientsDataAccessObject;
+import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.repository.RecipeRepository;
 import com.mealplanner.use_case.adjust_serving_size.AdjustServingSizeDataAccessInterface;
 import com.mealplanner.use_case.adjust_serving_size.AdjustServingSizeInputBoundary;
@@ -16,12 +18,26 @@ import com.mealplanner.use_case.adjust_serving_size.AdjustServingSizeOutputBound
 import com.mealplanner.use_case.browse_recipe.BrowseRecipeDataAccessInterface;
 import com.mealplanner.use_case.browse_recipe.BrowseRecipeInputBoundary;
 import com.mealplanner.use_case.browse_recipe.BrowseRecipeOutputBoundary;
+import com.mealplanner.use_case.login.LoginDataAccessInterface;
+import com.mealplanner.use_case.login.LoginInputBoundary;
+import com.mealplanner.use_case.login.LoginOutputBoundary;
+import com.mealplanner.use_case.signup.SignupDataAccessInterface;
+import com.mealplanner.use_case.signup.SignupInputBoundary;
+import com.mealplanner.use_case.signup.SignupOutputBoundary;
+import com.mealplanner.use_case.manage_meal_plan.add.AddMealDataAccessInterface;
+import com.mealplanner.use_case.manage_meal_plan.add.AddMealInputBoundary;
+import com.mealplanner.use_case.manage_meal_plan.add.AddMealOutputBoundary;
+import com.mealplanner.use_case.manage_meal_plan.delete.DeleteMealDataAccessInterface;
+import com.mealplanner.use_case.manage_meal_plan.delete.DeleteMealInputBoundary;
+import com.mealplanner.use_case.manage_meal_plan.delete.DeleteMealOutputBoundary;
+import com.mealplanner.use_case.manage_meal_plan.edit.EditMealDataAccessInterface;
+import com.mealplanner.use_case.manage_meal_plan.edit.EditMealInputBoundary;
+import com.mealplanner.use_case.manage_meal_plan.edit.EditMealOutputBoundary;
 import com.mealplanner.use_case.search_by_ingredients.SearchByIngredientsDataAccessInterface;
 import com.mealplanner.use_case.search_by_ingredients.SearchByIngredientsInputBoundary;
 import com.mealplanner.use_case.search_by_ingredients.SearchByIngredientsOutputBoundary;
 import com.mealplanner.use_case.store_recipe.StoreRecipeInputBoundary;
 import com.mealplanner.use_case.store_recipe.StoreRecipeOutputBoundary;
-
 import com.mealplanner.use_case.view_schedule.ViewScheduleDataAccessInterface;
 import com.mealplanner.use_case.view_schedule.ViewScheduleInputBoundary;
 import com.mealplanner.use_case.view_schedule.ViewScheduleOutputBoundary;
@@ -77,7 +93,7 @@ public class UseCaseFactory {
         return new AdjustServingSizeDataAccessObject(apiClient);
     }
 
-    public static FileScheduleDataAccessObject createViewScheduleDataAccess() {
+    public static ViewScheduleDataAccessInterface createViewScheduleDataAccess() {
         return new FileScheduleDataAccessObject();
     }
 
@@ -117,7 +133,7 @@ public class UseCaseFactory {
         if (presenter == null) {
             throw new IllegalArgumentException("Presenter cannot be null");
         }
-        FileScheduleDataAccessObject dataAccess = createViewScheduleDataAccess();
+        ViewScheduleDataAccessInterface dataAccess = createViewScheduleDataAccess();
         return new com.mealplanner.use_case.view_schedule.ViewScheduleInteractor(dataAccess, presenter);
     }
 
@@ -143,5 +159,69 @@ public class UseCaseFactory {
             throw new IllegalArgumentException("Repository cannot be null");
         }
         return new com.mealplanner.use_case.store_recipe.StoreRecipeInteractor(presenter, repository);
+    }
+
+    /**
+     * Creates a LoginInteractor with properly wired dependencies.
+     */
+    public static LoginInputBoundary createLoginInteractor(LoginOutputBoundary presenter) {
+        if (presenter == null) {
+            throw new IllegalArgumentException("Presenter cannot be null");
+        }
+        LoginDataAccessInterface dataAccess = new FileUserDataAccessObject();
+        return new com.mealplanner.use_case.login.LoginInteractor(dataAccess, presenter);
+    }
+
+    /**
+     * Creates a SignupInteractor with properly wired dependencies.
+     */
+    public static SignupInputBoundary createSignupInteractor(SignupOutputBoundary presenter) {
+        if (presenter == null) {
+            throw new IllegalArgumentException("Presenter cannot be null");
+        }
+        SignupDataAccessInterface dataAccess = new FileUserDataAccessObject();
+        return new com.mealplanner.use_case.signup.SignupInteractor(dataAccess, presenter);
+    }
+
+    /**
+     * Creates an AddMealInteractor with properly wired dependencies.
+     */
+    public static AddMealInputBoundary createAddMealInteractor(AddMealOutputBoundary presenter, ViewManagerModel viewManagerModel) {
+        if (presenter == null) {
+            throw new IllegalArgumentException("Presenter cannot be null");
+        }
+        if (viewManagerModel == null) {
+            throw new IllegalArgumentException("ViewManagerModel cannot be null");
+        }
+        AddMealDataAccessInterface dataAccess = new FileScheduleDataAccessObject(new FileUserDataAccessObject(), viewManagerModel);
+        return new com.mealplanner.use_case.manage_meal_plan.add.AddMealInteractor(dataAccess, presenter);
+    }
+
+    /**
+     * Creates an EditMealInteractor with properly wired dependencies.
+     */
+    public static EditMealInputBoundary createEditMealInteractor(EditMealOutputBoundary presenter, ViewManagerModel viewManagerModel) {
+        if (presenter == null) {
+            throw new IllegalArgumentException("Presenter cannot be null");
+        }
+        if (viewManagerModel == null) {
+            throw new IllegalArgumentException("ViewManagerModel cannot be null");
+        }
+        EditMealDataAccessInterface dataAccess = new FileScheduleDataAccessObject(new FileUserDataAccessObject(), viewManagerModel);
+        return new com.mealplanner.use_case.manage_meal_plan.edit.EditMealInteractor(dataAccess, presenter);
+    }
+
+    /**
+     * Creates a DeleteMealInteractor with properly wired dependencies.
+     */
+    public static DeleteMealInputBoundary createDeleteMealInteractor(DeleteMealOutputBoundary presenter, ViewManagerModel viewManagerModel) {
+        if (presenter == null) {
+            throw new IllegalArgumentException("Presenter cannot be null");
+        }
+        if (viewManagerModel == null) {
+            throw new IllegalArgumentException("ViewManagerModel cannot be null");
+        }
+        DeleteMealDataAccessInterface dataAccess = new FileScheduleDataAccessObject(new FileUserDataAccessObject(), viewManagerModel);
+        return new com.mealplanner.use_case.manage_meal_plan.delete.DeleteMealInteractor(dataAccess, presenter);
     }
 }

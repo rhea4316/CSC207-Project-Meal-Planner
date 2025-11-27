@@ -1,5 +1,6 @@
 package com.mealplanner.interface_adapter.controller;
 
+import com.mealplanner.use_case.login.LoginInputBoundary;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
@@ -11,42 +12,97 @@ import static org.mockito.Mockito.*;
  * Tests controller input validation and interactor invocation.
  *
  * Responsible: Mona (primary)
- * TODO: Implement tests once LoginController is implemented
  */
 public class LoginControllerTest {
 
     private LoginController controller;
 
     @Mock
-    private com.mealplanner.use_case.login.LoginInputBoundary interactor;
+    private LoginInputBoundary interactor;
 
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        // TODO: Initialize controller with mocked interactor
+        controller = new LoginController(interactor);
     }
 
     @Test
     public void testLoginWithValidCredentials() {
-        // TODO: Test login with valid credentials
-        // TODO: Verify interactor is called with correct data
+        // Arrange
+        String username = "testuser";
+        String password = "password123";
+
+        // Act
+        controller.execute(username, password);
+
+        // Assert
+        verify(interactor).execute(argThat(inputData -> 
+            inputData.getUsername().equals(username) &&
+            inputData.getPassword().equals(password)
+        ));
     }
 
     @Test
     public void testLoginWithEmptyUsername() {
-        // TODO: Test login with empty username
-        // TODO: Verify error handling
+        // Arrange
+        String username = "";
+        String password = "password123";
+
+        // Act
+        controller.execute(username, password);
+
+        // Assert
+        verify(interactor).execute(argThat(inputData -> 
+            inputData.getUsername().equals(username) &&
+            inputData.getPassword().equals(password)
+        ));
     }
 
     @Test
     public void testLoginWithEmptyPassword() {
-        // TODO: Test login with empty password
-        // TODO: Verify error handling
+        // Arrange
+        String username = "testuser";
+        String password = "";
+
+        // Act
+        controller.execute(username, password);
+
+        // Assert
+        verify(interactor).execute(argThat(inputData -> 
+            inputData.getUsername().equals(username) &&
+            inputData.getPassword().equals(password)
+        ));
     }
 
     @Test
     public void testLoginWithNullInput() {
-        // TODO: Test login with null input
-        // TODO: Verify error handling
+        // Arrange
+        String username = null;
+        String password = "password123";
+
+        // Act
+        controller.execute(username, password);
+
+        // Assert
+        verify(interactor).execute(argThat(inputData -> 
+            inputData.getUsername() == null &&
+            inputData.getPassword().equals(password)
+        ));
+    }
+
+    @Test
+    public void testLoginWithNullPassword() {
+        // Arrange
+        String username = "testuser";
+        String password = null;
+
+        // Act
+        controller.execute(username, password);
+
+        // Assert
+        verify(interactor).execute(argThat(inputData -> 
+            inputData.getUsername().equals(username) &&
+            inputData.getPassword() == null
+        ));
     }
 }

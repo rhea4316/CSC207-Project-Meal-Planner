@@ -2,7 +2,6 @@ package com.mealplanner.view;
 
 // Swing view for viewing user's saved meal schedule - displays weekly meal plan.
 // Responsible: Mona (functionality), Everyone (GUI implementation)
-// Note: Adjust later because I can't test it
 
 import com.mealplanner.entity.MealType;
 import com.mealplanner.entity.Schedule;
@@ -27,6 +26,7 @@ public class ScheduleView extends JPanel implements PropertyChangeListener {
 
     private final ScheduleViewModel scheduleViewModel;
     private final ViewScheduleController controller;
+    @SuppressWarnings("unused")
     private final ViewManagerModel viewManagerModel;
 
     private final JLabel titleLabel;
@@ -100,10 +100,32 @@ public class ScheduleView extends JPanel implements PropertyChangeListener {
         saveButton = new JButton("Save Schedule");
         loadButton = new JButton("Load Schedule");
 
-        saveButton.addActionListener(e -> controller.saveSchedule(scheduleViewModel.getSchedule()));
+        saveButton.addActionListener(e -> {
+            Schedule schedule = scheduleViewModel.getSchedule();
+            if (schedule != null) {
+                controller.saveSchedule(schedule);
+            } else {
+                JOptionPane.showMessageDialog(this,
+                        "No schedule to save. Please load a schedule first.",
+                        "Save Schedule",
+                        JOptionPane.WARNING_MESSAGE);
+            }
+        });
+        
         loadButton.addActionListener(e -> {
-            controller.loadSchedule(scheduleViewModel.getSchedule().getScheduleId());
-            updateFromViewModel();
+            String username = scheduleViewModel.getUsername();
+            if (username == null || username.trim().isEmpty()) {
+                // Prompt for username
+                username = JOptionPane.showInputDialog(this,
+                        "Enter username to load schedule:",
+                        "Load Schedule",
+                        JOptionPane.QUESTION_MESSAGE);
+                if (username == null || username.trim().isEmpty()) {
+                    return;
+                }
+                scheduleViewModel.setUsername(username.trim());
+            }
+            controller.execute(username);
         });
 
         buttonPanel.add(saveButton);

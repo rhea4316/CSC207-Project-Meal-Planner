@@ -20,10 +20,6 @@ public class SearchByIngredientsPresenter implements SearchByIngredientsOutputBo
 
     @Override
     public void presentRecipes(SearchByIngredientsOutputData outputData) {
-        if (viewModel == null) {
-            return;
-        }
-
         if (outputData == null || outputData.getRecipes() == null || outputData.isEmpty()) {
             viewModel.setErrorMessage("No recipes found matching the provided ingredients");
             viewModel.setLoading(false);
@@ -35,16 +31,12 @@ public class SearchByIngredientsPresenter implements SearchByIngredientsOutputBo
         viewModel.setLoading(false);
         
         // Switch to SearchByIngredientsView to show results
-        if (viewManagerModel != null) {
-            viewManagerModel.setActiveView("SearchByIngredientsView");
-        }
+        viewManagerModel.setActiveView("SearchByIngredientsView");
     }
 
     @Override
     public void presentError(String errorMessage) {
-        if (viewModel != null) {
-            viewModel.setErrorMessage(errorMessage != null ? errorMessage : "An error occurred");
-            viewModel.setLoading(false);
-        }
+        viewModel.setErrorMessage(errorMessage != null ? errorMessage : "An error occurred");
+        viewModel.setLoading(false);
     }
 }

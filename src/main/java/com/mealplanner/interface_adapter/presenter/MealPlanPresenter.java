@@ -37,9 +37,7 @@ public class MealPlanPresenter implements AddMealOutputBoundary, EditMealOutputB
 
     @Override
     public void presentAddError(String errorMessage) {
-        if (mealPlanViewModel != null) {
-            mealPlanViewModel.setErrorMessage(errorMessage != null ? errorMessage : "Failed to add meal");
-        }
+        mealPlanViewModel.setErrorMessage(errorMessage != null ? errorMessage : "Failed to add meal");
     }
 
     @Override
@@ -59,9 +57,7 @@ public class MealPlanPresenter implements AddMealOutputBoundary, EditMealOutputB
 
     @Override
     public void presentEditError(String errorMessage) {
-        if (mealPlanViewModel != null) {
-            mealPlanViewModel.setErrorMessage(errorMessage != null ? errorMessage : "Failed to edit meal");
-        }
+        mealPlanViewModel.setErrorMessage(errorMessage != null ? errorMessage : "Failed to edit meal");
     }
 
     @Override
@@ -81,8 +77,6 @@ public class MealPlanPresenter implements AddMealOutputBoundary, EditMealOutputB
 
     @Override
     public void presentDeleteError(String errorMessage) {
-        if (mealPlanViewModel != null) {
-            mealPlanViewModel.setErrorMessage(errorMessage != null ? errorMessage : "Failed to delete meal");
-        }
+        mealPlanViewModel.setErrorMessage(errorMessage != null ? errorMessage : "Failed to delete meal");
     }
 }

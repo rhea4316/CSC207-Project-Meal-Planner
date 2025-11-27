@@ -5,6 +5,7 @@ import com.mealplanner.exception.RecipeNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
 
 import java.io.IOException;
@@ -13,6 +14,11 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.mockito.Mockito.*;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Test class for BrowseRecipeInteractor.
