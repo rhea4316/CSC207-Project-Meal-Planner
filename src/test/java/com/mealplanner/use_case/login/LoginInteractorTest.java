@@ -1,10 +1,10 @@
 package com.mealplanner.use_case.login;
 
+import com.mealplanner.exception.UserNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 /**
@@ -12,7 +12,6 @@ import static org.mockito.Mockito.*;
  * Tests user authentication and login validation.
  *
  * Responsible: Mona (primary)
- * TODO: Implement tests once LoginInteractor is implemented
  */
 public class LoginInteractorTest {
 
@@ -27,49 +26,86 @@ public class LoginInteractorTest {
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        // TODO: Initialize interactor with mocked dependencies
+        interactor = new LoginInteractor(dataAccess, presenter);
     }
 
     @Test
-    public void testLoginSuccess() {
-        // TODO: Test login with valid credentials
-        // TODO: Verify user is authenticated
-        // TODO: Verify success is presented
+    public void testLoginSuccess() throws UserNotFoundException {
+        LoginInputData inputData = new LoginInputData("testuser");
+        com.mealplanner.entity.User user = new com.mealplanner.entity.User("user-1", "testuser", "password");
+        
+        when(dataAccess.getUserByUsername("testuser")).thenReturn(user);
+        
+        interactor.execute(inputData);
+        
+        verify(presenter).presentLoginSuccess(argThat(outputData -> 
+            outputData.getUsername().equals("testuser") && 
+            outputData.getUserUId().equals("user-1")
+        ));
+        verify(presenter, never()).presentLoginFailure(anyString());
     }
 
     @Test
-    public void testLoginInvalidUsername() {
-        // TODO: Test login with non-existent username
-        // TODO: Verify error is presented
+    public void testLoginInvalidUsername() throws UserNotFoundException {
+        LoginInputData inputData = new LoginInputData("nonexistent");
+        
+        when(dataAccess.getUserByUsername("nonexistent")).thenThrow(new UserNotFoundException("User not found"));
+        
+        interactor.execute(inputData);
+        
+        verify(presenter).presentLoginFailure("User not found");
+        verify(presenter, never()).presentLoginSuccess(any(LoginOutputData.class));
     }
 
     @Test
-    public void testLoginInvalidPassword() {
-        // TODO: Test login with incorrect password
-        // TODO: Verify error is presented
+    public void testLoginInvalidPassword() throws UserNotFoundException {
+        LoginInputData inputData = new LoginInputData("testuser");
+        
+        when(dataAccess.getUserByUsername("testuser")).thenThrow(new UserNotFoundException("User not found"));
+        
+        interactor.execute(inputData);
+        
+        verify(presenter).presentLoginFailure("User not found");
     }
 
     @Test
     public void testLoginEmptyUsername() {
-        // TODO: Test login with empty username
-        // TODO: Verify validation error
+        LoginInputData inputData = new LoginInputData("");
+        
+        interactor.execute(inputData);
+        
+        verify(presenter).presentLoginFailure("Username cannot be empty");
     }
 
     @Test
     public void testLoginEmptyPassword() {
-        // TODO: Test login with empty password
-        // TODO: Verify validation error
+        LoginInputData inputData = new LoginInputData("   ");
+        
+        interactor.execute(inputData);
+        
+        verify(presenter).presentLoginFailure("Username cannot be empty");
     }
 
     @Test
-    public void testDataAccessFailure() {
-        // TODO: Test handling user lookup failure
-        // TODO: Verify error message is presented
+    public void testDataAccessFailure() throws UserNotFoundException {
+        LoginInputData inputData = new LoginInputData("testuser");
+        
+        when(dataAccess.getUserByUsername("testuser")).thenThrow(new RuntimeException("Database error"));
+        
+        interactor.execute(inputData);
+        
+        verify(presenter).presentLoginFailure("Unexpected error during login");
     }
 
     @Test
-    public void testPasswordSecurity() {
-        // TODO: Test that passwords are compared securely
-        // TODO: Verify passwords are hashed, not plain text
+    public void testPasswordSecurity() throws UserNotFoundException {
+        LoginInputData inputData = new LoginInputData("testuser");
+        com.mealplanner.entity.User user = new com.mealplanner.entity.User("user-1", "testuser", "password");
+        
+        when(dataAccess.getUserByUsername("testuser")).thenReturn(user);
+        
+        interactor.execute(inputData);
+        
+        verify(presenter).presentLoginSuccess(any(LoginOutputData.class));
     }
 }

@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 /**
@@ -11,7 +12,6 @@ import static org.mockito.Mockito.*;
  * Tests controller input validation and interactor invocation.
  *
  * Responsible: Grace (primary)
- * TODO: Implement tests once DeleteMealController is implemented
  */
 public class DeleteMealControllerTest {
 
@@ -23,18 +23,39 @@ public class DeleteMealControllerTest {
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        // TODO: Initialize controller with mocked interactor
+        controller = new DeleteMealController(interactor);
     }
 
     @Test
     public void testDeleteMealWithValidData() {
-        // TODO: Test deleting meal with valid data
-        // TODO: Verify interactor is called
+        String date = java.time.LocalDate.now().toString();
+        String mealType = "BREAKFAST";
+        
+        controller.execute(date, mealType);
+        
+        verify(interactor).execute(argThat(inputData -> 
+            inputData.getDate().equals(java.time.LocalDate.parse(date)) &&
+            inputData.getMealType() == com.mealplanner.entity.MealType.BREAKFAST
+        ));
     }
 
     @Test
     public void testDeleteMealWithInvalidData() {
-        // TODO: Test deleting meal with invalid data
-        // TODO: Verify error handling
+        String invalidDate = "invalid-date";
+        String mealType = "BREAKFAST";
+        
+        assertThrows(Exception.class, () -> {
+            controller.execute(invalidDate, mealType);
+        });
+    }
+
+    @Test
+    public void testDeleteMealWithInvalidMealType() {
+        String date = java.time.LocalDate.now().toString();
+        String invalidMealType = "INVALID";
+        
+        assertThrows(Exception.class, () -> {
+            controller.execute(date, invalidMealType);
+        });
     }
 }
