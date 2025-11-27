@@ -4,24 +4,11 @@ package com.mealplanner.app;
 // Responsible: Everyone
 
 import com.mealplanner.interface_adapter.ViewManagerModel;
-import com.mealplanner.interface_adapter.controller.AdjustServingSizeController;
-import com.mealplanner.interface_adapter.controller.BrowseRecipeController;
-import com.mealplanner.interface_adapter.controller.SearchByIngredientsController;
-import com.mealplanner.interface_adapter.controller.StoreRecipeController;
-import com.mealplanner.interface_adapter.presenter.AdjustServingSizePresenter;
-import com.mealplanner.interface_adapter.presenter.BrowseRecipePresenter;
-import com.mealplanner.interface_adapter.presenter.SearchByIngredientsPresenter;
-import com.mealplanner.interface_adapter.presenter.StoreRecipePresenter;
-import com.mealplanner.interface_adapter.view_model.RecipeBrowseViewModel;
-import com.mealplanner.interface_adapter.view_model.RecipeDetailViewModel;
-import com.mealplanner.interface_adapter.view_model.RecipeSearchViewModel;
-import com.mealplanner.interface_adapter.view_model.RecipeStoreViewModel;
+import com.mealplanner.interface_adapter.controller.*;
+import com.mealplanner.interface_adapter.presenter.*;
+import com.mealplanner.interface_adapter.view_model.*;
 import com.mealplanner.repository.impl.FileRecipeRepository;
-import com.mealplanner.view.BrowseRecipeView;
-import com.mealplanner.view.RecipeDetailView;
-import com.mealplanner.view.SearchByIngredientsView;
-import com.mealplanner.view.StoreRecipeView;
-import com.mealplanner.view.ViewManager;
+import com.mealplanner.view.*;
 
 public class AppBuilder {
     private ViewManager viewManager;
@@ -40,6 +27,7 @@ public class AppBuilder {
         buildBrowseRecipeFlow();
         buildSearchByIngredientsFlow();
         buildAdjustServingSizeFlow();
+        buildScheduleFlow();
         
         // Set initial view - use ViewManager's switchToView to ensure proper display
         viewManager.switchToView(ViewManager.STORE_RECIPE_VIEW);
@@ -140,5 +128,20 @@ public class AppBuilder {
 
         // 6. ViewManager에 등록
         viewManager.addView(ViewManager.RECIPE_DETAIL_VIEW, view);
+    }
+
+    private void buildScheduleFlow() {
+        //View Model
+        ScheduleViewModel viewModel = new ScheduleViewModel();
+        //Presenter
+        ViewSchedulePresenter presenter = new ViewSchedulePresenter(viewModel);
+        //Interactor
+        var interactor =UseCaseFactory.createViewScheduleInteractor(presenter);
+        //Controller
+        ViewScheduleController controller = new ViewScheduleController(interactor);
+        //View
+        ScheduleView view = new ScheduleView(viewModel, controller, viewManagerModel);
+        //Adding to view manager
+        viewManager.addView(ViewManager.SCHEDULE_VIEW, view);
     }
 }

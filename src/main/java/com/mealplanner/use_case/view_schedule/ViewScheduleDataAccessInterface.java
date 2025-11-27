@@ -11,9 +11,6 @@ import com.mealplanner.exception.UserNotFoundException;
 public interface ViewScheduleDataAccessInterface {
 
     boolean existsByUsername(String username);
-
     User getUserByUsername(String username) throws UserNotFoundException;
-
-    Schedule getScheduleByUserID(String userID);
 
 }
