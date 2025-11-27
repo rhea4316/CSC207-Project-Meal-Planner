@@ -164,12 +164,10 @@ public class Recipe {
 
     @Override
     public String toString() {
-    StoreRecipieUseCase
         int stepsCount = steps != null ? steps.split("\n").length : 0; // Use "\n" or "\\n" depending on if steps is already escaped
         return String.format("%s (Serves %d)%s\n%d ingredients, %d step(s)",
                 name, servingSize,
                 cookTimeMinutes != null ? String.format("\nCook: %d min", cookTimeMinutes) : "",
                 ingredients.size(), stepsCount);
-   main
     }
 }

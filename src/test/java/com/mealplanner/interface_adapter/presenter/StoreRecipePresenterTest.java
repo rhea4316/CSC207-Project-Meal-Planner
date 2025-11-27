@@ -48,7 +48,7 @@ public class StoreRecipePresenterTest {
         assertTrue(viewModel.getSuccessMessage().contains("Test Recipe"));
         assertTrue(viewModel.getSuccessMessage().contains("serves 4"));
         assertTrue(viewModel.getSuccessMessage().contains("2 ingredients"));
-        assertTrue(viewModel.getSuccessMessage().contains("3 steps"));
+        assertTrue(viewModel.getSuccessMessage().contains("3 step(s)"));
         assertNull(viewModel.getErrorMessage());
     }
 
@@ -69,7 +69,7 @@ public class StoreRecipePresenterTest {
         // Assert
         assertNotNull(viewModel.getSuccessMessage());
         assertTrue(viewModel.getSuccessMessage().contains("1 ingredients"));
-        assertTrue(viewModel.getSuccessMessage().contains("1 steps"));
+        assertTrue(viewModel.getSuccessMessage().contains("1 step(s)"));
     }
 
     @Test
@@ -226,7 +226,7 @@ public class StoreRecipePresenterTest {
         presenter.presentSuccess(outputData);
 
         // Assert
-        assertTrue(viewModel.getSuccessMessage().contains("5 steps"));
+        assertTrue(viewModel.getSuccessMessage().contains("5 step(s)"));
         assertTrue(viewModel.getSuccessMessage().contains("3 ingredients"));
     }
 }

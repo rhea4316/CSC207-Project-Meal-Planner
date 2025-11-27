@@ -195,7 +195,7 @@ public class StoreRecipeInteractorTest {
 
         // Assert
         assertTrue(presenter.errorCalled, "Error should be called");
-        assertEquals("Serving size must be greater than zero", presenter.errorMessage);
+        assertEquals("Serving size must be between 1 and 100", presenter.errorMessage);
         assertFalse(repository.saveCalled);
     }
 
@@ -214,7 +214,7 @@ public class StoreRecipeInteractorTest {
 
         // Assert
         assertTrue(presenter.errorCalled, "Error should be called");
-        assertEquals("Serving size must be greater than zero", presenter.errorMessage);
+        assertEquals("Serving size must be between 1 and 100", presenter.errorMessage);
         assertFalse(repository.saveCalled);
     }
 

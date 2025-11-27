@@ -40,13 +40,11 @@ public class StoreRecipePresenter implements StoreRecipeOutputBoundary {
 		}
 
 		var recipe = outputData.getSavedRecipe();
-    StoreRecipieUseCase
 		String stepsString = recipe.getSteps();
 		int stepCount = stepsString != null ? stepsString.split("\n").length : 0;
 		
-    String msg = String.format("Saved recipe '%s' (serves %d) — %d ingredients, %d step(s).",
+		String msg = String.format("Saved recipe '%s' (serves %d) — %d ingredients, %d step(s).",
 				recipe.getName(), recipe.getServingSize(), recipe.getIngredients().size(), stepCount);
-    main
 		viewModel.setSuccessMessage(msg);
 	}
 
