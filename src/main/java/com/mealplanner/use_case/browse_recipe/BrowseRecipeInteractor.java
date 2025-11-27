@@ -3,15 +3,14 @@ package com.mealplanner.use_case.browse_recipe;
 // Main business logic for browsing recipe details and viewing ingredients.
 // Responsible: Regina
 
-import com.google.gson.JsonObject;
-import com.mealplanner.data_access.database.BrowseRecipeAPIParser;
+import com.mealplanner.config.ApiConfig;
 import com.mealplanner.entity.Recipe;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
+import com.mealplanner.exception.RecipeNotFoundException;
+import com.mealplanner.util.StringUtil;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 
 public class BrowseRecipeInteractor implements BrowseRecipeInputBoundary {
     // get the recipe specifications from DataAccessInterface
@@ -21,54 +20,48 @@ public class BrowseRecipeInteractor implements BrowseRecipeInputBoundary {
 
     public BrowseRecipeInteractor(BrowseRecipeDataAccessInterface browseRecipeDataAccessObject,
                                   BrowseRecipeOutputBoundary browseRecipePresenter) {
-        this.browseRecipeDataAccessObject = browseRecipeDataAccessObject;
-        this.browseRecipePresenter= browseRecipePresenter;
+        this.browseRecipeDataAccessObject = Objects.requireNonNull(browseRecipeDataAccessObject, 
+                "Data access object cannot be null");
+        this.browseRecipePresenter = Objects.requireNonNull(browseRecipePresenter, 
+                "Presenter cannot be null");
     }
 
     public void execute(BrowseRecipeInputData browseRecipeInputData) throws IOException {
+        if (browseRecipeInputData == null) {
+            browseRecipePresenter.presentError("Input data cannot be null");
+            return;
+        }
 
-        String recipeQuery = "query=" + browseRecipeInputData.getQuery();
-        String includedIngredients = "includeIngredients=" + browseRecipeInputData.getIncludedIngredients();
-        String numberOfRecipes = "number=" + browseRecipeInputData.getNumberOfRecipes();
+        if (StringUtil.isNullOrEmpty(browseRecipeInputData.getQuery())) {
+            browseRecipePresenter.presentError("Search query cannot be empty");
+            return;
+        }
 
-        if (browseRecipeInputData.getIncludedIngredients() == null) {
-            String url = "https://api.spoonacular.com/recipes/complexSearch?" + recipeQuery + "&" + numberOfRecipes
-                    + "&apiKey=1568ebc937304b8991ea3a1a003e1e40";
-            String apiResponse = run(url);
-            List<Recipe> recipes = browseRecipeDataAccessObject.searchRecipes(apiResponse);
+        // Check API configuration
+        if (!ApiConfig.isSpoonacularConfigured()) {
+            browseRecipePresenter.presentError("API key is not configured. Please check your configuration.");
+            return;
+        }
 
-            if (recipes.size() == 0) {
+        try {
+            // Delegate API call to data access layer
+            List<Recipe> recipes = browseRecipeDataAccessObject.searchRecipes(browseRecipeInputData);
+
+            if (recipes == null || recipes.isEmpty()) {
                 browseRecipePresenter.presentError("No recipes found, please try different wording " +
-                        "in your search query.");
+                        "in your search query" +
+                        (browseRecipeInputData.getIncludedIngredients() != null ?
+                                " or input different ingredients." : "."));
             } else {
                 BrowseRecipeOutputData browseRecipeOutputData = new BrowseRecipeOutputData(recipes);
                 browseRecipePresenter.presentRecipeDetails(browseRecipeOutputData);
             }
-        }
-
-        else {
-            String url = "https://api.spoonacular.com/recipes/complexSearch?" + recipeQuery + "&" +
-                    includedIngredients + "&" + numberOfRecipes + "&apiKey=1568ebc937304b8991ea3a1a003e1e40";
-            String apiResponse = run(url);
-            List<Recipe> recipes = browseRecipeDataAccessObject.searchRecipes(apiResponse);
-
-            if (recipes.size() == 0) {
-                browseRecipePresenter.presentError("No recipes found, please try different wording " +
-                        "in your search query or input different ingredients.");
-            } else {
-                BrowseRecipeOutputData browseRecipeOutputData = new BrowseRecipeOutputData(recipes);
-                browseRecipePresenter.presentRecipeDetails(browseRecipeOutputData);
-            }
-        }
-
-    }
-
-    String run(String url) throws IOException {
-        OkHttpClient client = new OkHttpClient();
-        Request request = new Request.Builder().url(url).build();
-
-        try (Response response = client.newCall(request).execute()) {
-            return response.body().string();
+        } catch (RecipeNotFoundException e) {
+            browseRecipePresenter.presentError("Recipe not found");
+        } catch (IOException e) {
+            browseRecipePresenter.presentError("Network error: " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            browseRecipePresenter.presentError("Invalid input: " + e.getMessage());
         }
     }
 }

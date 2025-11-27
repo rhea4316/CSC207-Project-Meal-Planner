@@ -2,7 +2,6 @@ package com.mealplanner.interface_adapter.view_model;
 
 // ViewModel for recipe creation form - holds data for StoreRecipeView.
 // Responsible: Aaryan, Everyone (GUI)
-// TODO: Implement fields for form state, success/error messages, and property change notifications
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;

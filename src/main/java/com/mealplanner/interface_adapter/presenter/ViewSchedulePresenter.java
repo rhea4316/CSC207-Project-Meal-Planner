@@ -2,8 +2,38 @@ package com.mealplanner.interface_adapter.presenter;
 
 // Presenter for viewing schedule - converts schedule OutputData to ViewModel for display.
 // Responsible: Mona
-// TODO: Implement OutputBoundary methods to format weekly schedule for ScheduleViewModel
+// done: Implement OutputBoundary methods to format weekly schedule for ScheduleViewModel
 
-public class ViewSchedulePresenter {
+import com.mealplanner.interface_adapter.view_model.ScheduleViewModel;
+import com.mealplanner.use_case.view_schedule.ViewScheduleInputBoundary;
+import com.mealplanner.use_case.view_schedule.ViewScheduleOutputBoundary;
+import com.mealplanner.use_case.view_schedule.ViewScheduleOutputData;
+
+public class ViewSchedulePresenter implements ViewScheduleOutputBoundary {
+    private final ScheduleViewModel scheduleViewModel;
+
+    public ViewSchedulePresenter(ScheduleViewModel scheduleViewModel) {
+        this.scheduleViewModel = scheduleViewModel;
+    }
+
+
+    @Override
+    public void presentSchedule(ViewScheduleOutputData outputData){
+        scheduleViewModel.setSchedule(outputData.getSchedule());
+        scheduleViewModel.setUsername(outputData.getUsername());
+        scheduleViewModel.setError(null);
+
+        scheduleViewModel.firePropertyChanged();
+
+
+    }
+
+    @Override
+    public void presentError(String errorMessage){
+
+        scheduleViewModel.setSchedule(null);
+        scheduleViewModel.setError(errorMessage);
+        scheduleViewModel.firePropertyChanged();
+    }
 
 }

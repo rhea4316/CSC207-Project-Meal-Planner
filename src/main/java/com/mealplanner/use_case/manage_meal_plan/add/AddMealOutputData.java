@@ -1,9 +1,21 @@
 package com.mealplanner.use_case.manage_meal_plan.add;
 
-// Data transfer object carrying updated meal schedule after adding meal.
-// Responsible: Grace
-// TODO: Implement with updated Schedule and confirmation message
+import com.mealplanner.entity.Schedule;
 
 public class AddMealOutputData {
+    private final Schedule schedule;
+    private final String message;
 
+    public AddMealOutputData(Schedule schedule, String message) {
+        this.schedule = schedule;
+        this.message = message;
+    }
+
+    public Schedule getSchedule() {
+        return schedule;
+    }
+
+    public String getMessage() {
+        return message;
+    }
 }

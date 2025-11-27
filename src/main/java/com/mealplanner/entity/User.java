@@ -6,8 +6,6 @@ import java.util.Objects;
 // Core entity representing a user with saved recipes, meal schedule, and nutrition goals.
 // Responsible: Mona (primary for login/user management), Everyone (used across use cases)
 
-// TODO: Implement user class with methods for managing saved recipes and generating grocery lists
-
 public class User {
     private final String userId;
     private String username;
@@ -28,12 +26,15 @@ public class User {
 
     }
 
-    public User(String userId, String username, String password, NutritionGoals nutritionGoals, Schedule mealSchedule)
-    {this.userId = userId;
-        this.username = username;
-        this.password = password;
+    public User(String userId, String username, String password, NutritionGoals nutritionGoals, Schedule mealSchedule) {
+        this.userId = requireNonBlank(userId, "userId");
+        this.username = requireNonBlank(username, "username");
+        this.password = requireNonBlank(password, "password");
+        this.savedRecipeIds = new ArrayList<>();
+        this.groceryList = new ArrayList<>();
         this.nutritionGoals = nutritionGoals;
-        this.mealSchedule = mealSchedule;}
+        this.mealSchedule = mealSchedule;
+    }
 
 
 
@@ -133,14 +134,27 @@ public class User {
     }
 
 
-    ///  Overriding: equals  ( Do we need to also do hashcode and toString?)
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof User)) return false;
         User other = (User) o;
         return Objects.equals(userId, other.userId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(userId);
+    }
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "userId='" + userId + '\'' +
+                ", username='" + username + '\'' +
+                ", savedRecipes=" + savedRecipeIds.size() +
+                ", groceryListSize=" + groceryList.size() +
+                '}';
     }
 
 
@@ -153,6 +167,5 @@ public class User {
             throw new IllegalArgumentException(fieldName + " cannot be blank");
         }
         return trimmed;
-
-
-    }}
+    }
+}

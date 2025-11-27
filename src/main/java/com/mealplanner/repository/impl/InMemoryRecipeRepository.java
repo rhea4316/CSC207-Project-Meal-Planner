@@ -21,14 +21,21 @@ public class InMemoryRecipeRepository implements RecipeRepository {
 
     @Override
     public void save(Recipe recipe) throws DataAccessException {
-        if (recipe == null) throw new DataAccessException("Cannot save null recipe");
-        // Use recipe name as key for this simple demo (assumes names are unique)
-        store.put(recipe.getName(), recipe);
+        if (recipe == null) {
+            throw new DataAccessException("Cannot save null recipe");
+        }
+        if (recipe.getRecipeId() == null || recipe.getRecipeId().isEmpty()) {
+            throw new DataAccessException("Recipe must have a valid ID");
+        }
+        // Use recipe ID as key
+        store.put(recipe.getRecipeId(), recipe);
     }
 
     @Override
     public Optional<Recipe> findById(String recipeId) throws DataAccessException {
-        if (recipeId == null) return Optional.empty();
+        if (recipeId == null || recipeId.isEmpty()) {
+            return Optional.empty();
+        }
         return Optional.ofNullable(store.get(recipeId));
     }
 
@@ -39,22 +46,32 @@ public class InMemoryRecipeRepository implements RecipeRepository {
 
     @Override
     public List<Recipe> findByName(String name) throws DataAccessException {
-        if (name == null) return Collections.emptyList();
+        if (name == null || name.isEmpty()) {
+            return Collections.emptyList();
+        }
         List<Recipe> result = new ArrayList<>();
-        String lower = name.toLowerCase();
+        String lower = name.toLowerCase().trim();
         for (Recipe r : store.values()) {
-            if (r.getName() != null && r.getName().toLowerCase().contains(lower)) result.add(r);
+            if (r != null && r.getName() != null && r.getName().toLowerCase().contains(lower)) {
+                result.add(r);
+            }
         }
         return result;
     }
 
     @Override
     public boolean delete(String recipeId) throws DataAccessException {
+        if (recipeId == null || recipeId.isEmpty()) {
+            return false;
+        }
         return store.remove(recipeId) != null;
     }
 
     @Override
     public boolean exists(String recipeId) throws DataAccessException {
+        if (recipeId == null || recipeId.isEmpty()) {
+            return false;
+        }
         return store.containsKey(recipeId);
     }
 

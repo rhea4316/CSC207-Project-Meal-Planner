@@ -2,7 +2,6 @@ package com.mealplanner.interface_adapter.presenter;
 
 // Presenter for recipe storage confirmation - converts OutputData to ViewModel and shows success/error.
 // Responsible: Aaryan
-// TODO: Implement OutputBoundary methods to show save confirmation with nutrition info in RecipeStoreViewModel
 
 import com.mealplanner.interface_adapter.view_model.RecipeStoreViewModel;
 import com.mealplanner.use_case.store_recipe.StoreRecipeOutputBoundary;
@@ -17,7 +16,7 @@ public class StoreRecipePresenter implements StoreRecipeOutputBoundary {
 	private final RecipeStoreViewModel viewModel;
 
 	public StoreRecipePresenter(RecipeStoreViewModel viewModel) {
-		this.viewModel = viewModel;
+		this.viewModel = viewModel; // Can be null for console-only mode
 	}
 
 	@Override
@@ -41,9 +40,13 @@ public class StoreRecipePresenter implements StoreRecipeOutputBoundary {
 		}
 
 		var recipe = outputData.getSavedRecipe();
-		int stepsCount = recipe.getSteps().split("\\n").length;
-		String msg = String.format("Saved recipe '%s' (serves %d) — %d ingredients, %d steps.",
-				recipe.getName(), recipe.getServingSize(), recipe.getIngredients().size(), stepsCount);
+    StoreRecipieUseCase
+		String stepsString = recipe.getSteps();
+		int stepCount = stepsString != null ? stepsString.split("\n").length : 0;
+		
+    String msg = String.format("Saved recipe '%s' (serves %d) — %d ingredients, %d step(s).",
+				recipe.getName(), recipe.getServingSize(), recipe.getIngredients().size(), stepCount);
+    main
 		viewModel.setSuccessMessage(msg);
 	}
 

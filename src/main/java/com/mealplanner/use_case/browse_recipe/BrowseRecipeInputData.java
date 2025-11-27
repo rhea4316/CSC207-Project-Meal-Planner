@@ -25,9 +25,10 @@ public class BrowseRecipeInputData {
     }
 
     //Getters:
-    String getQuery() {return query;}
-    String getIncludedIngredients() {return includedIngredients;}
-    String getNumberOfRecipes() {return String.valueOf(numberOfRecipes);}
+    public String getQuery() {return query;}
+    public String getIncludedIngredients() {return includedIngredients;}
+    public String getNumberOfRecipes() {return String.valueOf(numberOfRecipes);}
+    public int getNumberOfRecipesInt() {return numberOfRecipes;}
 
 }
 

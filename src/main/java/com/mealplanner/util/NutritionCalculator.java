@@ -31,8 +31,25 @@ public class NutritionCalculator {
      * @return NutritionInfo with totals
      */
     public static NutritionInfo calculateTotalNutrition(List<Ingredient> ingredients) {
-        // TODO: Implement total nutrition calculation
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (ingredients == null || ingredients.isEmpty()) {
+            return NutritionInfo.empty();
+        }
+        
+        int totalCalories = 0;
+        double totalProtein = 0.0;
+        double totalCarbs = 0.0;
+        double totalFat = 0.0;
+        
+        for (Ingredient ingredient : ingredients) {
+            if (ingredient != null) {
+                totalCalories += ingredient.getCalories();
+                totalProtein += ingredient.getProtein();
+                totalCarbs += ingredient.getCarbs();
+                totalFat += ingredient.getFat();
+            }
+        }
+        
+        return new NutritionInfo(totalCalories, totalProtein, totalCarbs, totalFat);
     }
 
     /**
@@ -43,8 +60,10 @@ public class NutritionCalculator {
      * @return Scaled NutritionInfo
      */
     public static NutritionInfo scaleNutrition(NutritionInfo original, double multiplier) {
-        // TODO: Implement nutrition scaling
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (original == null) {
+            throw new IllegalArgumentException("Nutrition info cannot be null");
+        }
+        return original.scale(multiplier);
     }
 
     /**
@@ -54,8 +73,16 @@ public class NutritionCalculator {
      * @return Array of percentages [calories%, protein%, carbs%, fat%]
      */
     public static double[] calculateDailyValuePercentages(NutritionInfo nutrition) {
-        // TODO: Implement daily value percentage calculation
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (nutrition == null) {
+            throw new IllegalArgumentException("Nutrition info cannot be null");
+        }
+        
+        double caloriesPercent = (nutrition.getCalories() / (double) STANDARD_DAILY_CALORIES) * 100;
+        double proteinPercent = (nutrition.getProtein() / STANDARD_DAILY_PROTEIN) * 100;
+        double carbsPercent = (nutrition.getCarbs() / STANDARD_DAILY_CARBS) * 100;
+        double fatPercent = (nutrition.getFat() / STANDARD_DAILY_FAT) * 100;
+        
+        return new double[]{caloriesPercent, proteinPercent, carbsPercent, fatPercent};
     }
 
     /**
@@ -65,8 +92,24 @@ public class NutritionCalculator {
      * @return Array of percentages [protein%, carbs%, fat%]
      */
     public static double[] calculateMacroPercentages(NutritionInfo nutrition) {
-        // TODO: Implement macro percentage calculation
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (nutrition == null) {
+            throw new IllegalArgumentException("Nutrition info cannot be null");
+        }
+        
+        int totalCalories = nutrition.getCalories();
+        if (totalCalories == 0) {
+            return new double[]{0.0, 0.0, 0.0};
+        }
+        
+        double proteinCalories = nutrition.getProtein() * CALORIES_PER_GRAM_PROTEIN;
+        double carbsCalories = nutrition.getCarbs() * CALORIES_PER_GRAM_CARBS;
+        double fatCalories = nutrition.getFat() * CALORIES_PER_GRAM_FAT;
+        
+        double proteinPercent = (proteinCalories / totalCalories) * 100;
+        double carbsPercent = (carbsCalories / totalCalories) * 100;
+        double fatPercent = (fatCalories / totalCalories) * 100;
+        
+        return new double[]{proteinPercent, carbsPercent, fatPercent};
     }
 
     /**
@@ -77,8 +120,20 @@ public class NutritionCalculator {
      * @return true if within healthy ranges
      */
     public static boolean isBalancedMacros(NutritionInfo nutrition) {
-        // TODO: Implement balanced macro check
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (nutrition == null) {
+            throw new IllegalArgumentException("Nutrition info cannot be null");
+        }
+        
+        double[] macroPercentages = calculateMacroPercentages(nutrition);
+        double proteinPercent = macroPercentages[0];
+        double carbsPercent = macroPercentages[1];
+        double fatPercent = macroPercentages[2];
+        
+        boolean proteinOk = proteinPercent >= 10 && proteinPercent <= 35;
+        boolean carbsOk = carbsPercent >= 45 && carbsPercent <= 65;
+        boolean fatOk = fatPercent >= 20 && fatPercent <= 35;
+        
+        return proteinOk && carbsOk && fatOk;
     }
 
     /**
@@ -91,8 +146,11 @@ public class NutritionCalculator {
      * @return Estimated total calories
      */
     public static int calculateCaloriesFromMacros(double protein, double carbs, double fat) {
-        // TODO: Implement calorie calculation from macros
-        throw new UnsupportedOperationException("Not yet implemented");
+        double proteinCalories = protein * CALORIES_PER_GRAM_PROTEIN;
+        double carbsCalories = carbs * CALORIES_PER_GRAM_CARBS;
+        double fatCalories = fat * CALORIES_PER_GRAM_FAT;
+        
+        return (int) Math.round(proteinCalories + carbsCalories + fatCalories);
     }
 
     /**
@@ -103,8 +161,21 @@ public class NutritionCalculator {
      * @return NutritionInfo representing remaining amounts
      */
     public static NutritionInfo calculateRemaining(NutritionInfo consumed, NutritionInfo goals) {
-        // TODO: Implement remaining nutrition calculation
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (consumed == null || goals == null) {
+            throw new IllegalArgumentException("Nutrition info cannot be null");
+        }
+        
+        int remainingCalories = goals.getCalories() - consumed.getCalories();
+        double remainingProtein = goals.getProtein() - consumed.getProtein();
+        double remainingCarbs = goals.getCarbs() - consumed.getCarbs();
+        double remainingFat = goals.getFat() - consumed.getFat();
+        
+        return new NutritionInfo(
+            Math.max(0, remainingCalories),
+            Math.max(0, remainingProtein),
+            Math.max(0, remainingCarbs),
+            Math.max(0, remainingFat)
+        );
     }
 
     /**
@@ -116,8 +187,23 @@ public class NutritionCalculator {
      * @return true if within goals plus tolerance
      */
     public static boolean isWithinGoals(NutritionInfo consumed, NutritionInfo goals, double tolerancePercent) {
-        // TODO: Implement goal check with tolerance
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (consumed == null || goals == null) {
+            throw new IllegalArgumentException("Nutrition info cannot be null");
+        }
+        
+        double toleranceMultiplier = 1.0 + (tolerancePercent / 100.0);
+        
+        int maxCalories = (int) Math.round(goals.getCalories() * toleranceMultiplier);
+        double maxProtein = goals.getProtein() * toleranceMultiplier;
+        double maxCarbs = goals.getCarbs() * toleranceMultiplier;
+        double maxFat = goals.getFat() * toleranceMultiplier;
+        
+        boolean caloriesOk = consumed.getCalories() <= maxCalories;
+        boolean proteinOk = consumed.getProtein() <= maxProtein;
+        boolean carbsOk = consumed.getCarbs() <= maxCarbs;
+        boolean fatOk = consumed.getFat() <= maxFat;
+        
+        return caloriesOk && proteinOk && carbsOk && fatOk;
     }
 
     /**
@@ -127,8 +213,16 @@ public class NutritionCalculator {
      * @return Formatted string (e.g., "250 cal, 10g protein, 30g carbs, 8g fat")
      */
     public static String formatNutritionSummary(NutritionInfo nutrition) {
-        // TODO: Implement nutrition summary formatting
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (nutrition == null) {
+            throw new IllegalArgumentException("Nutrition info cannot be null");
+        }
+        
+        return String.format("%d cal, %.1fg protein, %.1fg carbs, %.1fg fat",
+            nutrition.getCalories(),
+            nutrition.getProtein(),
+            nutrition.getCarbs(),
+            nutrition.getFat()
+        );
     }
 
     private NutritionCalculator() {

@@ -94,7 +94,8 @@ public class Recipe {
     }
 
     private String scaleIngredientQuantity(String ingredient, double scaleFactor) {
-        // Will need to reimplemented 
+        // Simple scaling: append scale factor to ingredient string
+        // Note: Full implementation would require parsing quantities from strings
         return String.format("%s (scaled by %.2f)", ingredient, scaleFactor);
     }
 
@@ -163,10 +164,12 @@ public class Recipe {
 
     @Override
     public String toString() {
-        int stepsCount = steps != null ? steps.split("\\n").length : 0;
-        return String.format("%s (Serves %d)%s\n%d ingredients, %d steps",
+    StoreRecipieUseCase
+        int stepsCount = steps != null ? steps.split("\n").length : 0; // Use "\n" or "\\n" depending on if steps is already escaped
+        return String.format("%s (Serves %d)%s\n%d ingredients, %d step(s)",
                 name, servingSize,
                 cookTimeMinutes != null ? String.format("\nCook: %d min", cookTimeMinutes) : "",
                 ingredients.size(), stepsCount);
+   main
     }
 }
