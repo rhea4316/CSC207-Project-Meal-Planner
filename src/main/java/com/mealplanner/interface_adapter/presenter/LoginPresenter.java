@@ -2,7 +2,6 @@ package com.mealplanner.interface_adapter.presenter;
 
 // Presenter for login - handles login success/failure and navigates to appropriate view.
 // Responsible: Mona
-// done: Implement OutputBoundary methods to show login result and navigate to schedule view on success
 
 import com.mealplanner.interface_adapter.view_model.LoginViewModel;
 import com.mealplanner.use_case.login.LoginOutputBoundary;

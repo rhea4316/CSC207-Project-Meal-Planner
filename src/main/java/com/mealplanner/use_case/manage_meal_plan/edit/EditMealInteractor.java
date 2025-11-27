@@ -6,7 +6,6 @@ import java.time.LocalDate;
 
 // Main business logic for editing an existing meal in the schedule.
 // Responsible: Grace
-// TODO: Implement execute method: validate meal exists, update with new recipe, save schedule, pass result to presenter
 
 public class EditMealInteractor implements EditMealInputBoundary {
 
