@@ -6,6 +6,7 @@ set "MAVEN_REPO=%USERPROFILE%\.m2\repository"
 set "JAVAFX_VERSION=17.0.2"
 set "KOTLIN_VERSION=1.8.21"
 set "OKIO_VERSION=3.6.0"
+set "OKIO_ARTIFACT=okio-jvm"
 
 set "JAVAFX_CONTROLS_DIR=%MAVEN_REPO%\org\openjfx\javafx-controls\%JAVAFX_VERSION%"
 set "JAVAFX_FXML_DIR=%MAVEN_REPO%\org\openjfx\javafx-fxml\%JAVAFX_VERSION%"
@@ -34,8 +35,8 @@ call :AddJar "org\slf4j\slf4j-api\2.0.9\slf4j-api-2.0.9.jar"
 call :AddJar "ch\qos\logback\logback-classic\1.4.11\logback-classic-1.4.11.jar"
 call :AddJar "ch\qos\logback\logback-core\1.4.11\logback-core-1.4.11.jar"
 
-echo   [INFO] Okio will be added: %OKIO_VERSION%
-call :AddJar "com\squareup\okio\okio\%OKIO_VERSION%\okio-%OKIO_VERSION%.jar"
+echo   [INFO] Okio (JVM) will be added: %OKIO_VERSION%
+call :AddJar "com\squareup\okio\%OKIO_ARTIFACT%\%OKIO_VERSION%\%OKIO_ARTIFACT%-%OKIO_VERSION%.jar"
 
 echo   [INFO] Kotlin stdlib will be added: %KOTLIN_VERSION%
 call :AddJar "org\jetbrains\kotlin\kotlin-stdlib-jdk8\%KOTLIN_VERSION%\kotlin-stdlib-jdk8-%KOTLIN_VERSION%.jar"

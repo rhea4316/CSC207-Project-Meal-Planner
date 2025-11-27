@@ -26,7 +26,8 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
 
     // Result Components
     private StackPane resultsContainer; 
-    private VBox listPanel; 
+    private VBox listPanel;
+    private ScrollPane listScrollPane;
     private VBox loadingPanel;
     private VBox emptyPanel;
     private Label errorLabel;
@@ -91,9 +92,9 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
 
         // 1. List View
         listPanel = new VBox(15);
-        ScrollPane scrollPane = new ScrollPane(listPanel);
-        scrollPane.setFitToWidth(true);
-        scrollPane.getStyleClass().add("scroll-pane-transparent");
+        listScrollPane = new ScrollPane(listPanel);
+        listScrollPane.setFitToWidth(true);
+        listScrollPane.getStyleClass().add("scroll-pane-transparent");
 
         // 2. Loading View
         loadingPanel = new VBox();
@@ -109,7 +110,7 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         emptyLabel.getStyleClass().add("empty-label");
         emptyPanel.getChildren().add(emptyLabel);
 
-        resultsContainer.getChildren().addAll(emptyPanel, loadingPanel, scrollPane);
+        resultsContainer.getChildren().addAll(emptyPanel, loadingPanel, listScrollPane);
         
         showView("EMPTY");
     }
@@ -117,12 +118,18 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
     private void showView(String viewName) {
         loadingPanel.setVisible(false);
         emptyPanel.setVisible(false);
-        listPanel.getParent().setVisible(false); // Hide scrollpane
+        if (listScrollPane != null) {
+            listScrollPane.setVisible(false); // Hide scrollpane
+        }
         
         switch(viewName) {
             case "LOADING": loadingPanel.setVisible(true); break;
             case "EMPTY": emptyPanel.setVisible(true); break;
-            case "LIST": listPanel.getParent().setVisible(true); break;
+            case "LIST":
+                if (listScrollPane != null) {
+                    listScrollPane.setVisible(true);
+                }
+                break;
         }
     }
 

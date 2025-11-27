@@ -4,6 +4,7 @@
 $mavenRepo = "$env:USERPROFILE\.m2\repository"
 $javafxVersion = "17.0.2"
 $okioVersion = "3.6.0"
+$okioArtifact = "okio-jvm"
 
 Write-Host "========================================"
 Write-Host "Meal Planner Application Launcher"
@@ -65,10 +66,10 @@ $dependencies = @(
     "org\slf4j\slf4j-api\2.0.9\slf4j-api-2.0.9.jar",
     "ch\qos\logback\logback-classic\1.4.11\logback-classic-1.4.11.jar",
     "ch\qos\logback\logback-core\1.4.11\logback-core-1.4.11.jar",
-    "com\squareup\okio\okio\$okioVersion\okio-$okioVersion.jar"
+    "com\squareup\okio\$okioArtifact\$okioVersion\$okioArtifact-$okioVersion.jar"
 )
 
-Write-Host "  [INFO] Okio will be added: $okioVersion" -ForegroundColor Cyan
+Write-Host "  [INFO] Okio (JVM) will be added: $okioVersion" -ForegroundColor Cyan
 
 foreach ($dep in $dependencies) {
     Add-ClasspathJar -path $dep
