@@ -18,26 +18,20 @@ public class AdjustServingSizePresenter implements AdjustServingSizeOutputBounda
     @Override
     public void presentAdjustedRecipe(AdjustServingSizeOutputData outputData) {
         if (outputData == null || outputData.getAdjustedRecipe() == null) {
-            if (viewModel != null) {
-                viewModel.setErrorMessage("Failed to adjust serving size");
-            }
+            viewModel.setErrorMessage("Failed to adjust serving size");
             return;
         }
 
         var adjustedRecipe = outputData.getAdjustedRecipe();
-        if (viewModel != null) {
-            viewModel.setRecipe(adjustedRecipe);
-            viewModel.setServingSize(adjustedRecipe.getServingSize());
-            viewModel.setIngredients(adjustedRecipe.getIngredients());
-            viewModel.setNutrition(adjustedRecipe.getNutritionInfo());
-            viewModel.setErrorMessage("");
-        }
+        viewModel.setRecipe(adjustedRecipe);
+        viewModel.setServingSize(adjustedRecipe.getServingSize());
+        viewModel.setIngredients(adjustedRecipe.getIngredients());
+        viewModel.setNutrition(adjustedRecipe.getNutritionInfo());
+        viewModel.setErrorMessage("");
     }
 
     @Override
     public void presentError(String errorMessage) {
-        if (viewModel != null) {
-            viewModel.setErrorMessage(errorMessage != null ? errorMessage : "An error occurred");
-        }
+        viewModel.setErrorMessage(errorMessage != null ? errorMessage : "An error occurred");
     }
 }

@@ -21,6 +21,7 @@ import com.mealplanner.use_case.search_by_ingredients.SearchByIngredientsInputBo
 import com.mealplanner.use_case.search_by_ingredients.SearchByIngredientsOutputBoundary;
 import com.mealplanner.use_case.store_recipe.StoreRecipeInputBoundary;
 import com.mealplanner.use_case.store_recipe.StoreRecipeOutputBoundary;
+import com.mealplanner.use_case.view_schedule.ViewScheduleDataAccessInterface;
 import com.mealplanner.use_case.view_schedule.ViewScheduleInputBoundary;
 import com.mealplanner.use_case.view_schedule.ViewScheduleOutputBoundary;
 import okhttp3.OkHttpClient;
@@ -75,7 +76,7 @@ public class UseCaseFactory {
         return new AdjustServingSizeDataAccessObject(apiClient);
     }
 
-    public static FileScheduleDataAccessObject createViewScheduleDataAccess() {
+    public static ViewScheduleDataAccessInterface createViewScheduleDataAccess() {
         return new FileScheduleDataAccessObject();
     }
 
@@ -115,7 +116,7 @@ public class UseCaseFactory {
         if (presenter == null) {
             throw new IllegalArgumentException("Presenter cannot be null");
         }
-        FileScheduleDataAccessObject dataAccess = createViewScheduleDataAccess();
+        ViewScheduleDataAccessInterface dataAccess = createViewScheduleDataAccess();
         return new com.mealplanner.use_case.view_schedule.ViewScheduleInteractor(dataAccess, presenter);
     }
 

@@ -12,5 +12,7 @@ public interface ViewScheduleDataAccessInterface {
 
     boolean existsByUsername(String username);
     User getUserByUsername(String username) throws UserNotFoundException;
+    void saveSchedule(Schedule schedule);
+    Schedule loadScheduleByUsername(String username);
 
 }

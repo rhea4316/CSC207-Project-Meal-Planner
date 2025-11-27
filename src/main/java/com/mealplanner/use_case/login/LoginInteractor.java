@@ -5,6 +5,7 @@ package com.mealplanner.use_case.login;
 
 import com.mealplanner.entity.User;
 import com.mealplanner.exception.UserNotFoundException;
+import java.util.Objects;
 
 public class LoginInteractor implements LoginInputBoundary {
 
@@ -12,8 +13,8 @@ public class LoginInteractor implements LoginInputBoundary {
     private final LoginOutputBoundary presenter;
 
     public LoginInteractor(LoginDataAccessInterface userDataAccess, LoginOutputBoundary presenter) {
-        this.userDataAccess = userDataAccess;
-        this.presenter = presenter;
+        this.userDataAccess = Objects.requireNonNull(userDataAccess, "User data access cannot be null");
+        this.presenter = Objects.requireNonNull(presenter, "Presenter cannot be null");
     }
 
     @Override

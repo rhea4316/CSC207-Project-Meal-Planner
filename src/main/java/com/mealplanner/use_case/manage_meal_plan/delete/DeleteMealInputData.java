@@ -5,7 +5,6 @@ import java.time.LocalDate;
 
 // Data transfer object carrying meal deletion information (date, meal type).
 // Responsible: Grace
-// TODO: Implement with date and meal type of the meal to delete
 
 public class DeleteMealInputData {
     private final LocalDate date;
