@@ -6,5 +6,6 @@ package com.mealplanner.use_case.view_schedule;
 
 public interface ViewScheduleInputBoundary {
     void execute(ViewScheduleInputData inputData);
-
+    void saveSchedule(ViewScheduleInputData inputData);
+    void loadSchedule(ViewScheduleInputData inputData);
 }

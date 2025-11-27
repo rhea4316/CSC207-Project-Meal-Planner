@@ -77,7 +77,7 @@ public class UseCaseFactory {
         return new AdjustServingSizeDataAccessObject(apiClient);
     }
 
-    public static ViewScheduleDataAccessInterface createViewScheduleDataAccess() {
+    public static FileScheduleDataAccessObject createViewScheduleDataAccess() {
         return new FileScheduleDataAccessObject();
     }
 
@@ -117,7 +117,7 @@ public class UseCaseFactory {
         if (presenter == null) {
             throw new IllegalArgumentException("Presenter cannot be null");
         }
-        ViewScheduleDataAccessInterface dataAccess = createViewScheduleDataAccess();
+        FileScheduleDataAccessObject dataAccess = createViewScheduleDataAccess();
         return new com.mealplanner.use_case.view_schedule.ViewScheduleInteractor(dataAccess, presenter);
     }
 
