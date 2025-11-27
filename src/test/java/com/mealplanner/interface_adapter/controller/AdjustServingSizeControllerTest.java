@@ -11,7 +11,6 @@ import static org.mockito.Mockito.*;
  * Tests controller input validation and interactor invocation.
  *
  * Responsible: Eden (primary)
- * TODO: Implement tests once AdjustServingSizeController is implemented
  */
 public class AdjustServingSizeControllerTest {
 
@@ -23,24 +22,57 @@ public class AdjustServingSizeControllerTest {
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        // TODO: Initialize controller with mocked interactor
+        controller = new AdjustServingSizeController(interactor);
     }
 
     @Test
     public void testAdjustServingSizeWithValidInput() {
-        // TODO: Test adjusting serving size with valid input
-        // TODO: Verify interactor is called with correct data
+        String recipeId = "recipe-1";
+        int newServingSize = 4;
+        
+        controller.execute(recipeId, newServingSize);
+        
+        verify(interactor).execute(argThat(inputData -> 
+            inputData.getRecipeId().equals(recipeId) &&
+            inputData.getNewServingSize() == newServingSize
+        ));
     }
 
     @Test
     public void testAdjustServingSizeWithInvalidSize() {
-        // TODO: Test adjusting with invalid serving size
-        // TODO: Verify error handling
+        String recipeId = "recipe-1";
+        int invalidSize = -1;
+        
+        controller.execute(recipeId, invalidSize);
+        
+        verify(interactor).execute(argThat(inputData -> 
+            inputData.getRecipeId().equals(recipeId) &&
+            inputData.getNewServingSize() == invalidSize
+        ));
     }
 
     @Test
     public void testAdjustServingSizeWithZero() {
-        // TODO: Test adjusting with zero serving size
-        // TODO: Verify error handling
+        String recipeId = "recipe-1";
+        int zeroSize = 0;
+        
+        controller.execute(recipeId, zeroSize);
+        
+        verify(interactor).execute(argThat(inputData -> 
+            inputData.getRecipeId().equals(recipeId) &&
+            inputData.getNewServingSize() == zeroSize
+        ));
+    }
+
+    @Test
+    public void testAdjustServingSizeWithEmptyRecipeId() {
+        controller.execute("", 4);
+        verify(interactor, never()).execute(any());
+    }
+
+    @Test
+    public void testAdjustServingSizeWithNullRecipeId() {
+        controller.execute(null, 4);
+        verify(interactor, never()).execute(any());
     }
 }

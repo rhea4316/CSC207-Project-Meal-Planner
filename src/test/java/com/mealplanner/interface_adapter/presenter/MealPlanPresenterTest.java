@@ -2,51 +2,100 @@ package com.mealplanner.interface_adapter.presenter;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
-import static org.junit.jupiter.api.Assertions.*;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import static org.mockito.Mockito.*;
 
 /**
  * Test class for MealPlanPresenter.
  * Tests formatting and presentation of meal plan operations.
  *
  * Responsible: Grace (primary)
- * TODO: Implement tests once MealPlanPresenter is implemented
  */
 public class MealPlanPresenterTest {
 
     private MealPlanPresenter presenter;
 
+    @Mock
+    private com.mealplanner.interface_adapter.view_model.MealPlanViewModel viewModel;
+
+    @Mock
+    private com.mealplanner.interface_adapter.ViewManagerModel viewManager;
+
     @BeforeEach
     public void setUp() {
-        // TODO: Initialize presenter with view model
+        MockitoAnnotations.openMocks(this);
+        presenter = new MealPlanPresenter(viewModel, viewManager);
     }
 
     @Test
     public void testPresentAddSuccess() {
-        // TODO: Test presenting successful meal addition
-        // TODO: Verify view model is updated
+        com.mealplanner.entity.Schedule schedule = new com.mealplanner.entity.Schedule("schedule-1", "user-1");
+        com.mealplanner.use_case.manage_meal_plan.add.AddMealOutputData outputData = 
+            new com.mealplanner.use_case.manage_meal_plan.add.AddMealOutputData(schedule, "Meal added successfully");
+        
+        presenter.presentAddSuccess(outputData);
+        
+        verify(viewModel).setSchedule(schedule);
+        verify(viewModel).setSuccessMessage("Meal added successfully");
+        verify(viewManager).setActiveView("MealPlanView");
     }
 
     @Test
     public void testPresentEditSuccess() {
-        // TODO: Test presenting successful meal edit
-        // TODO: Verify updated meal is shown
+        com.mealplanner.entity.Schedule schedule = new com.mealplanner.entity.Schedule("schedule-1", "user-1");
+        com.mealplanner.use_case.manage_meal_plan.edit.EditMealOutputData outputData = 
+            new com.mealplanner.use_case.manage_meal_plan.edit.EditMealOutputData(schedule, "Meal edited successfully");
+        
+        presenter.presentEditSuccess(outputData);
+        
+        verify(viewModel).setSchedule(schedule);
+        verify(viewModel).setSuccessMessage("Meal edited successfully");
+        verify(viewManager).setActiveView("MealPlanView");
     }
 
     @Test
     public void testPresentDeleteSuccess() {
-        // TODO: Test presenting successful meal deletion
-        // TODO: Verify meal is removed from view
+        com.mealplanner.entity.Schedule schedule = new com.mealplanner.entity.Schedule("schedule-1", "user-1");
+        com.mealplanner.use_case.manage_meal_plan.delete.DeleteMealOutputData outputData = 
+            new com.mealplanner.use_case.manage_meal_plan.delete.DeleteMealOutputData(schedule, "Meal deleted successfully");
+        
+        presenter.presentDeleteSuccess(outputData);
+        
+        verify(viewModel).setSchedule(schedule);
+        verify(viewModel).setSuccessMessage("Meal deleted successfully");
+        verify(viewManager).setActiveView("MealPlanView");
     }
 
     @Test
     public void testPresentConflictError() {
-        // TODO: Test presenting scheduling conflict
-        // TODO: Verify error message
+        String errorMessage = "Meal slot already taken";
+        
+        presenter.presentAddError(errorMessage);
+        
+        verify(viewModel).setErrorMessage(errorMessage);
     }
 
     @Test
     public void testFormatWeeklySchedule() {
-        // TODO: Test formatting weekly schedule display
-        // TODO: Verify all days are included
+        com.mealplanner.entity.Schedule schedule = new com.mealplanner.entity.Schedule("schedule-1", "user-1");
+        com.mealplanner.use_case.manage_meal_plan.add.AddMealOutputData outputData = 
+            new com.mealplanner.use_case.manage_meal_plan.add.AddMealOutputData(schedule, "Success");
+        
+        presenter.presentAddSuccess(outputData);
+        
+        verify(viewModel).setSchedule(schedule);
+    }
+
+    @Test
+    public void testPresentNullOutputData() {
+        presenter.presentAddSuccess(null);
+        verify(viewModel).setErrorMessage("Failed to add meal");
+        
+        presenter.presentEditSuccess(null);
+        verify(viewModel).setErrorMessage("Failed to edit meal");
+        
+        presenter.presentDeleteSuccess(null);
+        verify(viewModel).setErrorMessage("Failed to delete meal");
     }
 }

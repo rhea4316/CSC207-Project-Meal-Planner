@@ -2,39 +2,58 @@ package com.mealplanner.interface_adapter.presenter;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
-import static org.junit.jupiter.api.Assertions.*;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import static org.mockito.Mockito.*;
 
 /**
  * Test class for LoginPresenter.
  * Tests formatting and presentation of login results.
  *
  * Responsible: Mona (primary)
- * TODO: Implement tests once LoginPresenter is implemented
  */
 public class LoginPresenterTest {
 
     private LoginPresenter presenter;
 
+    @Mock
+    private com.mealplanner.interface_adapter.view_model.LoginViewModel viewModel;
+
     @BeforeEach
     public void setUp() {
-        // TODO: Initialize presenter with view model
+        MockitoAnnotations.openMocks(this);
+        presenter = new LoginPresenter(viewModel);
     }
 
     @Test
     public void testPresentLoginSuccess() {
-        // TODO: Test presenting successful login
-        // TODO: Verify user info is displayed
+        com.mealplanner.use_case.login.LoginOutputData outputData = 
+            new com.mealplanner.use_case.login.LoginOutputData("user-1", "testuser");
+        
+        presenter.presentLoginSuccess(outputData);
+        
+        verify(viewModel).setLoggedInUser("testuser");
+        verify(viewModel).setError(null);
+        verify(viewModel).firePropertyChanged();
     }
 
     @Test
     public void testPresentLoginFailure() {
-        // TODO: Test presenting login failure
-        // TODO: Verify error message
+        String errorMessage = "User not found";
+        
+        presenter.presentLoginFailure(errorMessage);
+        
+        verify(viewModel).setLoggedInUser(null);
+        verify(viewModel).setError(errorMessage);
+        verify(viewModel).firePropertyChanged();
     }
 
     @Test
     public void testPresentValidationError() {
-        // TODO: Test presenting validation error
-        // TODO: Verify specific field errors
+        String errorMessage = "Username cannot be empty";
+        
+        presenter.presentLoginFailure(errorMessage);
+        
+        verify(viewModel).setError(errorMessage);
     }
 }

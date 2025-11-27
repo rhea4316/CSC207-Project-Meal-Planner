@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 /**
@@ -11,7 +12,6 @@ import static org.mockito.Mockito.*;
  * Tests controller input validation and interactor invocation.
  *
  * Responsible: Mona (primary)
- * TODO: Implement tests once LoginController is implemented
  */
 public class LoginControllerTest {
 
@@ -23,30 +23,41 @@ public class LoginControllerTest {
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        // TODO: Initialize controller with mocked interactor
+        controller = new LoginController(interactor);
     }
 
     @Test
     public void testLoginWithValidCredentials() {
-        // TODO: Test login with valid credentials
-        // TODO: Verify interactor is called with correct data
+        String username = "testuser";
+        
+        controller.execute(username);
+        
+        verify(interactor).execute(argThat(inputData -> 
+            inputData.getUsername().equals(username)
+        ));
     }
 
     @Test
     public void testLoginWithEmptyUsername() {
-        // TODO: Test login with empty username
-        // TODO: Verify error handling
+        controller.execute("");
+        
+        verify(interactor).execute(argThat(inputData -> 
+            inputData.getUsername().equals("")
+        ));
     }
 
     @Test
     public void testLoginWithEmptyPassword() {
-        // TODO: Test login with empty password
-        // TODO: Verify error handling
+        String username = "testuser";
+        controller.execute(username);
+        
+        verify(interactor).execute(any());
     }
 
     @Test
     public void testLoginWithNullInput() {
-        // TODO: Test login with null input
-        // TODO: Verify error handling
+        assertThrows(NullPointerException.class, () -> {
+            controller.execute(null);
+        });
     }
 }

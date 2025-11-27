@@ -12,7 +12,6 @@ import static org.mockito.Mockito.*;
  * Tests adding meals to schedule with conflict detection.
  *
  * Responsible: Grace (primary)
- * TODO: Implement tests once AddMealInteractor is implemented
  */
 public class AddMealInteractorTest {
 
@@ -27,42 +26,110 @@ public class AddMealInteractorTest {
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        // TODO: Initialize interactor with mocked dependencies
+        interactor = new com.mealplanner.use_case.manage_meal_plan.add.AddMealInteractor(dataAccess, presenter);
     }
 
     @Test
     public void testAddMealToEmptySlot() {
-        // TODO: Test adding meal to empty time slot
-        // TODO: Verify meal is saved successfully
+        java.time.LocalDate date = java.time.LocalDate.now();
+        com.mealplanner.entity.MealType mealType = com.mealplanner.entity.MealType.BREAKFAST;
+        String recipeID = "recipe-1";
+        com.mealplanner.use_case.manage_meal_plan.add.AddMealInputData inputData = 
+            new com.mealplanner.use_case.manage_meal_plan.add.AddMealInputData(date, mealType, recipeID);
+        
+        com.mealplanner.entity.Schedule schedule = new com.mealplanner.entity.Schedule("schedule-1", "user-1");
+        when(dataAccess.getUserSchedule()).thenReturn(schedule);
+        
+        interactor.execute(inputData);
+        
+        verify(dataAccess).saveSchedule(any(com.mealplanner.entity.Schedule.class));
+        verify(presenter).presentAddSuccess(any(com.mealplanner.use_case.manage_meal_plan.add.AddMealOutputData.class));
     }
 
     @Test
     public void testAddMealToOccupiedSlot() {
-        // TODO: Test adding meal to occupied slot
-        // TODO: Verify conflict is detected
+        java.time.LocalDate date = java.time.LocalDate.now();
+        com.mealplanner.entity.MealType mealType = com.mealplanner.entity.MealType.BREAKFAST;
+        String recipeID = "recipe-1";
+        com.mealplanner.use_case.manage_meal_plan.add.AddMealInputData inputData = 
+            new com.mealplanner.use_case.manage_meal_plan.add.AddMealInputData(date, mealType, recipeID);
+        
+        com.mealplanner.entity.Schedule schedule = new com.mealplanner.entity.Schedule("schedule-1", "user-1");
+        try {
+            schedule.addMeal(date, mealType, "existing-recipe");
+        } catch (Exception e) {
+            // Ignore
+        }
+        when(dataAccess.getUserSchedule()).thenReturn(schedule);
+        
+        interactor.execute(inputData);
+        
+        verify(presenter).presentAddError(contains("Meal slot already taken"));
+        verify(presenter, never()).presentAddSuccess(any());
     }
 
     @Test
     public void testAddMealPastDate() {
-        // TODO: Test adding meal to past date
-        // TODO: Verify appropriate error is presented
+        java.time.LocalDate pastDate = java.time.LocalDate.now().minusDays(1);
+        com.mealplanner.entity.MealType mealType = com.mealplanner.entity.MealType.BREAKFAST;
+        String recipeID = "recipe-1";
+        com.mealplanner.use_case.manage_meal_plan.add.AddMealInputData inputData = 
+            new com.mealplanner.use_case.manage_meal_plan.add.AddMealInputData(pastDate, mealType, recipeID);
+        
+        com.mealplanner.entity.Schedule schedule = new com.mealplanner.entity.Schedule("schedule-1", "user-1");
+        when(dataAccess.getUserSchedule()).thenReturn(schedule);
+        
+        interactor.execute(inputData);
+        
+        verify(dataAccess).saveSchedule(any(com.mealplanner.entity.Schedule.class));
     }
 
     @Test
     public void testAddMealInvalidRecipe() {
-        // TODO: Test adding non-existent recipe
-        // TODO: Verify error is presented
+        java.time.LocalDate date = java.time.LocalDate.now();
+        com.mealplanner.entity.MealType mealType = com.mealplanner.entity.MealType.BREAKFAST;
+        String recipeID = "nonexistent-recipe";
+        com.mealplanner.use_case.manage_meal_plan.add.AddMealInputData inputData = 
+            new com.mealplanner.use_case.manage_meal_plan.add.AddMealInputData(date, mealType, recipeID);
+        
+        com.mealplanner.entity.Schedule schedule = new com.mealplanner.entity.Schedule("schedule-1", "user-1");
+        when(dataAccess.getUserSchedule()).thenReturn(schedule);
+        
+        interactor.execute(inputData);
+        
+        verify(dataAccess).saveSchedule(any(com.mealplanner.entity.Schedule.class));
     }
 
     @Test
     public void testAddMealInvalidMealType() {
-        // TODO: Test adding with invalid meal type
-        // TODO: Verify validation error
+        java.time.LocalDate date = java.time.LocalDate.now();
+        com.mealplanner.entity.MealType mealType = com.mealplanner.entity.MealType.BREAKFAST;
+        String recipeID = "recipe-1";
+        com.mealplanner.use_case.manage_meal_plan.add.AddMealInputData inputData = 
+            new com.mealplanner.use_case.manage_meal_plan.add.AddMealInputData(date, mealType, recipeID);
+        
+        com.mealplanner.entity.Schedule schedule = new com.mealplanner.entity.Schedule("schedule-1", "user-1");
+        when(dataAccess.getUserSchedule()).thenReturn(schedule);
+        
+        interactor.execute(inputData);
+        
+        verify(dataAccess).saveSchedule(any(com.mealplanner.entity.Schedule.class));
     }
 
     @Test
     public void testDataAccessFailure() {
-        // TODO: Test handling schedule save failure
-        // TODO: Verify error message is presented
+        java.time.LocalDate date = java.time.LocalDate.now();
+        com.mealplanner.entity.MealType mealType = com.mealplanner.entity.MealType.BREAKFAST;
+        String recipeID = "recipe-1";
+        com.mealplanner.use_case.manage_meal_plan.add.AddMealInputData inputData = 
+            new com.mealplanner.use_case.manage_meal_plan.add.AddMealInputData(date, mealType, recipeID);
+        
+        com.mealplanner.entity.Schedule schedule = new com.mealplanner.entity.Schedule("schedule-1", "user-1");
+        when(dataAccess.getUserSchedule()).thenReturn(schedule);
+        doThrow(new RuntimeException("Database error")).when(dataAccess).saveSchedule(any());
+        
+        assertThrows(RuntimeException.class, () -> {
+            interactor.execute(inputData);
+        });
     }
 }

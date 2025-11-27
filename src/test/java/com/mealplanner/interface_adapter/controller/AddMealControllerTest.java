@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 /**
@@ -11,7 +12,6 @@ import static org.mockito.Mockito.*;
  * Tests controller input validation and interactor invocation.
  *
  * Responsible: Grace (primary)
- * TODO: Implement tests once AddMealController is implemented
  */
 public class AddMealControllerTest {
 
@@ -23,24 +23,43 @@ public class AddMealControllerTest {
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        // TODO: Initialize controller with mocked interactor
+        controller = new AddMealController(interactor);
     }
 
     @Test
     public void testAddMealWithValidData() {
-        // TODO: Test adding meal with valid data
-        // TODO: Verify interactor is called
+        String date = java.time.LocalDate.now().toString();
+        String mealType = "BREAKFAST";
+        String recipeID = "recipe-1";
+        
+        controller.execute(date, mealType, recipeID);
+        
+        verify(interactor).execute(argThat(inputData -> 
+            inputData.getDate().equals(java.time.LocalDate.parse(date)) &&
+            inputData.getMealType() == com.mealplanner.entity.MealType.BREAKFAST &&
+            inputData.getRecipe().equals(recipeID)
+        ));
     }
 
     @Test
     public void testAddMealWithInvalidDate() {
-        // TODO: Test adding meal with invalid date
-        // TODO: Verify error handling
+        String invalidDate = "invalid-date";
+        String mealType = "BREAKFAST";
+        String recipeID = "recipe-1";
+        
+        assertThrows(Exception.class, () -> {
+            controller.execute(invalidDate, mealType, recipeID);
+        });
     }
 
     @Test
     public void testAddMealWithInvalidMealType() {
-        // TODO: Test adding meal with invalid meal type
-        // TODO: Verify error handling
+        String date = java.time.LocalDate.now().toString();
+        String invalidMealType = "INVALID";
+        String recipeID = "recipe-1";
+        
+        assertThrows(Exception.class, () -> {
+            controller.execute(date, invalidMealType, recipeID);
+        });
     }
 }

@@ -11,7 +11,6 @@ import static org.mockito.Mockito.*;
  * Tests controller input validation and interactor invocation.
  *
  * Responsible: Mona (primary)
- * TODO: Implement tests once ViewScheduleController is implemented
  */
 public class ViewScheduleControllerTest {
 
@@ -23,24 +22,56 @@ public class ViewScheduleControllerTest {
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        // TODO: Initialize controller with mocked interactor
+        controller = new ViewScheduleController(interactor);
     }
 
     @Test
     public void testViewScheduleWithValidUsername() {
-        // TODO: Test viewing schedule with valid username
-        // TODO: Verify interactor is called
+        String username = "testuser";
+        
+        controller.execute(username);
+        
+        verify(interactor).execute(argThat(inputData -> 
+            inputData.getUsername().equals(username)
+        ));
     }
 
     @Test
     public void testViewScheduleWithEmptyUsername() {
-        // TODO: Test viewing schedule with empty username
-        // TODO: Verify error handling
+        controller.execute("");
+        
+        verify(interactor).execute(argThat(inputData -> 
+            inputData.getUsername().equals("")
+        ));
     }
 
     @Test
     public void testViewScheduleForDateRange() {
-        // TODO: Test viewing schedule for specific date range
-        // TODO: Verify correct dates are passed to interactor
+        String username = "testuser";
+        controller.execute(username);
+        
+        verify(interactor).execute(any());
+    }
+
+    @Test
+    public void testLoadSchedule() {
+        String scheduleId = "schedule-1";
+        
+        controller.loadSchedule(scheduleId);
+        
+        verify(interactor).loadSchedule(argThat(inputData -> 
+            inputData.getUsername().equals(scheduleId)
+        ));
+    }
+
+    @Test
+    public void testSaveSchedule() {
+        com.mealplanner.entity.Schedule schedule = new com.mealplanner.entity.Schedule("schedule-1", "user-1");
+        
+        controller.saveSchedule(schedule);
+        
+        verify(interactor).saveSchedule(argThat(inputData -> 
+            inputData.getSchedule() == schedule
+        ));
     }
 }

@@ -11,7 +11,6 @@ import static org.mockito.Mockito.*;
  * Tests controller input validation and interactor invocation.
  *
  * Responsible: Regina (primary)
- * TODO: Implement tests once BrowseRecipeController is implemented
  */
 public class BrowseRecipeControllerTest {
 
@@ -23,18 +22,40 @@ public class BrowseRecipeControllerTest {
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        // TODO: Initialize controller with mocked interactor
+        controller = new BrowseRecipeController(interactor);
     }
 
     @Test
-    public void testBrowseRecipes() {
-        // TODO: Test browsing recipes
-        // TODO: Verify interactor is called
+    public void testBrowseRecipes() throws Exception {
+        String query = "pasta";
+        int numberOfRecipes = 5;
+        
+        controller.execute(query, numberOfRecipes);
+        
+        verify(interactor).execute(argThat(inputData -> 
+            inputData.getQuery().equals(query) &&
+            inputData.getNumberOfRecipesInt() == numberOfRecipes
+        ));
     }
 
     @Test
-    public void testViewRecipeDetails() {
-        // TODO: Test viewing recipe details
-        // TODO: Verify correct recipe ID is passed
+    public void testViewRecipeDetails() throws Exception {
+        String query = "pasta";
+        int numberOfRecipes = 5;
+        String ingredients = "tomato, cheese";
+        
+        controller.execute(query, numberOfRecipes, ingredients);
+        
+        verify(interactor).execute(argThat(inputData -> 
+            inputData.getQuery().equals(query) &&
+            inputData.getNumberOfRecipesInt() == numberOfRecipes &&
+            inputData.getIncludedIngredients().equals(ingredients)
+        ));
+    }
+
+    @Test
+    public void testBrowseRecipesWithEmptyQuery() throws Exception {
+        controller.execute("", 5);
+        verify(interactor, never()).execute(any());
     }
 }

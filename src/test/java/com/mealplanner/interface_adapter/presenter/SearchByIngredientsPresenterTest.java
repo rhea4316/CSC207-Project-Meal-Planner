@@ -2,45 +2,80 @@ package com.mealplanner.interface_adapter.presenter;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
-import static org.junit.jupiter.api.Assertions.*;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import static org.mockito.Mockito.*;
 
 /**
  * Test class for SearchByIngredientsPresenter.
  * Tests formatting and presentation of search results.
  *
  * Responsible: Jerry (primary)
- * TODO: Implement tests once SearchByIngredientsPresenter is implemented
  */
 public class SearchByIngredientsPresenterTest {
 
     private SearchByIngredientsPresenter presenter;
 
+    @Mock
+    private com.mealplanner.interface_adapter.view_model.RecipeSearchViewModel viewModel;
+
+    @Mock
+    private com.mealplanner.interface_adapter.ViewManagerModel viewManagerModel;
+
     @BeforeEach
     public void setUp() {
-        // TODO: Initialize presenter with view model
+        MockitoAnnotations.openMocks(this);
+        presenter = new SearchByIngredientsPresenter(viewModel, viewManagerModel);
     }
 
     @Test
     public void testPresentSuccess() {
-        // TODO: Test presenting successful search results
-        // TODO: Verify view model is updated correctly
+        com.mealplanner.entity.Recipe recipe = new com.mealplanner.entity.Recipe(
+            "Pasta", java.util.Arrays.asList("pasta", "sauce"), "Cook pasta", 2, null, null, null, "recipe-1");
+        java.util.List<com.mealplanner.entity.Recipe> recipes = java.util.Arrays.asList(recipe);
+        com.mealplanner.use_case.search_by_ingredients.SearchByIngredientsOutputData outputData = 
+            new com.mealplanner.use_case.search_by_ingredients.SearchByIngredientsOutputData(recipes);
+        
+        presenter.presentRecipes(outputData);
+        
+        verify(viewModel).setRecipes(recipes);
+        verify(viewModel).setErrorMessage("");
+        verify(viewModel).setLoading(false);
+        verify(viewManagerModel).setActiveView("SearchByIngredientsView");
     }
 
     @Test
     public void testPresentError() {
-        // TODO: Test presenting error message
-        // TODO: Verify error is displayed in view model
+        String errorMessage = "Search failed";
+        
+        presenter.presentError(errorMessage);
+        
+        verify(viewModel).setErrorMessage(errorMessage);
+        verify(viewModel).setLoading(false);
     }
 
     @Test
     public void testPresentEmptyResults() {
-        // TODO: Test presenting when no recipes found
-        // TODO: Verify appropriate message
+        com.mealplanner.use_case.search_by_ingredients.SearchByIngredientsOutputData outputData = 
+            new com.mealplanner.use_case.search_by_ingredients.SearchByIngredientsOutputData(java.util.Collections.emptyList());
+        
+        presenter.presentRecipes(outputData);
+        
+        verify(viewModel).setErrorMessage("No recipes found matching the provided ingredients");
+        verify(viewModel).setLoading(false);
     }
 
     @Test
     public void testFormatRecipeList() {
-        // TODO: Test recipe list formatting
-        // TODO: Verify nutrition info is included
+        com.mealplanner.entity.NutritionInfo nutrition = new com.mealplanner.entity.NutritionInfo(500, 20.0, 60.0, 15.0);
+        com.mealplanner.entity.Recipe recipe = new com.mealplanner.entity.Recipe(
+            "Pasta", java.util.Arrays.asList("pasta", "sauce"), "Cook pasta", 2, nutrition, null, null, "recipe-1");
+        java.util.List<com.mealplanner.entity.Recipe> recipes = java.util.Arrays.asList(recipe);
+        com.mealplanner.use_case.search_by_ingredients.SearchByIngredientsOutputData outputData = 
+            new com.mealplanner.use_case.search_by_ingredients.SearchByIngredientsOutputData(recipes);
+        
+        presenter.presentRecipes(outputData);
+        
+        verify(viewModel).setRecipes(recipes);
     }
 }

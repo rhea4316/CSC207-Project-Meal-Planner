@@ -11,7 +11,6 @@ import static org.mockito.Mockito.*;
  * Tests controller input validation and interactor invocation.
  *
  * Responsible: Jerry (primary)
- * TODO: Implement tests once SearchByIngredientsController is implemented
  */
 public class SearchByIngredientsControllerTest {
 
@@ -23,24 +22,47 @@ public class SearchByIngredientsControllerTest {
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        // TODO: Initialize controller with mocked interactor
+        controller = new SearchByIngredientsController(interactor);
     }
 
     @Test
-    public void testExecuteWithValidInput() {
-        // TODO: Test executing search with valid ingredients
-        // TODO: Verify interactor is called with correct input data
+    public void testExecuteWithValidInput() throws Exception {
+        java.util.List<String> ingredients = java.util.Arrays.asList("tomato", "cheese", "pasta");
+        
+        controller.execute(ingredients);
+        
+        Thread.sleep(100);
+        
+        verify(interactor, timeout(1000)).execute(argThat(inputData -> 
+            inputData.getIngredients().size() == 3 &&
+            inputData.getIngredients().contains("tomato")
+        ));
     }
 
     @Test
     public void testExecuteWithEmptyIngredients() {
-        // TODO: Test executing with empty ingredient list
-        // TODO: Verify appropriate handling
+        java.util.List<String> emptyList = java.util.Collections.emptyList();
+        
+        controller.execute(emptyList);
+        
+        verify(interactor, never()).execute(any());
     }
 
     @Test
     public void testExecuteWithNullInput() {
-        // TODO: Test executing with null input
-        // TODO: Verify error handling
+        controller.execute((java.util.List<String>) null);
+        
+        verify(interactor, never()).execute(any());
+    }
+
+    @Test
+    public void testExecuteWithStringInput() throws Exception {
+        String ingredientsRaw = "tomato, cheese, pasta";
+        
+        controller.execute(ingredientsRaw);
+        
+        Thread.sleep(100);
+        
+        verify(interactor, timeout(1000)).execute(any());
     }
 }
