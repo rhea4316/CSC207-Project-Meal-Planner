@@ -4,7 +4,6 @@ package com.mealplanner.interface_adapter.presenter;
 // Responsible: Mona
 
 import com.mealplanner.interface_adapter.view_model.ScheduleViewModel;
-import com.mealplanner.use_case.view_schedule.ViewScheduleInputBoundary;
 import com.mealplanner.use_case.view_schedule.ViewScheduleOutputBoundary;
 import com.mealplanner.use_case.view_schedule.ViewScheduleOutputData;
 

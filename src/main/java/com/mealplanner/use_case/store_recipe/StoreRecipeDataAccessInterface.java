@@ -15,8 +15,8 @@ public interface StoreRecipeDataAccessInterface {
 	/**
 	 * Save the provided recipe to persistent storage.
 	 * @param recipe recipe to save
-	 * @throws DataAccessException on persistence errors
+	 * @throws DataAccessException on persistence errors (unchecked)
 	 */
-	void save(Recipe recipe) throws DataAccessException;
+	void save(Recipe recipe);
 
 }

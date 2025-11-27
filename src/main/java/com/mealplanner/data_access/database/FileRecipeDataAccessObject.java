@@ -22,7 +22,7 @@ public class FileRecipeDataAccessObject implements StoreRecipeDataAccessInterfac
     }
 
     @Override
-    public void save(Recipe recipe) throws DataAccessException {
+    public void save(Recipe recipe) {
         if (recipe == null) {
             throw new DataAccessException("Recipe cannot be null");
         }
