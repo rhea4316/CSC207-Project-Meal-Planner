@@ -6,6 +6,7 @@ import com.mealplanner.exception.UserNotFoundException;
 // Responsible: Mona (interface), Everyone (implementation via FileUserDataAccessObject)
 // Done: Define methods to check if user exists and retrieve User entity by username
 
+
 public interface LoginDataAccessInterface {
 
     ///  return true if a user with the given username exists

@@ -7,6 +7,7 @@ import com.mealplanner.use_case.search_by_ingredients.SearchByIngredientsInputBo
 import com.mealplanner.use_case.search_by_ingredients.SearchByIngredientsInputData;
 import com.mealplanner.util.StringUtil;
 
+import javax.swing.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -20,14 +21,35 @@ public class SearchByIngredientsController {
     }
 
     /**
-     * Execute the use case with a list of ingredients.
+     * Execute the use case with a list of ingredients using SwingWorker for background processing.
      */
     public void execute(List<String> ingredients) {
         if (ingredients == null || ingredients.isEmpty()) {
-            return; // Let interactor handle validation
+            return; // Let interactor handle validation or view handle empty check
         }
-        SearchByIngredientsInputData inputData = new SearchByIngredientsInputData(ingredients);
-        interactor.execute(inputData);
+
+        // SwingWorker<ResultType, ProgressType>
+        // We don't need result type here because interactor calls presenter which updates view model
+        SwingWorker<Void, Void> worker = new SwingWorker<>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                SearchByIngredientsInputData inputData = new SearchByIngredientsInputData(ingredients);
+                interactor.execute(inputData);
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    get(); // Check for exceptions
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    // Ideally, we should have an error handling path in the interactor/presenter for exceptions
+                }
+            }
+        };
+        
+        worker.execute();
     }
 
     /**

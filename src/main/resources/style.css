@@ -1,0 +1,138 @@
+/* Global Styles */
+.root {
+    -fx-font-family: 'Segoe UI', sans-serif;
+    -fx-background-color: #F5F5F5;
+    -fx-font-size: 14px;
+}
+
+/* Headings */
+.title-label {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #333333;
+    -fx-padding: 20px;
+}
+
+.section-title {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #333333;
+    -fx-padding: 10px 0;
+}
+
+/* Modern Button */
+.modern-button {
+    -fx-background-color: #4CAF50;
+    -fx-text-fill: white;
+    -fx-background-radius: 10px;
+    -fx-padding: 10px 20px;
+    -fx-cursor: hand;
+    -fx-font-weight: bold;
+}
+
+.modern-button:hover {
+    -fx-background-color: #43A047;
+}
+
+.modern-button:pressed {
+    -fx-background-color: #388E3C;
+}
+
+.secondary-button {
+    -fx-background-color: white;
+    -fx-text-fill: #333333;
+    -fx-border-color: #E0E0E0;
+    -fx-border-radius: 10px;
+    -fx-background-radius: 10px;
+}
+
+.secondary-button:hover {
+    -fx-background-color: #F0F0F0;
+}
+
+.action-button {
+    -fx-background-color: #FF9800; /* Orange for actions */
+    -fx-text-fill: white;
+}
+.action-button:hover {
+    -fx-background-color: #F57C00;
+}
+
+/* Card Panel */
+.card-panel {
+    -fx-background-color: white;
+    -fx-background-radius: 15px;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 0);
+    -fx-padding: 15px;
+}
+
+/* Sidebar */
+.sidebar {
+    -fx-background-color: white;
+    -fx-border-color: transparent #E0E0E0 transparent transparent;
+    -fx-min-width: 250px;
+}
+
+.sidebar-logo {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #4CAF50;
+    -fx-padding: 20px;
+}
+
+.sidebar-item {
+    -fx-background-color: transparent;
+    -fx-text-fill: #333333;
+    -fx-font-size: 16px;
+    -fx-padding: 12px 25px;
+    -fx-alignment: center-left;
+    -fx-cursor: hand;
+}
+
+.sidebar-item:hover {
+    -fx-background-color: #F0F0F0;
+}
+
+.sidebar-item:selected {
+    -fx-background-color: #E8F5E9;
+    -fx-text-fill: #4CAF50;
+    -fx-font-weight: bold;
+}
+
+/* Inputs */
+.text-field, .text-area {
+    -fx-background-radius: 5px;
+    -fx-border-color: #E0E0E0;
+    -fx-border-radius: 5px;
+    -fx-padding: 8px;
+}
+
+.text-field:focused, .text-area:focused {
+    -fx-border-color: #4CAF50;
+    -fx-background-color: white;
+}
+
+/* Progress Bar */
+.progress-bar .track {
+    -fx-background-color: #E0E0E0;
+    -fx-background-radius: 5px;
+}
+
+.progress-bar .bar {
+    -fx-background-color: #4CAF50;
+    -fx-background-radius: 5px;
+    -fx-padding: 5px;
+}
+
+/* Table/Grid Styling */
+.grid-cell {
+    -fx-background-color: white;
+    -fx-border-color: #E0E0E0;
+    -fx-padding: 10px;
+}
+.grid-header {
+    -fx-background-color: #4CAF50;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-alignment: center;
+}

@@ -18,7 +18,6 @@ import java.io.IOException;
  * Tests controller input validation and interactor invocation.
  *
  * Responsible: Regina (primary)
- *
  */
 public class BrowseRecipeControllerTest {
 
@@ -34,59 +33,36 @@ public class BrowseRecipeControllerTest {
     }
 
     @Test
-    public void testBrowseRecipes() throws IOException {
+    public void testBrowseRecipes() throws Exception {
         String query = "pasta";
-        int numberOfRecipes = 1;
-        String ingredients = "tomato";
-
-        controller.execute(query, numberOfRecipes, ingredients);
-        verify(interactor).execute(argThat(inputData ->
-                inputData != null &&
-                query.equals(inputData.getQuery()) &&
-                numberOfRecipes == inputData.getNumberOfRecipesInt() &&
-                ingredients.equals(inputData.getIncludedIngredients())
-        ));
-    }
-
-    @Test
-    public void testBrowseRecipesWithoutIngredients() throws IOException {
-        String query = "pasta";
-        int numberOfRecipes = 3;
-
+        int numberOfRecipes = 5;
+        
         controller.execute(query, numberOfRecipes);
-        verify(interactor).execute(argThat(inputData ->
-                inputData != null &&
-                query.equals(inputData.getQuery()) &&
-                numberOfRecipes == inputData.getNumberOfRecipesInt() &&
-                inputData.getIncludedIngredients() == null
+        
+        verify(interactor).execute(argThat(inputData -> 
+            inputData.getQuery().equals(query) &&
+            inputData.getNumberOfRecipesInt() == numberOfRecipes
         ));
     }
 
     @Test
-    public void testBrowseRecipesWithEmptyQuery() throws IOException {
-        // Arrange
-        String query = "";
+    public void testViewRecipeDetails() throws Exception {
+        String query = "pasta";
         int numberOfRecipes = 5;
-        String ingredients = "chicken";
-
-        // Act
+        String ingredients = "tomato, cheese";
+        
         controller.execute(query, numberOfRecipes, ingredients);
-
-        // Assert
-        verify(interactor, never()).execute(any());
+        
+        verify(interactor).execute(argThat(inputData -> 
+            inputData.getQuery().equals(query) &&
+            inputData.getNumberOfRecipesInt() == numberOfRecipes &&
+            inputData.getIncludedIngredients().equals(ingredients)
+        ));
     }
 
     @Test
-    public void testBrowseRecipesWithNullQuery() throws IOException {
-        // Arrange
-        String query = null;
-        int numberOfRecipes = 5;
-        String ingredients = "chicken";
-
-        // Act
-        controller.execute(query, numberOfRecipes, ingredients);
-
-        // Assert
+    public void testBrowseRecipesWithEmptyQuery() throws Exception {
+        controller.execute("", 5);
         verify(interactor, never()).execute(any());
     }
 }

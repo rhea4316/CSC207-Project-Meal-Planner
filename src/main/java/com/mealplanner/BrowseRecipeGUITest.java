@@ -10,23 +10,25 @@ import com.mealplanner.use_case.browse_recipe.BrowseRecipeDataAccessInterface;
 import com.mealplanner.use_case.browse_recipe.BrowseRecipeInteractor;
 import com.mealplanner.view.BrowseRecipeView;
 import okhttp3.OkHttpClient;
+import javafx.application.Application;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
 
-import javax.swing.*;
-import java.awt.*;
-
-public class BrowseRecipeGUITest {
+public class BrowseRecipeGUITest extends Application {
     public static void main(String[] args) {
-        // Set up the application on the Event Dispatch Thread
-        SwingUtilities.invokeLater(() -> {
-            try {
-                createAndShowGUI();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
+        launch(args);
     }
 
-    private static void createAndShowGUI() {
+    @Override
+    public void start(Stage primaryStage) {
+        try {
+            createAndShowGUI(primaryStage);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void createAndShowGUI(Stage stage) {
         
         // Set up the architecture components
         ViewManagerModel viewManagerModel = new ViewManagerModel();
@@ -46,18 +48,11 @@ public class BrowseRecipeGUITest {
         BrowseRecipeController controller = new BrowseRecipeController(interactor);
 
         // Create the view
-        BrowseRecipeView browseRecipeView = new BrowseRecipeView(recipeBrowseViewModel, controller);
+        BrowseRecipeView browseRecipeView = new BrowseRecipeView(recipeBrowseViewModel, controller, viewManagerModel);
 
-        JFrame frame = new JFrame("Browse Recipe Test");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setPreferredSize(new Dimension(800, 600));
-
-        // Add view to frame
-        frame.add(browseRecipeView);
-
-        // Display the frame
-        frame.pack();
-        frame.setLocationRelativeTo(null); // Center the window
-        frame.setVisible(true);
+        Scene scene = new Scene(browseRecipeView, 800, 600);
+        stage.setTitle("Browse Recipe Test");
+        stage.setScene(scene);
+        stage.show();
     }
 }

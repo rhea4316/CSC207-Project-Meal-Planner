@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 /**
@@ -28,81 +29,36 @@ public class LoginControllerTest {
 
     @Test
     public void testLoginWithValidCredentials() {
-        // Arrange
         String username = "testuser";
-        String password = "password123";
-
-        // Act
-        controller.execute(username, password);
-
-        // Assert
+        
+        controller.execute(username);
+        
         verify(interactor).execute(argThat(inputData -> 
-            inputData.getUsername().equals(username) &&
-            inputData.getPassword().equals(password)
+            inputData.getUsername().equals(username)
         ));
     }
 
     @Test
     public void testLoginWithEmptyUsername() {
-        // Arrange
-        String username = "";
-        String password = "password123";
-
-        // Act
-        controller.execute(username, password);
-
-        // Assert
+        controller.execute("");
+        
         verify(interactor).execute(argThat(inputData -> 
-            inputData.getUsername().equals(username) &&
-            inputData.getPassword().equals(password)
+            inputData.getUsername().equals("")
         ));
     }
 
     @Test
     public void testLoginWithEmptyPassword() {
-        // Arrange
         String username = "testuser";
-        String password = "";
-
-        // Act
-        controller.execute(username, password);
-
-        // Assert
-        verify(interactor).execute(argThat(inputData -> 
-            inputData.getUsername().equals(username) &&
-            inputData.getPassword().equals(password)
-        ));
+        controller.execute(username);
+        
+        verify(interactor).execute(any());
     }
 
     @Test
     public void testLoginWithNullInput() {
-        // Arrange
-        String username = null;
-        String password = "password123";
-
-        // Act
-        controller.execute(username, password);
-
-        // Assert
-        verify(interactor).execute(argThat(inputData -> 
-            inputData.getUsername() == null &&
-            inputData.getPassword().equals(password)
-        ));
-    }
-
-    @Test
-    public void testLoginWithNullPassword() {
-        // Arrange
-        String username = "testuser";
-        String password = null;
-
-        // Act
-        controller.execute(username, password);
-
-        // Assert
-        verify(interactor).execute(argThat(inputData -> 
-            inputData.getUsername().equals(username) &&
-            inputData.getPassword() == null
-        ));
+        assertThrows(NullPointerException.class, () -> {
+            controller.execute(null);
+        });
     }
 }

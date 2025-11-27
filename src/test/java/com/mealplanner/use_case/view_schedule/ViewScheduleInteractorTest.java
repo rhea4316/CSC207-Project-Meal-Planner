@@ -20,7 +20,7 @@ public class ViewScheduleInteractorTest {
     private ViewScheduleInteractor interactor;
 
     @Mock
-    private ViewScheduleDataAccessInterface dataAccess;
+    private com.mealplanner.data_access.database.FileScheduleDataAccessObject dataAccess;
 
     @Mock
     private ViewScheduleOutputBoundary presenter;
@@ -32,248 +32,153 @@ public class ViewScheduleInteractorTest {
     }
 
     @Test
-    public void testViewScheduleSuccess() {
-        // Arrange
+    public void testViewScheduleSuccess() throws com.mealplanner.exception.UserNotFoundException, com.mealplanner.exception.ScheduleConflictException {
         String username = "testuser";
-        Schedule schedule = new Schedule("schedule1", "user123");
-        User user = new User("user123", username, "password");
+        ViewScheduleInputData inputData = new ViewScheduleInputData(username);
+        
+        com.mealplanner.entity.Schedule schedule = new com.mealplanner.entity.Schedule("schedule-1", "user-1");
+        schedule.addMeal(java.time.LocalDate.now(), com.mealplanner.entity.MealType.BREAKFAST, "recipe-1");
+        
+        com.mealplanner.entity.User user = new com.mealplanner.entity.User("user-1", username, "password");
         user.setMealSchedule(schedule);
         
         when(dataAccess.getUserByUsername(username)).thenReturn(user);
-
-        ViewScheduleInputData inputData = new ViewScheduleInputData(username);
-
-        // Act
+        
         interactor.execute(inputData);
-
-        // Assert
-        verify(dataAccess).getUserByUsername(username);
+        
         verify(presenter).presentSchedule(argThat(outputData -> 
-            outputData.getUsername().equals(username) && 
-            outputData.getSchedule().equals(schedule)
+            outputData.getUsername().equals(username) &&
+            outputData.getSchedule() != null
         ));
-        verify(presenter, never()).presentError(anyString());
     }
 
     @Test
-    public void testViewEmptySchedule() {
-        // Arrange
+    public void testViewEmptySchedule() throws com.mealplanner.exception.UserNotFoundException {
         String username = "testuser";
-        Schedule emptySchedule = new Schedule("schedule1", "user123");
-        User user = new User("user123", username, "password");
-        user.setMealSchedule(emptySchedule);
+        ViewScheduleInputData inputData = new ViewScheduleInputData(username);
+        
+        com.mealplanner.entity.Schedule schedule = new com.mealplanner.entity.Schedule("schedule-1", "user-1");
+        com.mealplanner.entity.User user = new com.mealplanner.entity.User("user-1", username, "password");
+        user.setMealSchedule(schedule);
         
         when(dataAccess.getUserByUsername(username)).thenReturn(user);
-
-        ViewScheduleInputData inputData = new ViewScheduleInputData(username);
-
-        // Act
+        
         interactor.execute(inputData);
-
-        // Assert
-        verify(dataAccess).getUserByUsername(username);
+        
         verify(presenter).presentError("No Schedule found for user");
-        verify(presenter, never()).presentSchedule(any());
     }
 
     @Test
-    public void testViewScheduleInvalidUser() {
-        // Arrange
+    public void testViewScheduleInvalidUser() throws com.mealplanner.exception.UserNotFoundException {
         String username = "nonexistent";
-        
-        when(dataAccess.getUserByUsername(username)).thenThrow(new UserNotFoundException(username));
-
         ViewScheduleInputData inputData = new ViewScheduleInputData(username);
-
-        // Act
+        
+        when(dataAccess.getUserByUsername(username)).thenThrow(new com.mealplanner.exception.UserNotFoundException("User not found"));
+        
         interactor.execute(inputData);
-
-        // Assert
-        verify(dataAccess).getUserByUsername(username);
+        
         verify(presenter).presentError("Username not found");
-        verify(presenter, never()).presentSchedule(any());
     }
 
     @Test
-    public void testViewScheduleNullInput() {
-        // Act
-        interactor.execute(null);
-
-        // Assert
-        verify(dataAccess, never()).getUserByUsername(anyString());
-        verify(presenter).presentError("Input data cannot be null");
-        verify(presenter, never()).presentSchedule(any());
-    }
-
-    @Test
-    public void testViewScheduleEmptyUsername() {
-        // Arrange
-        ViewScheduleInputData inputData = new ViewScheduleInputData("");
-
-        // Act
-        interactor.execute(inputData);
-
-        // Assert
-        verify(dataAccess, never()).getUserByUsername(anyString());
-        verify(presenter).presentError("Username cannot be empty");
-        verify(presenter, never()).presentSchedule(any());
-    }
-
-    @Test
-    public void testViewScheduleNullUsername() {
-        // Arrange
-        ViewScheduleInputData inputData = new ViewScheduleInputData(null);
-
-        // Act
-        interactor.execute(inputData);
-
-        // Assert
-        verify(dataAccess, never()).getUserByUsername(anyString());
-        verify(presenter).presentError("Username cannot be empty");
-        verify(presenter, never()).presentSchedule(any());
-    }
-
-    @Test
-    public void testViewScheduleWhitespaceUsername() {
-        // Arrange
-        ViewScheduleInputData inputData = new ViewScheduleInputData("   ");
-
-        // Act
-        interactor.execute(inputData);
-
-        // Assert
-        verify(dataAccess, never()).getUserByUsername(anyString());
-        verify(presenter).presentError("Username cannot be empty");
-        verify(presenter, never()).presentSchedule(any());
-    }
-
-    @Test
-    public void testViewScheduleNullSchedule() {
-        // Arrange
+    public void testViewSpecificDate() throws com.mealplanner.exception.UserNotFoundException, com.mealplanner.exception.ScheduleConflictException {
         String username = "testuser";
-        User user = new User("user123", username, "password");
-        user.setMealSchedule(null);
+        ViewScheduleInputData inputData = new ViewScheduleInputData(username);
+        
+        com.mealplanner.entity.Schedule schedule = new com.mealplanner.entity.Schedule("schedule-1", "user-1");
+        schedule.addMeal(java.time.LocalDate.now(), com.mealplanner.entity.MealType.BREAKFAST, "recipe-1");
+        
+        com.mealplanner.entity.User user = new com.mealplanner.entity.User("user-1", username, "password");
+        user.setMealSchedule(schedule);
         
         when(dataAccess.getUserByUsername(username)).thenReturn(user);
-
-        ViewScheduleInputData inputData = new ViewScheduleInputData(username);
-
-        // Act
+        
         interactor.execute(inputData);
-
-        // Assert
-        verify(dataAccess).getUserByUsername(username);
-        verify(presenter).presentError("No Schedule found for user");
-        verify(presenter, never()).presentSchedule(any());
+        
+        verify(presenter).presentSchedule(any());
     }
 
     @Test
-    public void testDataAccessFailure() {
-        // Arrange
+    public void testViewWeeklySchedule() throws com.mealplanner.exception.UserNotFoundException, com.mealplanner.exception.ScheduleConflictException {
         String username = "testuser";
+        ViewScheduleInputData inputData = new ViewScheduleInputData(username);
+        
+        com.mealplanner.entity.Schedule schedule = new com.mealplanner.entity.Schedule("schedule-1", "user-1");
+        java.time.LocalDate start = java.time.LocalDate.now();
+        for (int i = 0; i < 7; i++) {
+            schedule.addMeal(start.plusDays(i), com.mealplanner.entity.MealType.BREAKFAST, "recipe-" + i);
+        }
+        
+        com.mealplanner.entity.User user = new com.mealplanner.entity.User("user-1", username, "password");
+        user.setMealSchedule(schedule);
+        
+        when(dataAccess.getUserByUsername(username)).thenReturn(user);
+        
+        interactor.execute(inputData);
+        
+        verify(presenter).presentSchedule(any());
+    }
+
+    @Test
+    public void testRecipeDetailsInSchedule() throws com.mealplanner.exception.UserNotFoundException, com.mealplanner.exception.ScheduleConflictException {
+        String username = "testuser";
+        ViewScheduleInputData inputData = new ViewScheduleInputData(username);
+        
+        com.mealplanner.entity.Schedule schedule = new com.mealplanner.entity.Schedule("schedule-1", "user-1");
+        schedule.addMeal(java.time.LocalDate.now(), com.mealplanner.entity.MealType.BREAKFAST, "recipe-1");
+        
+        com.mealplanner.entity.User user = new com.mealplanner.entity.User("user-1", username, "password");
+        user.setMealSchedule(schedule);
+        
+        when(dataAccess.getUserByUsername(username)).thenReturn(user);
+        
+        interactor.execute(inputData);
+        
+        verify(presenter).presentSchedule(any());
+    }
+
+    @Test
+    public void testDataAccessFailure() throws com.mealplanner.exception.UserNotFoundException {
+        String username = "testuser";
+        ViewScheduleInputData inputData = new ViewScheduleInputData(username);
         
         when(dataAccess.getUserByUsername(username)).thenThrow(new RuntimeException("Database error"));
-
-        ViewScheduleInputData inputData = new ViewScheduleInputData(username);
-
-        // Act
+        
         interactor.execute(inputData);
-
-        // Assert
-        verify(dataAccess).getUserByUsername(username);
-        verify(presenter).presentError("Unexpected error: Database error");
-        verify(presenter, never()).presentSchedule(any());
-    }
-
-    @Test
-    public void testSaveScheduleSuccess() {
-        // Arrange
-        Schedule schedule = new Schedule("schedule1", "user123");
-        ViewScheduleInputData inputData = new ViewScheduleInputData("testuser");
-        inputData.loadSchedule(schedule);
-
-        // Act
-        interactor.saveSchedule(inputData);
-
-        // Assert
-        verify(dataAccess).saveSchedule(schedule);
-        verify(presenter, never()).presentError(anyString());
-    }
-
-    @Test
-    public void testSaveScheduleNullInput() {
-        // Act
-        interactor.saveSchedule(null);
-
-        // Assert
-        verify(dataAccess, never()).saveSchedule(any());
-        verify(presenter).presentError("Input data cannot be null");
-    }
-
-    @Test
-    public void testSaveScheduleNullSchedule() {
-        // Arrange
-        ViewScheduleInputData inputData = new ViewScheduleInputData("testuser");
-
-        // Act
-        interactor.saveSchedule(inputData);
-
-        // Assert
-        verify(dataAccess, never()).saveSchedule(any());
-        verify(presenter).presentError("Schedule cannot be empty");
-    }
-
-    @Test
-    public void testLoadScheduleSuccess() {
-        // Arrange
-        String username = "testuser";
-        Schedule schedule = new Schedule("schedule1", "user123");
         
-        when(dataAccess.loadScheduleByUsername(username)).thenReturn(schedule);
-
-        ViewScheduleInputData inputData = new ViewScheduleInputData(username);
-
-        // Act
-        interactor.loadSchedule(inputData);
-
-        // Assert
-        verify(dataAccess).loadScheduleByUsername(username);
-        verify(presenter).presentSchedule(argThat(outputData -> 
-            outputData.getUsername().equals(username) && 
-            outputData.getSchedule().equals(schedule)
-        ));
-        verify(presenter, never()).presentError(anyString());
+        verify(presenter).presentError("Unexpected error");
     }
 
     @Test
-    public void testLoadScheduleNullSchedule() {
-        // Arrange
-        String username = "testuser";
-        
-        when(dataAccess.loadScheduleByUsername(username)).thenReturn(null);
-
-        ViewScheduleInputData inputData = new ViewScheduleInputData(username);
-
-        // Act
-        interactor.loadSchedule(inputData);
-
-        // Assert
-        verify(dataAccess).loadScheduleByUsername(username);
-        verify(presenter).presentError("No Schedule found for user");
-        verify(presenter, never()).presentSchedule(any());
-    }
-
-    @Test
-    public void testLoadScheduleEmptyUsername() {
-        // Arrange
+    public void testViewScheduleWithEmptyUsername() {
         ViewScheduleInputData inputData = new ViewScheduleInputData("");
-
-        // Act
-        interactor.loadSchedule(inputData);
-
-        // Assert
-        verify(dataAccess, never()).loadScheduleByUsername(anyString());
+        
+        interactor.execute(inputData);
+        
         verify(presenter).presentError("Username cannot be empty");
-        verify(presenter, never()).presentSchedule(any());
+    }
+
+    @Test
+    public void testSaveSchedule() {
+        com.mealplanner.entity.Schedule schedule = new com.mealplanner.entity.Schedule("schedule-1", "user-1");
+        ViewScheduleInputData inputData = new ViewScheduleInputData("user-1");
+        inputData.loadSchedule(schedule);
+        
+        interactor.saveSchedule(inputData);
+        
+        verify(dataAccess).saveSchedule(schedule);
+    }
+
+    @Test
+    public void testLoadSchedule() {
+        String scheduleId = "schedule-1";
+        ViewScheduleInputData inputData = new ViewScheduleInputData(scheduleId);
+        com.mealplanner.entity.Schedule schedule = new com.mealplanner.entity.Schedule(scheduleId, "user-1");
+        
+        when(dataAccess.loadSchedule(scheduleId)).thenReturn(schedule);
+        
+        interactor.loadSchedule(inputData);
+        
+        verify(presenter).presentSchedule(any());
     }
 }

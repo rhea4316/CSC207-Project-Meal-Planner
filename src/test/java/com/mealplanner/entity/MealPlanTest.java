@@ -8,6 +8,8 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.Arrays;
+
 /**
  * Test class for MealPlan entity.
  * Tests daily meal plan creation and nutrition calculation.
@@ -20,152 +22,232 @@ public class MealPlanTest {
     private Recipe breakfast;
     private Recipe lunch;
     private Recipe dinner;
+    private NutritionInfo breakfastNutrition;
+    private NutritionInfo lunchNutrition;
+    private NutritionInfo dinnerNutrition;
 
     @BeforeEach
     public void setUp() {
-        breakfast = new Recipe("Oatmeal", Arrays.asList("oats", "milk"), "Cook oats", 1,
-                new NutritionInfo(300, 10.0, 50.0, 5.0), 10, null, "breakfast_1");
+        breakfastNutrition = new NutritionInfo(300, 10.0, 50.0, 5.0);
+        lunchNutrition = new NutritionInfo(500, 20.0, 60.0, 15.0);
+        dinnerNutrition = new NutritionInfo(600, 25.0, 70.0, 20.0);
 
-        lunch = new Recipe("Chicken Salad", Arrays.asList("chicken", "lettuce"), "Mix ingredients", 1,
-                new NutritionInfo(400, 30.0, 20.0, 15.0), 15, null, "lunch_1");
+        breakfast = new Recipe(
+            "Scrambled Eggs",
+            Arrays.asList("2 eggs", "butter", "salt"),
+            "Cook eggs in butter",
+            2,
+            breakfastNutrition,
+            10,
+            null,
+            "recipe-1"
+        );
 
-        dinner = new Recipe("Salmon", Arrays.asList("salmon", "rice"), "Grill salmon", 1,
-                new NutritionInfo(500, 40.0, 30.0, 20.0), 25, null, "dinner_1");
+        lunch = new Recipe(
+            "Chicken Salad",
+            Arrays.asList("chicken", "lettuce", "tomato"),
+            "Mix ingredients",
+            1,
+            lunchNutrition,
+            15,
+            null,
+            "recipe-2"
+        );
+
+        dinner = new Recipe(
+            "Grilled Salmon",
+            Arrays.asList("salmon", "lemon", "herbs"),
+            "Grill salmon",
+            2,
+            dinnerNutrition,
+            20,
+            null,
+            "recipe-3"
+        );
 
         mealPlan = new MealPlan(breakfast, lunch, dinner);
     }
 
     @Test
     public void testMealPlanCreation() {
-        // Test meal plan creation with valid recipes
-        assertNotNull(mealPlan);
-        assertEquals(breakfast, mealPlan.getBreakfast());
-        assertEquals(lunch, mealPlan.getLunch());
-        assertEquals(dinner, mealPlan.getDinner());
+        Recipe testBreakfast = new Recipe(
+            "Test Breakfast",
+            Arrays.asList("ingredient1"),
+            "step1",
+            1,
+            null,
+            null,
+            null,
+            null
+        );
+        Recipe testLunch = new Recipe(
+            "Test Lunch",
+            Arrays.asList("ingredient2"),
+            "step2",
+            1,
+            null,
+            null,
+            null,
+            null
+        );
+        Recipe testDinner = new Recipe(
+            "Test Dinner",
+            Arrays.asList("ingredient3"),
+            "step3",
+            1,
+            null,
+            null,
+            null,
+            null
+        );
 
-        // Test meal plan creation with null recipes throws exception
+        MealPlan newMealPlan = new MealPlan(testBreakfast, testLunch, testDinner);
+        assertNotNull(newMealPlan);
+        assertEquals(testBreakfast, newMealPlan.getBreakfast());
+        assertEquals(testLunch, newMealPlan.getLunch());
+        assertEquals(testDinner, newMealPlan.getDinner());
+        assertEquals(3, newMealPlan.getServingSize());
+
         assertThrows(IllegalArgumentException.class, () -> {
-            new MealPlan(null, lunch, dinner);
+            new MealPlan(null, testLunch, testDinner);
         });
 
         assertThrows(IllegalArgumentException.class, () -> {
-            new MealPlan(breakfast, null, dinner);
+            new MealPlan(testBreakfast, null, testDinner);
         });
 
         assertThrows(IllegalArgumentException.class, () -> {
-            new MealPlan(breakfast, lunch, null);
+            new MealPlan(testBreakfast, testLunch, null);
         });
     }
 
     @Test
     public void testAddMeal() {
-        // Test adding breakfast
-        Recipe newBreakfast = new Recipe("Pancakes", Arrays.asList("flour", "eggs"), "Cook", 1);
+        Recipe newBreakfast = new Recipe(
+            "New Breakfast",
+            Arrays.asList("new ingredient"),
+            "new step",
+            1,
+            null,
+            null,
+            null,
+            null
+        );
+        Recipe newLunch = new Recipe(
+            "New Lunch",
+            Arrays.asList("new ingredient2"),
+            "new step2",
+            2,
+            null,
+            null,
+            null,
+            null
+        );
+        Recipe newDinner = new Recipe(
+            "New Dinner",
+            Arrays.asList("new ingredient3"),
+            "new step3",
+            3,
+            null,
+            null,
+            null,
+            null
+        );
+
         mealPlan.setBreakfast(newBreakfast);
         assertEquals(newBreakfast, mealPlan.getBreakfast());
+        assertEquals(6, mealPlan.getServingSize());
 
-        // Test adding lunch
-        Recipe newLunch = new Recipe("Burger", Arrays.asList("bun", "patty"), "Grill", 1);
         mealPlan.setLunch(newLunch);
         assertEquals(newLunch, mealPlan.getLunch());
+        assertEquals(6, mealPlan.getServingSize());
 
-        // Test adding dinner
-        Recipe newDinner = new Recipe("Steak", Arrays.asList("beef"), "Grill", 1);
         mealPlan.setDinner(newDinner);
         assertEquals(newDinner, mealPlan.getDinner());
+        assertEquals(6, mealPlan.getServingSize());
 
-        // Test adding null meal throws exception
         assertThrows(IllegalArgumentException.class, () -> {
             mealPlan.setBreakfast(null);
+        });
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            mealPlan.setLunch(null);
+        });
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            mealPlan.setDinner(null);
         });
     }
 
     @Test
     public void testTotalNutritionCalculation() {
-        // Test calculating total daily calories
         NutritionInfo totalNutrition = mealPlan.getTotalDailyNutrition();
 
-        // Total: 300 + 400 + 500 = 1200 calories
-        assertEquals(1200, totalNutrition.getCalories());
+        assertEquals(1400, totalNutrition.getCalories());
+        assertEquals(55.0, totalNutrition.getProtein(), 0.01);
+        assertEquals(180.0, totalNutrition.getCarbs(), 0.01);
+        assertEquals(40.0, totalNutrition.getFat(), 0.01);
 
-        // Total protein: 10 + 30 + 40 = 80g
-        assertEquals(80.0, totalNutrition.getProtein());
+        Recipe noNutritionBreakfast = new Recipe(
+            "No Nutrition Breakfast",
+            Arrays.asList("ingredient"),
+            "step",
+            1,
+            null,
+            null,
+            null,
+            null
+        );
+        Recipe noNutritionLunch = new Recipe(
+            "No Nutrition Lunch",
+            Arrays.asList("ingredient2"),
+            "step2",
+            1,
+            null,
+            null,
+            null,
+            null
+        );
+        Recipe noNutritionDinner = new Recipe(
+            "No Nutrition Dinner",
+            Arrays.asList("ingredient3"),
+            "step3",
+            1,
+            null,
+            null,
+            null,
+            null
+        );
 
-        // Total carbs: 50 + 20 + 30 = 100g
-        assertEquals(100.0, totalNutrition.getCarbs());
+        MealPlan mealPlanNoNutrition = new MealPlan(noNutritionBreakfast, noNutritionLunch, noNutritionDinner);
+        NutritionInfo totalNutritionEmpty = mealPlanNoNutrition.getTotalDailyNutrition();
 
-        // Total fat: 5 + 15 + 20 = 40g
-        assertEquals(40.0, totalNutrition.getFat());
-    }
-
-    @Test
-    public void testTotalNutritionWithNullNutrition() {
-        // Test with recipes without nutrition info
-        Recipe noNutritionBreakfast = new Recipe("Toast", Arrays.asList("bread"), "Toast", 1);
-        Recipe noNutritionLunch = new Recipe("Soup", Arrays.asList("water", "vegetables"), "Boil", 1);
-        Recipe noNutritionDinner = new Recipe("Pasta", Arrays.asList("pasta"), "Cook", 1);
-
-        MealPlan emptyNutrition = new MealPlan(noNutritionBreakfast, noNutritionLunch, noNutritionDinner);
-        NutritionInfo totalNutrition = emptyNutrition.getTotalDailyNutrition();
-
-        // Should handle null nutrition info gracefully
-        assertEquals(0, totalNutrition.getCalories());
-        assertEquals(0.0, totalNutrition.getProtein());
+        assertEquals(0, totalNutritionEmpty.getCalories());
+        assertEquals(0.0, totalNutritionEmpty.getProtein(), 0.01);
+        assertEquals(0.0, totalNutritionEmpty.getCarbs(), 0.01);
+        assertEquals(0.0, totalNutritionEmpty.getFat(), 0.01);
     }
 
     @Test
     public void testGetMealByType() {
-        // Test getting specific meal type
-        Map<MealType, Recipe> meals = mealPlan.getMeals();
-        assertEquals(breakfast, meals.get(MealType.BREAKFAST));
-        assertEquals(lunch, meals.get(MealType.LUNCH));
-        assertEquals(dinner, meals.get(MealType.DINNER));
+        assertEquals(breakfast, mealPlan.getBreakfast());
+        assertEquals(lunch, mealPlan.getLunch());
+        assertEquals(dinner, mealPlan.getDinner());
+
+        assertEquals(breakfast, mealPlan.getMeals().get(MealType.BREAKFAST));
+        assertEquals(lunch, mealPlan.getMeals().get(MealType.LUNCH));
+        assertEquals(dinner, mealPlan.getMeals().get(MealType.DINNER));
     }
 
     @Test
-    public void testGetServingSize() {
-        // Serving size should be sum of all meal serving sizes
-        assertEquals(3, mealPlan.getServingSize());
-    }
+    public void testIsComplete() {
+        assertNotNull(mealPlan.getBreakfast());
+        assertNotNull(mealPlan.getLunch());
+        assertNotNull(mealPlan.getDinner());
 
-    @Test
-    public void testServingSizeUpdatesWhenMealsChange() {
-        Recipe twoServingBreakfast = new Recipe("Big Breakfast", Arrays.asList("eggs", "bacon"),
-                "Cook", 2);
-
-        mealPlan.setBreakfast(twoServingBreakfast);
-
-        // New serving size: 2 (breakfast) + 1 (lunch) + 1 (dinner) = 4
-        assertEquals(4, mealPlan.getServingSize());
-    }
-
-    @Test
-    public void testEquals() {
-        MealPlan mealPlan1 = new MealPlan(breakfast, lunch, dinner);
-        MealPlan mealPlan2 = new MealPlan(breakfast, lunch, dinner);
-
-        Recipe differentDinner = new Recipe("Pizza", Arrays.asList("dough", "cheese"), "Bake", 1);
-        MealPlan mealPlan3 = new MealPlan(breakfast, lunch, differentDinner);
-
-        assertEquals(mealPlan1, mealPlan2);
-        assertNotEquals(mealPlan1, mealPlan3);
-    }
-
-    @Test
-    public void testHashCode() {
-        MealPlan mealPlan1 = new MealPlan(breakfast, lunch, dinner);
-        MealPlan mealPlan2 = new MealPlan(breakfast, lunch, dinner);
-
-        assertEquals(mealPlan1.hashCode(), mealPlan2.hashCode());
-    }
-
-    @Test
-    public void testToString() {
-        String result = mealPlan.toString();
-
-        assertNotNull(result);
-        assertTrue(result.contains("Oatmeal"));
-        assertTrue(result.contains("Chicken Salad"));
-        assertTrue(result.contains("Salmon"));
+        assertEquals(3, mealPlan.getMeals().size());
+        assertTrue(mealPlan.getMeals().containsKey(MealType.BREAKFAST));
+        assertTrue(mealPlan.getMeals().containsKey(MealType.LUNCH));
+        assertTrue(mealPlan.getMeals().containsKey(MealType.DINNER));
     }
 }

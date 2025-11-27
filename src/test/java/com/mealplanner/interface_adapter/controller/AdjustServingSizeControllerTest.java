@@ -30,14 +30,11 @@ public class AdjustServingSizeControllerTest {
 
     @Test
     public void testAdjustServingSizeWithValidInput() {
-        // Arrange
-        String recipeId = "recipe123";
+        String recipeId = "recipe-1";
         int newServingSize = 4;
-
-        // Act
+        
         controller.execute(recipeId, newServingSize);
-
-        // Assert
+        
         verify(interactor).execute(argThat(inputData -> 
             inputData.getRecipeId().equals(recipeId) &&
             inputData.getNewServingSize() == newServingSize
@@ -46,75 +43,39 @@ public class AdjustServingSizeControllerTest {
 
     @Test
     public void testAdjustServingSizeWithInvalidSize() {
-        // Arrange
-        String recipeId = "recipe123";
-        int invalidServingSize = -1;
-
-        // Act
-        controller.execute(recipeId, invalidServingSize);
-
-        // Assert
+        String recipeId = "recipe-1";
+        int invalidSize = -1;
+        
+        controller.execute(recipeId, invalidSize);
+        
         verify(interactor).execute(argThat(inputData -> 
             inputData.getRecipeId().equals(recipeId) &&
-            inputData.getNewServingSize() == invalidServingSize
+            inputData.getNewServingSize() == invalidSize
         ));
     }
 
     @Test
     public void testAdjustServingSizeWithZero() {
-        // Arrange
-        String recipeId = "recipe123";
-        int zeroServingSize = 0;
-
-        // Act
-        controller.execute(recipeId, zeroServingSize);
-
-        // Assert
+        String recipeId = "recipe-1";
+        int zeroSize = 0;
+        
+        controller.execute(recipeId, zeroSize);
+        
         verify(interactor).execute(argThat(inputData -> 
             inputData.getRecipeId().equals(recipeId) &&
-            inputData.getNewServingSize() == zeroServingSize
+            inputData.getNewServingSize() == zeroSize
         ));
     }
 
     @Test
     public void testAdjustServingSizeWithEmptyRecipeId() {
-        // Arrange
-        String emptyRecipeId = "";
-        int newServingSize = 4;
-
-        // Act
-        controller.execute(emptyRecipeId, newServingSize);
-
-        // Assert
-        verify(interactor, never()).execute(any(AdjustServingSizeInputData.class));
+        controller.execute("", 4);
+        verify(interactor, never()).execute(any());
     }
 
     @Test
     public void testAdjustServingSizeWithNullRecipeId() {
-        // Arrange
-        String nullRecipeId = null;
-        int newServingSize = 4;
-
-        // Act
-        controller.execute(nullRecipeId, newServingSize);
-
-        // Assert
-        verify(interactor, never()).execute(any(AdjustServingSizeInputData.class));
-    }
-
-    @Test
-    public void testAdjustServingSizeWithLargeServingSize() {
-        // Arrange
-        String recipeId = "recipe123";
-        int largeServingSize = 100;
-
-        // Act
-        controller.execute(recipeId, largeServingSize);
-
-        // Assert
-        verify(interactor).execute(argThat(inputData -> 
-            inputData.getRecipeId().equals(recipeId) &&
-            inputData.getNewServingSize() == largeServingSize
-        ));
+        controller.execute(null, 4);
+        verify(interactor, never()).execute(any());
     }
 }

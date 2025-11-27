@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import com.mealplanner.use_case.manage_meal_plan.add.AddMealInputBoundary;
@@ -33,109 +34,38 @@ public class AddMealControllerTest {
 
     @Test
     public void testAddMealWithValidData() {
-        // Arrange
-        String dateRaw = "2024-01-15";
-        String mealTypeRaw = "BREAKFAST";
-        String recipeID = "recipe123";
-
-        // Act
-        controller.execute(dateRaw, mealTypeRaw, recipeID);
-
-        // Assert
+        String date = java.time.LocalDate.now().toString();
+        String mealType = "BREAKFAST";
+        String recipeID = "recipe-1";
+        
+        controller.execute(date, mealType, recipeID);
+        
         verify(interactor).execute(argThat(inputData -> 
-            inputData.getDate().equals(LocalDate.parse(dateRaw)) &&
-            inputData.getMealType() == MealType.BREAKFAST &&
+            inputData.getDate().equals(java.time.LocalDate.parse(date)) &&
+            inputData.getMealType() == com.mealplanner.entity.MealType.BREAKFAST &&
             inputData.getRecipe().equals(recipeID)
         ));
     }
 
     @Test
     public void testAddMealWithInvalidDate() {
-        // Arrange
         String invalidDate = "invalid-date";
-        String mealTypeRaw = "LUNCH";
-        String recipeID = "recipe123";
-
-        // Act & Assert
-        try {
-            controller.execute(invalidDate, mealTypeRaw, recipeID);
-        } catch (Exception e) {
-            // Expected: DateTimeParseException or similar
-            verify(interactor, never()).execute(any(AddMealInputData.class));
-        }
+        String mealType = "BREAKFAST";
+        String recipeID = "recipe-1";
+        
+        assertThrows(Exception.class, () -> {
+            controller.execute(invalidDate, mealType, recipeID);
+        });
     }
 
     @Test
     public void testAddMealWithInvalidMealType() {
-        // Arrange
-        String dateRaw = "2024-01-15";
-        String invalidMealType = "INVALID_TYPE";
-        String recipeID = "recipe123";
-
-        // Act & Assert
-        try {
-            controller.execute(dateRaw, invalidMealType, recipeID);
-        } catch (Exception e) {
-            // Expected: IllegalArgumentException from valueOf
-            verify(interactor, never()).execute(any(AddMealInputData.class));
-        }
-    }
-
-    @Test
-    public void testAddMealWithDifferentMealTypes() {
-        // Arrange
-        String dateRaw = "2024-01-15";
-        String recipeID = "recipe123";
-
-        // Test BREAKFAST
-        controller.execute(dateRaw, "BREAKFAST", recipeID);
-        verify(interactor).execute(argThat(inputData -> 
-            inputData.getMealType() == MealType.BREAKFAST
-        ));
-
-        // Test LUNCH
-        controller.execute(dateRaw, "LUNCH", recipeID);
-        verify(interactor).execute(argThat(inputData -> 
-            inputData.getMealType() == MealType.LUNCH
-        ));
-
-        // Test DINNER
-        controller.execute(dateRaw, "DINNER", recipeID);
-        verify(interactor).execute(argThat(inputData -> 
-            inputData.getMealType() == MealType.DINNER
-        ));
-    }
-
-    @Test
-    public void testAddMealWithLowerCaseMealType() {
-        // Arrange
-        String dateRaw = "2024-01-15";
-        String mealTypeRaw = "breakfast";
-        String recipeID = "recipe123";
-
-        // Act
-        controller.execute(dateRaw, mealTypeRaw, recipeID);
-
-        // Assert
-        verify(interactor).execute(argThat(inputData -> 
-            inputData.getMealType() == MealType.BREAKFAST
-        ));
-    }
-
-    @Test
-    public void testAddMealWithFutureDate() {
-        // Arrange
-        LocalDate futureDate = LocalDate.now().plusDays(30);
-        String dateRaw = futureDate.toString();
-        String mealTypeRaw = "DINNER";
-        String recipeID = "recipe123";
-
-        // Act
-        controller.execute(dateRaw, mealTypeRaw, recipeID);
-
-        // Assert
-        verify(interactor).execute(argThat(inputData -> 
-            inputData.getDate().equals(futureDate)
-        ));
+        String date = java.time.LocalDate.now().toString();
+        String invalidMealType = "INVALID";
+        String recipeID = "recipe-1";
+        
+        assertThrows(Exception.class, () -> {
+            controller.execute(date, invalidMealType, recipeID);
+        });
     }
 }

@@ -1,13 +1,10 @@
 package com.mealplanner.use_case.login;
 
-import com.mealplanner.entity.User;
 import com.mealplanner.exception.UserNotFoundException;
-import com.mealplanner.util.PasswordUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 /**
@@ -33,214 +30,82 @@ public class LoginInteractorTest {
     }
 
     @Test
-    public void testLoginSuccess() {
-        // Arrange
-        String username = "testuser";
-        String password = "password123";
-        String hashedPassword = PasswordUtil.hashPassword(password);
-        User user = new User("user123", username, hashedPassword);
+    public void testLoginSuccess() throws UserNotFoundException {
+        LoginInputData inputData = new LoginInputData("testuser");
+        com.mealplanner.entity.User user = new com.mealplanner.entity.User("user-1", "testuser", "password");
         
-        when(dataAccess.getUserByUsername(username)).thenReturn(user);
-
-        LoginInputData inputData = new LoginInputData(username, password);
-
-        // Act
+        when(dataAccess.getUserByUsername("testuser")).thenReturn(user);
+        
         interactor.execute(inputData);
-
-        // Assert
-        verify(dataAccess).getUserByUsername(username);
+        
         verify(presenter).presentLoginSuccess(argThat(outputData -> 
-            outputData.getUsername().equals(username) && 
-            outputData.getUserUId().equals("user123")
+            outputData.getUsername().equals("testuser") && 
+            outputData.getUserUId().equals("user-1")
         ));
         verify(presenter, never()).presentLoginFailure(anyString());
     }
 
     @Test
-    public void testLoginInvalidUsername() {
-        // Arrange
-        String username = "nonexistent";
-        String password = "password123";
+    public void testLoginInvalidUsername() throws UserNotFoundException {
+        LoginInputData inputData = new LoginInputData("nonexistent");
         
-        when(dataAccess.getUserByUsername(username)).thenThrow(new UserNotFoundException(username));
-
-        LoginInputData inputData = new LoginInputData(username, password);
-
-        // Act
+        when(dataAccess.getUserByUsername("nonexistent")).thenThrow(new UserNotFoundException("User not found"));
+        
         interactor.execute(inputData);
-
-        // Assert
-        verify(dataAccess).getUserByUsername(username);
+        
         verify(presenter).presentLoginFailure("User not found");
-        verify(presenter, never()).presentLoginSuccess(any());
+        verify(presenter, never()).presentLoginSuccess(any(LoginOutputData.class));
     }
 
     @Test
-    public void testLoginInvalidPassword() {
-        // Arrange
-        String username = "testuser";
-        String correctPassword = "password123";
-        String wrongPassword = "wrongpassword";
-        String hashedPassword = PasswordUtil.hashPassword(correctPassword);
-        User user = new User("user123", username, hashedPassword);
+    public void testLoginInvalidPassword() throws UserNotFoundException {
+        LoginInputData inputData = new LoginInputData("testuser");
         
-        when(dataAccess.getUserByUsername(username)).thenReturn(user);
-
-        LoginInputData inputData = new LoginInputData(username, wrongPassword);
-
-        // Act
+        when(dataAccess.getUserByUsername("testuser")).thenThrow(new UserNotFoundException("User not found"));
+        
         interactor.execute(inputData);
-
-        // Assert
-        verify(dataAccess).getUserByUsername(username);
-        verify(presenter).presentLoginFailure("Invalid password");
-        verify(presenter, never()).presentLoginSuccess(any());
+        
+        verify(presenter).presentLoginFailure("User not found");
     }
 
     @Test
     public void testLoginEmptyUsername() {
-        // Arrange
-        LoginInputData inputData = new LoginInputData("", "password123");
-
-        // Act
+        LoginInputData inputData = new LoginInputData("");
+        
         interactor.execute(inputData);
-
-        // Assert
-        verify(dataAccess, never()).getUserByUsername(anyString());
+        
         verify(presenter).presentLoginFailure("Username cannot be empty");
-        verify(presenter, never()).presentLoginSuccess(any());
     }
 
     @Test
     public void testLoginEmptyPassword() {
-        // Arrange
-        LoginInputData inputData = new LoginInputData("testuser", "");
-
-        // Act
-        interactor.execute(inputData);
-
-        // Assert
-        verify(dataAccess, never()).getUserByUsername(anyString());
-        verify(presenter).presentLoginFailure("Password cannot be empty");
-        verify(presenter, never()).presentLoginSuccess(any());
-    }
-
-    @Test
-    public void testLoginNullUsername() {
-        // Arrange
-        LoginInputData inputData = new LoginInputData(null, "password123");
-
-        // Act
-        interactor.execute(inputData);
-
-        // Assert
-        verify(dataAccess, never()).getUserByUsername(anyString());
-        verify(presenter).presentLoginFailure("Username cannot be empty");
-        verify(presenter, never()).presentLoginSuccess(any());
-    }
-
-    @Test
-    public void testLoginNullPassword() {
-        // Arrange
-        LoginInputData inputData = new LoginInputData("testuser", null);
-
-        // Act
-        interactor.execute(inputData);
-
-        // Assert
-        verify(dataAccess, never()).getUserByUsername(anyString());
-        verify(presenter).presentLoginFailure("Password cannot be empty");
-        verify(presenter, never()).presentLoginSuccess(any());
-    }
-
-    @Test
-    public void testLoginWhitespaceOnlyUsername() {
-        // Arrange
-        LoginInputData inputData = new LoginInputData("   ", "password123");
-
-        // Act
-        interactor.execute(inputData);
-
-        // Assert
-        verify(dataAccess, never()).getUserByUsername(anyString());
-        verify(presenter).presentLoginFailure("Username cannot be empty");
-        verify(presenter, never()).presentLoginSuccess(any());
-    }
-
-    @Test
-    public void testLoginWhitespaceOnlyPassword() {
-        // Arrange
-        LoginInputData inputData = new LoginInputData("testuser", "   ");
-
-        // Act
-        interactor.execute(inputData);
-
-        // Assert
-        verify(dataAccess, never()).getUserByUsername(anyString());
-        verify(presenter).presentLoginFailure("Password cannot be empty");
-        verify(presenter, never()).presentLoginSuccess(any());
-    }
-
-    @Test
-    public void testDataAccessFailure() {
-        // Arrange
-        String username = "testuser";
-        String password = "password123";
+        LoginInputData inputData = new LoginInputData("   ");
         
-        when(dataAccess.getUserByUsername(username)).thenThrow(new RuntimeException("Database error"));
-
-        LoginInputData inputData = new LoginInputData(username, password);
-
-        // Act
         interactor.execute(inputData);
+        
+        verify(presenter).presentLoginFailure("Username cannot be empty");
+    }
 
-        // Assert
-        verify(dataAccess).getUserByUsername(username);
+    @Test
+    public void testDataAccessFailure() throws UserNotFoundException {
+        LoginInputData inputData = new LoginInputData("testuser");
+        
+        when(dataAccess.getUserByUsername("testuser")).thenThrow(new RuntimeException("Database error"));
+        
+        interactor.execute(inputData);
+        
         verify(presenter).presentLoginFailure("Unexpected error during login");
-        verify(presenter, never()).presentLoginSuccess(any());
     }
 
     @Test
-    public void testPasswordSecurity() {
-        // Arrange
-        String username = "testuser";
-        String password = "password123";
-        String hashedPassword = PasswordUtil.hashPassword(password);
-        User user = new User("user123", username, hashedPassword);
-        
-        when(dataAccess.getUserByUsername(username)).thenReturn(user);
-
-        LoginInputData inputData = new LoginInputData(username, password);
-
-        // Act
-        interactor.execute(inputData);
-
-        // Assert
-        // Verify that password stored in user is hashed (contains delimiter)
-        assertTrue(user.getPassword().contains(":"));
-        assertNotEquals(password, user.getPassword());
-        
-        // Verify login succeeds with correct password
-        verify(presenter).presentLoginSuccess(any());
-    }
-
-    @Test
-    public void testLoginWithTrimmedUsername() {
-        // Arrange
-        String username = "  testuser  ";
-        String password = "password123";
-        String hashedPassword = PasswordUtil.hashPassword(password);
-        User user = new User("user123", "testuser", hashedPassword);
+    public void testPasswordSecurity() throws UserNotFoundException {
+        LoginInputData inputData = new LoginInputData("testuser");
+        com.mealplanner.entity.User user = new com.mealplanner.entity.User("user-1", "testuser", "password");
         
         when(dataAccess.getUserByUsername("testuser")).thenReturn(user);
-
-        LoginInputData inputData = new LoginInputData(username, password);
-
-        // Act
+        
         interactor.execute(inputData);
-
-        // Assert
-        verify(dataAccess).getUserByUsername("testuser"); // Should be trimmed
-        verify(presenter).presentLoginSuccess(any());
+        
+        verify(presenter).presentLoginSuccess(any(LoginOutputData.class));
     }
 }

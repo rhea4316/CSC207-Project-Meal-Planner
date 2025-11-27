@@ -30,13 +30,10 @@ public class ViewScheduleControllerTest {
 
     @Test
     public void testViewScheduleWithValidUsername() {
-        // Arrange
         String username = "testuser";
-
-        // Act
+        
         controller.execute(username);
-
-        // Assert
+        
         verify(interactor).execute(argThat(inputData -> 
             inputData.getUsername().equals(username)
         ));
@@ -44,55 +41,40 @@ public class ViewScheduleControllerTest {
 
     @Test
     public void testViewScheduleWithEmptyUsername() {
-        // Arrange
-        String username = "";
-
-        // Act
-        controller.execute(username);
-
-        // Assert
+        controller.execute("");
+        
         verify(interactor).execute(argThat(inputData -> 
-            inputData.getUsername().equals(username)
+            inputData.getUsername().equals("")
         ));
     }
 
     @Test
     public void testViewScheduleForDateRange() {
-        // Arrange
         String username = "testuser";
-
-        // Act
         controller.execute(username);
-
-        // Assert
-        verify(interactor).execute(any(ViewScheduleInputData.class));
-    }
-
-    @Test
-    public void testSaveSchedule() {
-        // Arrange
-        Schedule schedule = new Schedule("schedule1", "user123");
-
-        // Act
-        controller.saveSchedule(schedule);
-
-        // Assert
-        verify(interactor).saveSchedule(argThat(inputData -> 
-            inputData.getSchedule().equals(schedule)
-        ));
+        
+        verify(interactor).execute(any());
     }
 
     @Test
     public void testLoadSchedule() {
-        // Arrange
-        String scheduleId = "schedule1";
-
-        // Act
+        String scheduleId = "schedule-1";
+        
         controller.loadSchedule(scheduleId);
-
-        // Assert
+        
         verify(interactor).loadSchedule(argThat(inputData -> 
             inputData.getUsername().equals(scheduleId)
+        ));
+    }
+
+    @Test
+    public void testSaveSchedule() {
+        com.mealplanner.entity.Schedule schedule = new com.mealplanner.entity.Schedule("schedule-1", "user-1");
+        
+        controller.saveSchedule(schedule);
+        
+        verify(interactor).saveSchedule(argThat(inputData -> 
+            inputData.getSchedule() == schedule
         ));
     }
 }

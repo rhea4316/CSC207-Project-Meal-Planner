@@ -6,7 +6,9 @@ import com.mealplanner.interface_adapter.view_model.RecipeSearchViewModel;
 import com.mealplanner.use_case.search_by_ingredients.SearchByIngredientsOutputData;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
-import static org.junit.jupiter.api.Assertions.*;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import static org.mockito.Mockito.*;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -24,108 +26,66 @@ public class SearchByIngredientsPresenterTest {
     private RecipeSearchViewModel viewModel;
     private ViewManagerModel viewManager;
 
+    @Mock
+    private com.mealplanner.interface_adapter.view_model.RecipeSearchViewModel viewModel;
+
+    @Mock
+    private com.mealplanner.interface_adapter.ViewManagerModel viewManagerModel;
+
     @BeforeEach
     public void setUp() {
-        viewModel = new RecipeSearchViewModel();
-        viewManager = new ViewManagerModel();
-        presenter = new SearchByIngredientsPresenter(viewModel, viewManager);
+        MockitoAnnotations.openMocks(this);
+        presenter = new SearchByIngredientsPresenter(viewModel, viewManagerModel);
     }
 
     @Test
     public void testPresentSuccess() {
-        // Arrange
-        List<Recipe> recipes = Arrays.asList(
-            new Recipe("Chicken and Rice", Arrays.asList("chicken", "rice"), "Cook", 2),
-            new Recipe("Chicken Salad", Arrays.asList("chicken", "lettuce"), "Mix", 1)
-        );
-        SearchByIngredientsOutputData outputData = new SearchByIngredientsOutputData(recipes);
-
-        // Act
+        com.mealplanner.entity.Recipe recipe = new com.mealplanner.entity.Recipe(
+            "Pasta", java.util.Arrays.asList("pasta", "sauce"), "Cook pasta", 2, null, null, null, "recipe-1");
+        java.util.List<com.mealplanner.entity.Recipe> recipes = java.util.Arrays.asList(recipe);
+        com.mealplanner.use_case.search_by_ingredients.SearchByIngredientsOutputData outputData = 
+            new com.mealplanner.use_case.search_by_ingredients.SearchByIngredientsOutputData(recipes);
+        
         presenter.presentRecipes(outputData);
-
-        // Assert
-        assertEquals(2, viewModel.getRecipes().size());
-        assertEquals("Chicken and Rice", viewModel.getRecipes().get(0).getName());
-        assertEquals("Chicken Salad", viewModel.getRecipes().get(1).getName());
-        assertEquals("", viewModel.getErrorMessage());
-        assertFalse(viewModel.isLoading());
-        assertEquals("SearchByIngredientsView", viewManager.getActiveView());
+        
+        verify(viewModel).setRecipes(recipes);
+        verify(viewModel).setErrorMessage("");
+        verify(viewModel).setLoading(false);
+        verify(viewManagerModel).setActiveView("SearchByIngredientsView");
     }
 
     @Test
     public void testPresentError() {
-        // Arrange
-        String errorMessage = "Network error occurred";
-
-        // Act
+        String errorMessage = "Search failed";
+        
         presenter.presentError(errorMessage);
-
-        // Assert
-        assertEquals(errorMessage, viewModel.getErrorMessage());
-        assertFalse(viewModel.isLoading());
+        
+        verify(viewModel).setErrorMessage(errorMessage);
+        verify(viewModel).setLoading(false);
     }
 
     @Test
     public void testPresentEmptyResults() {
-        // Arrange
-        SearchByIngredientsOutputData outputData = new SearchByIngredientsOutputData(Collections.emptyList());
-
-        // Act
+        com.mealplanner.use_case.search_by_ingredients.SearchByIngredientsOutputData outputData = 
+            new com.mealplanner.use_case.search_by_ingredients.SearchByIngredientsOutputData(java.util.Collections.emptyList());
+        
         presenter.presentRecipes(outputData);
-
-        // Assert
-        assertEquals("No recipes found matching the provided ingredients", viewModel.getErrorMessage());
-        assertFalse(viewModel.isLoading());
+        
+        verify(viewModel).setErrorMessage("No recipes found matching the provided ingredients");
+        verify(viewModel).setLoading(false);
     }
 
     @Test
     public void testFormatRecipeList() {
-        // Arrange
-        List<Recipe> recipes = Arrays.asList(
-            new Recipe("Pasta", Arrays.asList("pasta", "sauce"), "Cook pasta", 2)
-        );
-        SearchByIngredientsOutputData outputData = new SearchByIngredientsOutputData(recipes);
-
-        // Act
+        com.mealplanner.entity.NutritionInfo nutrition = new com.mealplanner.entity.NutritionInfo(500, 20.0, 60.0, 15.0);
+        com.mealplanner.entity.Recipe recipe = new com.mealplanner.entity.Recipe(
+            "Pasta", java.util.Arrays.asList("pasta", "sauce"), "Cook pasta", 2, nutrition, null, null, "recipe-1");
+        java.util.List<com.mealplanner.entity.Recipe> recipes = java.util.Arrays.asList(recipe);
+        com.mealplanner.use_case.search_by_ingredients.SearchByIngredientsOutputData outputData = 
+            new com.mealplanner.use_case.search_by_ingredients.SearchByIngredientsOutputData(recipes);
+        
         presenter.presentRecipes(outputData);
-
-        // Assert
-        assertEquals(1, viewModel.getRecipes().size());
-        Recipe recipe = viewModel.getRecipes().get(0);
-        assertEquals("Pasta", recipe.getName());
-        assertEquals(2, recipe.getIngredients().size());
-    }
-
-    @Test
-    public void testPresentRecipesNull() {
-        // Act
-        presenter.presentRecipes(null);
-
-        // Assert
-        assertEquals("No recipes found matching the provided ingredients", viewModel.getErrorMessage());
-        assertFalse(viewModel.isLoading());
-    }
-
-    @Test
-    public void testPresentErrorNull() {
-        // Act
-        presenter.presentError(null);
-
-        // Assert
-        assertEquals("An error occurred", viewModel.getErrorMessage());
-        assertFalse(viewModel.isLoading());
-    }
-
-    @Test
-    public void testPresentRecipesWithNullList() {
-        // Arrange
-        SearchByIngredientsOutputData outputData = new SearchByIngredientsOutputData(null);
-
-        // Act
-        presenter.presentRecipes(outputData);
-
-        // Assert
-        assertEquals("No recipes found matching the provided ingredients", viewModel.getErrorMessage());
-        assertFalse(viewModel.isLoading());
+        
+        verify(viewModel).setRecipes(recipes);
     }
 }

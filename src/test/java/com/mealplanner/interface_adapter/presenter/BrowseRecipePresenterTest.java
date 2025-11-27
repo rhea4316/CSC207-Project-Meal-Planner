@@ -8,27 +8,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 /**
  * Test class for BrowseRecipePresenter.
  * Tests formatting and presentation of recipe browsing.
  *
  * Responsible: Regina (primary)
- *
  */
 public class BrowseRecipePresenterTest {
 
@@ -40,38 +26,43 @@ public class BrowseRecipePresenterTest {
 
     private ViewManagerModel viewManager;
 
+    @Mock
+    private com.mealplanner.interface_adapter.view_model.RecipeBrowseViewModel viewModel;
+
+    @Mock
+    private com.mealplanner.interface_adapter.ViewManagerModel viewManager;
+
     @BeforeEach
     public void setUp() {
-        viewModel = new RecipeBrowseViewModel();
-        viewManager = new ViewManagerModel();
+        MockitoAnnotations.openMocks(this);
         presenter = new BrowseRecipePresenter(viewModel, viewManager);
     }
 
     @Test
     public void testPresentRecipeList() {
-        List<Recipe> mockRecipes = Arrays.asList(
-                new Recipe("Chicken Alfredo", Arrays.asList("pasta", "chicken", "cream"), "steps", 1),
-                new Recipe("Creamy Garlic Chicken Pasta", Arrays.asList("pasta", "chicken", "garlic"), "steps", 1));
-        BrowseRecipeOutputData outputData = new BrowseRecipeOutputData(mockRecipes);
-
+        com.mealplanner.entity.Recipe recipe = new com.mealplanner.entity.Recipe(
+            "Pasta", java.util.Arrays.asList("pasta", "sauce"), "Cook pasta", 2, null, null, null, "recipe-1");
+        java.util.List<com.mealplanner.entity.Recipe> recipes = java.util.Arrays.asList(recipe);
+        com.mealplanner.use_case.browse_recipe.BrowseRecipeOutputData outputData = 
+            new com.mealplanner.use_case.browse_recipe.BrowseRecipeOutputData(recipes);
+        
         presenter.presentRecipeDetails(outputData);
-        assertEquals(mockRecipes, viewModel.getRecipes());
-        assertEquals("BrowseRecipeView", viewManager.getActiveView());
-        assertEquals("", viewModel.getErrorMessage());
+        
+        verify(viewModel).setRecipes(recipes);
+        verify(viewManager).setActiveView("BrowseRecipeView");
     }
 
     @Test
-    public void testPresentRecipeDetailsWithNullOutputData() {
-        // Arrange
-        BrowseRecipeOutputData outputData = null;
-
-        // Act
+    public void testPresentRecipeDetails() {
+        com.mealplanner.entity.Recipe recipe = new com.mealplanner.entity.Recipe(
+            "Pasta", java.util.Arrays.asList("pasta", "sauce"), "Cook pasta", 2, null, null, null, "recipe-1");
+        java.util.List<com.mealplanner.entity.Recipe> recipes = java.util.Arrays.asList(recipe);
+        com.mealplanner.use_case.browse_recipe.BrowseRecipeOutputData outputData = 
+            new com.mealplanner.use_case.browse_recipe.BrowseRecipeOutputData(recipes);
+        
         presenter.presentRecipeDetails(outputData);
-
-        assertEquals("No recipe data available", viewModel.getErrorMessage());
-        assertTrue(viewModel.getRecipes().isEmpty());
-        assertNull(viewManager.getActiveView());
-
+        
+        verify(viewModel).setRecipes(recipes);
     }
 
     @Test
@@ -103,12 +94,18 @@ public class BrowseRecipePresenterTest {
 
     @Test
     public void testPresentError() {
-        String errorMessage = "No recipes found";
-
+        String errorMessage = "Recipe not found";
+        
         presenter.presentError(errorMessage);
-        assertEquals("No recipes found", viewModel.getErrorMessage());
-        assertTrue(viewModel.getRecipes().isEmpty());
-        assertNull(viewManager.getActiveView());
+        
+        verify(viewModel).setErrorMessage(errorMessage);
+    }
+
+    @Test
+    public void testPresentNullOutputData() {
+        presenter.presentRecipeDetails(null);
+        
+        verify(viewModel).setErrorMessage("No recipe data available");
     }
 
     @Test

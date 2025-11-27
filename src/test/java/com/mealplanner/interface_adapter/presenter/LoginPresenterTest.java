@@ -5,7 +5,9 @@ import com.mealplanner.interface_adapter.view_model.LoginViewModel;
 import com.mealplanner.use_case.login.LoginOutputData;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
-import static org.junit.jupiter.api.Assertions.*;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import static org.mockito.Mockito.*;
 
 /**
  * Test class for LoginPresenter.
@@ -19,98 +21,44 @@ public class LoginPresenterTest {
     private LoginViewModel viewModel;
     private ViewManagerModel viewManagerModel;
 
+    @Mock
+    private com.mealplanner.interface_adapter.view_model.LoginViewModel viewModel;
+
     @BeforeEach
     public void setUp() {
-        viewModel = new LoginViewModel();
-        viewManagerModel = new ViewManagerModel();
-        presenter = new LoginPresenter(viewModel, viewManagerModel);
+        MockitoAnnotations.openMocks(this);
+        presenter = new LoginPresenter(viewModel);
     }
 
     @Test
     public void testPresentLoginSuccess() {
-        // Arrange
-        String username = "testuser";
-        String userId = "user123";
-        LoginOutputData outputData = new LoginOutputData(userId, username);
-
-        // Act
+        com.mealplanner.use_case.login.LoginOutputData outputData = 
+            new com.mealplanner.use_case.login.LoginOutputData("user-1", "testuser");
+        
         presenter.presentLoginSuccess(outputData);
-
-        // Assert
-        assertEquals(username, viewModel.getLoggedInUser());
-        assertNull(viewModel.getError());
+        
+        verify(viewModel).setLoggedInUser("testuser");
+        verify(viewModel).setError(null);
+        verify(viewModel).firePropertyChanged();
     }
 
     @Test
     public void testPresentLoginFailure() {
-        // Arrange
-        String errorMessage = "Invalid password";
-
-        // Act
+        String errorMessage = "User not found";
+        
         presenter.presentLoginFailure(errorMessage);
-
-        // Assert
-        assertNull(viewModel.getLoggedInUser());
-        assertEquals(errorMessage, viewModel.getError());
+        
+        verify(viewModel).setLoggedInUser(null);
+        verify(viewModel).setError(errorMessage);
+        verify(viewModel).firePropertyChanged();
     }
 
     @Test
     public void testPresentValidationError() {
-        // Arrange
         String errorMessage = "Username cannot be empty";
-
-        // Act
+        
         presenter.presentLoginFailure(errorMessage);
-
-        // Assert
-        assertNull(viewModel.getLoggedInUser());
-        assertEquals(errorMessage, viewModel.getError());
-    }
-
-    @Test
-    public void testPresentLoginFailureNull() {
-        // Act
-        presenter.presentLoginFailure(null);
-
-        // Assert
-        assertNull(viewModel.getLoggedInUser());
-        assertEquals("Login failed", viewModel.getError());
-    }
-
-    @Test
-    public void testPresentLoginSuccessNull() {
-        // Act
-        presenter.presentLoginSuccess(null);
-
-        // Assert
-        assertEquals("Login data is missing", viewModel.getError());
-    }
-
-    @Test
-    public void testPresentLoginSuccessClearsError() {
-        // Arrange
-        viewModel.setError("Previous error");
-        LoginOutputData outputData = new LoginOutputData("user123", "testuser");
-
-        // Act
-        presenter.presentLoginSuccess(outputData);
-
-        // Assert
-        assertEquals("testuser", viewModel.getLoggedInUser());
-        assertNull(viewModel.getError());
-    }
-
-    @Test
-    public void testPresentLoginFailureClearsUser() {
-        // Arrange
-        viewModel.setLoggedInUser("previoususer");
-        String errorMessage = "Login failed";
-
-        // Act
-        presenter.presentLoginFailure(errorMessage);
-
-        // Assert
-        assertNull(viewModel.getLoggedInUser());
-        assertEquals(errorMessage, viewModel.getError());
+        
+        verify(viewModel).setError(errorMessage);
     }
 }

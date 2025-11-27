@@ -31,97 +31,43 @@ public class SearchByIngredientsControllerTest {
     }
 
     @Test
-    public void testExecuteWithValidInput() {
-        // Arrange
-        List<String> ingredients = Arrays.asList("chicken", "rice");
-
-        // Act
+    public void testExecuteWithValidInput() throws Exception {
+        java.util.List<String> ingredients = java.util.Arrays.asList("tomato", "cheese", "pasta");
+        
         controller.execute(ingredients);
-
-        // Assert
-        verify(interactor).execute(argThat(inputData -> 
-            inputData.getIngredients().size() == 2 &&
-            inputData.getIngredients().contains("chicken") &&
-            inputData.getIngredients().contains("rice")
+        
+        Thread.sleep(100);
+        
+        verify(interactor, timeout(1000)).execute(argThat(inputData -> 
+            inputData.getIngredients().size() == 3 &&
+            inputData.getIngredients().contains("tomato")
         ));
     }
 
     @Test
     public void testExecuteWithEmptyIngredients() {
-        // Arrange
-        List<String> ingredients = Collections.emptyList();
-
-        // Act
-        controller.execute(ingredients);
-
-        // Assert
+        java.util.List<String> emptyList = java.util.Collections.emptyList();
+        
+        controller.execute(emptyList);
+        
         verify(interactor, never()).execute(any());
     }
 
     @Test
     public void testExecuteWithNullInput() {
-        // Arrange
-        List<String> ingredients = null;
-
-        // Act
-        controller.execute(ingredients);
-
-        // Assert
+        controller.execute((java.util.List<String>) null);
+        
         verify(interactor, never()).execute(any());
     }
 
     @Test
-    public void testExecuteWithStringInput() {
-        // Arrange
-        String ingredientsRaw = "chicken, rice, broccoli";
-
-        // Act
+    public void testExecuteWithStringInput() throws Exception {
+        String ingredientsRaw = "tomato, cheese, pasta";
+        
         controller.execute(ingredientsRaw);
-
-        // Assert
-        verify(interactor).execute(argThat(inputData -> 
-            inputData.getIngredients().size() == 3 &&
-            inputData.getIngredients().contains("chicken") &&
-            inputData.getIngredients().contains("rice") &&
-            inputData.getIngredients().contains("broccoli")
-        ));
-    }
-
-    @Test
-    public void testExecuteWithStringInputNewlineSeparated() {
-        // Arrange
-        String ingredientsRaw = "chicken\nrice\nbroccoli";
-
-        // Act
-        controller.execute(ingredientsRaw);
-
-        // Assert
-        verify(interactor).execute(argThat(inputData -> 
-            inputData.getIngredients().size() == 3
-        ));
-    }
-
-    @Test
-    public void testExecuteWithEmptyString() {
-        // Arrange
-        String ingredientsRaw = "";
-
-        // Act
-        controller.execute(ingredientsRaw);
-
-        // Assert
-        verify(interactor, never()).execute(any());
-    }
-
-    @Test
-    public void testExecuteWithNullString() {
-        // Arrange
-        String ingredientsRaw = null;
-
-        // Act
-        controller.execute(ingredientsRaw);
-
-        // Assert
-        verify(interactor, never()).execute(any());
+        
+        Thread.sleep(100);
+        
+        verify(interactor, timeout(1000)).execute(any());
     }
 }

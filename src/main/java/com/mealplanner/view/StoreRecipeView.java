@@ -1,221 +1,186 @@
 package com.mealplanner.view;
 
-// Swing view for creating and storing new recipes - displays recipe creation form.
-// Responsible: Aaryan (functionality), Everyone (GUI implementation)
 import com.mealplanner.entity.Unit;
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.StoreRecipeController;
 import com.mealplanner.interface_adapter.view_model.RecipeStoreViewModel;
-import com.mealplanner.util.StringUtil;
 import com.mealplanner.util.NumberUtil;
+import com.mealplanner.util.StringUtil;
+import javafx.application.Platform;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
 
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Swing panel for creating and storing recipes. Minimal, self-contained UI components
- * and wiring to a provided `StoreRecipeController`.
- */
-public class StoreRecipeView extends JPanel {
+public class StoreRecipeView extends BorderPane implements PropertyChangeListener {
+    
+    private final StoreRecipeController controller;
+    private final RecipeStoreViewModel viewModel;
+    private final ViewManagerModel viewManagerModel;
 
-	private final JTextField nameField = new JTextField(30);
+    private TextField nameField;
+    private TextField ingredientQtyField;
+    private ComboBox<Unit> unitCombo;
+    private TextField ingredientNameField;
+    private ListView<String> ingredientList;
+    private TextArea stepsArea;
+    private TextField servingSizeField;
+    private Label statusLabel;
 
-	// Ingredient inputs
-	private final JTextField ingredientQtyField = new JTextField(6);
-	private final JComboBox<Unit> unitCombo = new JComboBox<>(Unit.values());
-	private final JTextField ingredientNameField = new JTextField(15);
-	private final DefaultListModel<String> ingredientListModel = new DefaultListModel<>();
-	private final JList<String> ingredientJList = new JList<>(ingredientListModel);
+    public StoreRecipeView(StoreRecipeController controller, RecipeStoreViewModel viewModel, ViewManagerModel viewManagerModel) {
+        if (controller == null) throw new IllegalArgumentException("Controller cannot be null");
+        
+        this.controller = controller;
+        // viewModel and viewManagerModel are stored for potential future use (e.g., navigation, error display)
+        this.viewModel = viewModel;
+        this.viewManagerModel = viewManagerModel;
 
-	// Steps / instructions
-	private final JTextArea stepsArea = new JTextArea(8, 40);
+        if (viewModel != null) {
+            viewModel.addPropertyChangeListener(this);
+        }
 
-	private final JTextField servingSizeField = new JTextField("1", 4);
+        setPadding(new Insets(20));
+        setStyle("-fx-background-color: white;");
 
-	private final JButton addIngredientButton = new JButton("Add Ingredient");
-	private final JButton saveButton = new JButton("Save Recipe");
+        // Title
+        Label titleLabel = new Label("Create New Recipe");
+        titleLabel.getStyleClass().add("title-label");
+        setTop(titleLabel);
 
-	private final JLabel statusLabel = new JLabel(" ");
-	
-	private final ViewManagerModel viewManagerModel;
+        // Form
+        createForm();
+    }
 
-	public StoreRecipeView(StoreRecipeController controller, RecipeStoreViewModel viewModel) {
-		this(controller, viewModel, null);
-	}
-	
-	public StoreRecipeView(StoreRecipeController controller, RecipeStoreViewModel viewModel, ViewManagerModel viewManagerModel) {
-		super(new BorderLayout());
-		
-		if (controller == null) {
-			throw new IllegalArgumentException("Controller cannot be null");
-		}
-		
-		this.viewManagerModel = viewManagerModel;
+    private void createForm() {
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(15);
+        grid.setPadding(new Insets(20));
 
-		// Create navigation panel
-		JPanel navPanel = createNavigationPanel();
-		if (navPanel != null) {
-			this.add(navPanel, BorderLayout.NORTH);
-		}
+        int row = 0;
 
-		JPanel form = new JPanel(new GridBagLayout());
-		GridBagConstraints gbc = new GridBagConstraints();
-		gbc.insets = new Insets(4, 4, 4, 4);
-		gbc.anchor = GridBagConstraints.WEST;
+        // Name
+        grid.add(new Label("Recipe Name:"), 0, row);
+        nameField = new TextField();
+        grid.add(nameField, 1, row++);
 
-		int row = 0;
+        // Ingredient Input
+        grid.add(new Label("Add Ingredient:"), 0, row);
+        HBox ingBox = new HBox(5);
+        ingredientQtyField = new TextField();
+        ingredientQtyField.setPromptText("Qty");
+        ingredientQtyField.setPrefWidth(50);
+        
+        unitCombo = new ComboBox<>();
+        unitCombo.getItems().addAll(Unit.values());
+        unitCombo.setPromptText("Unit");
+        
+        ingredientNameField = new TextField();
+        ingredientNameField.setPromptText("Name");
+        
+        Button addIngBtn = new Button("Add");
+        addIngBtn.getStyleClass().add("secondary-button");
+        addIngBtn.setOnAction(e -> addIngredient());
+        
+        ingBox.getChildren().addAll(ingredientQtyField, unitCombo, ingredientNameField, addIngBtn);
+        grid.add(ingBox, 1, row++);
 
-		// Name
-		gbc.gridx = 0;
-		gbc.gridy = row;
-		form.add(new JLabel("Recipe name:"), gbc);
-		gbc.gridx = 1;
-		form.add(nameField, gbc);
-		row++;
+        // Ingredient List
+        grid.add(new Label("Ingredients:"), 0, row);
+        ingredientList = new ListView<>();
+        ingredientList.setPrefHeight(100);
+        grid.add(ingredientList, 1, row++);
 
-		// Ingredients input row
-		gbc.gridx = 0;
-		gbc.gridy = row;
-		form.add(new JLabel("Ingredient (qty/unit/name):"), gbc);
+        // Steps
+        grid.add(new Label("Instructions:"), 0, row);
+        stepsArea = new TextArea();
+        stepsArea.setPrefRowCount(5);
+        stepsArea.setWrapText(true);
+        grid.add(stepsArea, 1, row++);
 
-		JPanel ingInput = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
-		ingInput.add(ingredientQtyField);
-		ingInput.add(unitCombo);
-		ingInput.add(ingredientNameField);
-		ingInput.add(addIngredientButton);
+        // Serving Size
+        grid.add(new Label("Serving Size:"), 0, row);
+        servingSizeField = new TextField("1");
+        grid.add(servingSizeField, 1, row++);
 
-		gbc.gridx = 1;
-		form.add(ingInput, gbc);
-		row++;
+        // Save Button
+        Button saveBtn = new Button("Save Recipe");
+        saveBtn.getStyleClass().add("modern-button");
+        saveBtn.setOnAction(e -> saveRecipe());
+        
+        HBox bottomBox = new HBox(10);
+        bottomBox.setAlignment(Pos.CENTER_LEFT);
+        statusLabel = new Label("");
+        bottomBox.getChildren().addAll(saveBtn, statusLabel);
+        
+        grid.add(bottomBox, 1, row);
 
-		// Ingredient list
-		gbc.gridx = 0;
-		gbc.gridy = row;
-		form.add(new JLabel("Ingredients:"), gbc);
-		gbc.gridx = 1;
-		ingredientJList.setVisibleRowCount(5);
-		ingredientJList.setFixedCellWidth(300);
-		form.add(new JScrollPane(ingredientJList), gbc);
-		row++;
+        setCenter(grid);
+    }
 
-		// Steps
-		gbc.gridx = 0;
-		gbc.gridy = row;
-		form.add(new JLabel("Cooking instructions:"), gbc);
-		gbc.gridx = 1;
-		stepsArea.setLineWrap(true);
-		stepsArea.setWrapStyleWord(true);
-		form.add(new JScrollPane(stepsArea), gbc);
-		row++;
+    private void addIngredient() {
+        String name = StringUtil.safeTrim(ingredientNameField.getText());
+        if (StringUtil.isNullOrEmpty(name)) {
+            // Show validation error
+            return;
+        }
+        
+        String qty = StringUtil.safeTrim(ingredientQtyField.getText());
+        Unit unit = unitCombo.getValue();
+        
+        String entry = String.format("%s %s %s", 
+            StringUtil.isNullOrEmpty(qty) ? "" : qty, 
+            unit != null ? unit.getAbbreviation() : "", 
+            name).trim();
+            
+        ingredientList.getItems().add(entry);
+        
+        ingredientQtyField.clear();
+        ingredientNameField.clear();
+        unitCombo.getSelectionModel().clearSelection();
+    }
 
-		// Serving size and save
-		gbc.gridx = 0;
-		gbc.gridy = row;
-		form.add(new JLabel("Serving size:"), gbc);
-		gbc.gridx = 1;
-		JPanel bottomRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-		bottomRow.add(servingSizeField);
-		bottomRow.add(saveButton);
-		bottomRow.add(statusLabel);
-		form.add(bottomRow, gbc);
+    private void saveRecipe() {
+        String name = StringUtil.safeTrim(nameField.getText());
+        List<String> ingredients = new ArrayList<>(ingredientList.getItems());
+        String stepsRaw = stepsArea.getText();
+        List<String> steps = new ArrayList<>();
+        
+        if (stepsRaw != null) {
+            for (String s : stepsRaw.split("\\n")) {
+                if (!s.isBlank()) steps.add(s.trim());
+            }
+        }
 
-		this.add(form, BorderLayout.CENTER);
+        int servingSize = NumberUtil.parseInt(servingSizeField.getText(), 1);
+        if (servingSize <= 0) servingSize = 1;
 
-		// Actions
-		addIngredientButton.addActionListener(this::onAddIngredient);
-		saveButton.addActionListener(e -> onSave(controller, viewModel));
+        controller.execute(name, ingredients, steps, servingSize);
+        clearForm();
+    }
 
-		// Observe view model changes to update status label
-		if (viewModel != null) {
-			viewModel.addPropertyChangeListener(new PropertyChangeListener() {
-				@Override
-				public void propertyChange(PropertyChangeEvent evt) {
-					if (RecipeStoreViewModel.PROP_SUCCESS_MESSAGE.equals(evt.getPropertyName())) {
-						statusLabel.setForeground(new Color(0, 128, 0));
-						statusLabel.setText((String) evt.getNewValue());
-					} else if (RecipeStoreViewModel.PROP_ERROR_MESSAGE.equals(evt.getPropertyName())) {
-						statusLabel.setForeground(Color.RED);
-						statusLabel.setText((String) evt.getNewValue());
-					}
-				}
-			});
-		}
-	}
+    private void clearForm() {
+        nameField.clear();
+        ingredientList.getItems().clear();
+        stepsArea.clear();
+        servingSizeField.setText("1");
+    }
 
-	private void onAddIngredient(ActionEvent e) {
-		String qty = StringUtil.safeTrim(ingredientQtyField.getText());
-		Unit unit = (Unit) unitCombo.getSelectedItem();
-		String name = StringUtil.safeTrim(ingredientNameField.getText());
-		if (StringUtil.isNullOrEmpty(name)) {
-			JOptionPane.showMessageDialog(this, "Ingredient name cannot be empty", "Validation", JOptionPane.WARNING_MESSAGE);
-			return;
-		}
-
-		String entry = StringUtil.safeTrim(String.format("%s %s %s", StringUtil.isNullOrEmpty(qty) ? "" : qty, unit != null ? unit.getAbbreviation() : "", name));
-		ingredientListModel.addElement(entry);
-
-		// Clear small inputs
-		ingredientQtyField.setText("");
-		ingredientNameField.setText("");
-	}
-
-	private void onSave(StoreRecipeController controller, RecipeStoreViewModel viewModel) {
-		String name = StringUtil.safeTrim(nameField.getText());
-		List<String> ingredients = new ArrayList<>();
-		for (int i = 0; i < ingredientListModel.size(); i++) {
-			ingredients.add(ingredientListModel.get(i));
-		}
-		String stepsRaw = stepsArea.getText();
-		List<String> steps = new ArrayList<>();
-		if (stepsRaw != null && !stepsRaw.isBlank()) {
-			for (String s : stepsRaw.split("\\r?\\n")) {
-				String trimmed = StringUtil.safeTrim(s);
-				if (!StringUtil.isNullOrEmpty(trimmed)) steps.add(trimmed);
-			}
-		}
-
-		int servingSize = NumberUtil.parseInt(servingSizeField.getText(), 1);
-		if (servingSize <= 0) servingSize = 1;
-
-		// Call controller - this will trigger the presenter to update the view model
-		controller.execute(name, ingredients, steps, servingSize);
-
-		// Clear form after save is initiated
-		clearForm();
-	}
-
-	private void clearForm() {
-		nameField.setText("");
-		ingredientListModel.clear();
-		ingredientQtyField.setText("");
-		ingredientNameField.setText("");
-		stepsArea.setText("");
-		servingSizeField.setText("1");
-	}
-	
-	private JPanel createNavigationPanel() {
-		if (viewManagerModel == null) {
-			return null;
-		}
-		
-		JPanel navPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-		navPanel.setBorder(BorderFactory.createTitledBorder("Navigation"));
-		
-		JButton browseButton = new JButton("Browse Recipes");
-		browseButton.addActionListener(e -> viewManagerModel.setActiveView("BrowseRecipeView"));
-		
-		JButton searchButton = new JButton("Search by Ingredients");
-		searchButton.addActionListener(e -> viewManagerModel.setActiveView("SearchByIngredientsView"));
-		
-		navPanel.add(browseButton);
-		navPanel.add(searchButton);
-		
-		return navPanel;
-	}
-
+    @Override
+    public void propertyChange(PropertyChangeEvent evt) {
+        Platform.runLater(() -> {
+            if (RecipeStoreViewModel.PROP_SUCCESS_MESSAGE.equals(evt.getPropertyName())) {
+                statusLabel.setText((String) evt.getNewValue());
+                statusLabel.setStyle("-fx-text-fill: green;");
+            } else if (RecipeStoreViewModel.PROP_ERROR_MESSAGE.equals(evt.getPropertyName())) {
+                statusLabel.setText((String) evt.getNewValue());
+                statusLabel.setStyle("-fx-text-fill: red;");
+            }
+        });
+    }
 }
