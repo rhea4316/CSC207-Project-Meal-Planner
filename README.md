@@ -2,6 +2,36 @@
 
 A comprehensive meal planning application that helps users manage their daily and weekly meals with detailed nutrient tracking.
 
+## Easy Setup & Run (Recommended)
+
+You don't need to manually install Maven or libraries. Just run the script below!
+
+### Windows
+Double-click **`setup_and_run.bat`** file.
+*(Or run in CMD/PowerShell)*
+
+### Mac / Linux
+Open terminal and run:
+```bash
+chmod +x setup_and_run.sh  # Run this only once to give permission
+./setup_and_run.sh
+```
+
+This script will automatically:
+1. Check your Java version.
+2. Download all required libraries (dependencies).
+3. Build the project.
+4. Run the application.
+
+---
+
+## Manual Execution (If needed)
+
+If you prefer running via your IDE (IntelliJ, etc.), run the main class located at:
+**`src/main/java/com/mealplanner/app/Main.java`**
+
+---
+
 ## Team Members (Group 14, TUT0201)
 
 * Aaryan Patel
@@ -195,7 +225,6 @@ See [CODE_STRUCTURE.md](CODE_STRUCTURE.md) for detailed architecture documentati
 
 ### Class: Ingredient
 * `name`: String
-
 * `unit`: **Unit** (P0: Type-safe enum instead of String)
 * `nutrition`: **NutritionInfo** (encapsulated nutrition data)
 
@@ -272,7 +301,7 @@ Configuration managed through `ApiConfig` (P0) - see [GETTING_STARTED.md](GETTIN
 
 ---
 
-## Getting Started
+## Manual Setup (Developers Only)
 
 ### Prerequisites
 - Java 11 or higher
@@ -296,6 +325,7 @@ mvn test
 
 # Run application
 mvn exec:java -Dexec.mainClass="com.mealplanner.app.Main"
+```
 
 ---
 
