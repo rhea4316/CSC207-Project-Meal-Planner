@@ -4,6 +4,7 @@ package com.mealplanner.use_case.browse_recipe;
 // Responsible: Regina (interface), Everyone (implementation)
 
 import com.mealplanner.entity.Recipe;
+import com.mealplanner.exception.RecipeNotFoundException;
 
 import java.io.IOException;
 import java.util.List;
@@ -19,6 +20,6 @@ public interface BrowseRecipeDataAccessInterface {
      * @return List of recipes matching the search criteria
      * @throws IOException if API call fails
      */
-    List<Recipe> searchRecipes(BrowseRecipeInputData inputData) throws IOException;
+    List<Recipe> searchRecipes(BrowseRecipeInputData inputData) throws IOException, RecipeNotFoundException;
 
 }

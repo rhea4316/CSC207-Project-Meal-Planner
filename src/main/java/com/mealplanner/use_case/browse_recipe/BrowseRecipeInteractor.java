@@ -5,6 +5,7 @@ package com.mealplanner.use_case.browse_recipe;
 
 import com.mealplanner.config.ApiConfig;
 import com.mealplanner.entity.Recipe;
+import com.mealplanner.exception.RecipeNotFoundException;
 import com.mealplanner.util.StringUtil;
 
 import java.io.IOException;
@@ -30,7 +31,7 @@ public class BrowseRecipeInteractor implements BrowseRecipeInputBoundary {
             browseRecipePresenter.presentError("Input data cannot be null");
             return;
         }
-        
+
         if (StringUtil.isNullOrEmpty(browseRecipeInputData.getQuery())) {
             browseRecipePresenter.presentError("Search query cannot be empty");
             return;
@@ -48,13 +49,15 @@ public class BrowseRecipeInteractor implements BrowseRecipeInputBoundary {
 
             if (recipes == null || recipes.isEmpty()) {
                 browseRecipePresenter.presentError("No recipes found, please try different wording " +
-                        "in your search query" + 
-                        (browseRecipeInputData.getIncludedIngredients() != null ? 
-                         " or input different ingredients." : "."));
+                        "in your search query" +
+                        (browseRecipeInputData.getIncludedIngredients() != null ?
+                                " or input different ingredients." : "."));
             } else {
                 BrowseRecipeOutputData browseRecipeOutputData = new BrowseRecipeOutputData(recipes);
                 browseRecipePresenter.presentRecipeDetails(browseRecipeOutputData);
             }
+        } catch (RecipeNotFoundException e) {
+            browseRecipePresenter.presentError("Recipe not found");
         } catch (IOException e) {
             browseRecipePresenter.presentError("Network error: " + e.getMessage());
         } catch (IllegalArgumentException e) {
