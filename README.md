@@ -7,8 +7,7 @@ A comprehensive meal planning application that helps users manage their daily an
 You don't need to manually install Maven or libraries. Just run the script below!
 
 ### Windows
-Double-click **`setup_and_run.bat`** file.
-*(Or run in CMD/PowerShell)*
+Open terminal and run: ```& $env:ComSpec /c "setup_and_run.bat"```
 
 ### Mac / Linux
 Open terminal and run:
