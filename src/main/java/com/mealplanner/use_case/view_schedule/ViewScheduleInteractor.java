@@ -7,7 +7,6 @@ import com.mealplanner.exception.UserNotFoundException;
 
 // Main business logic for retrieving and displaying user's meal schedule.
 // Responsible: Mona
-// done: Implement execute method: retrieve user's schedule from data access, format for display, pass to presenter
 
 public class ViewScheduleInteractor implements ViewScheduleInputBoundary {
 

@@ -2,7 +2,6 @@ package com.mealplanner.interface_adapter.presenter;
 
 // Presenter for viewing schedule - converts schedule OutputData to ViewModel for display.
 // Responsible: Mona
-// done: Implement OutputBoundary methods to format weekly schedule for ScheduleViewModel
 
 import com.mealplanner.interface_adapter.view_model.ScheduleViewModel;
 import com.mealplanner.use_case.view_schedule.ViewScheduleInputBoundary;
