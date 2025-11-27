@@ -105,6 +105,26 @@ public class StoreRecipeInteractorTest {
     }
 
     @Test
+    public void testStoreRecipeInvalidName() {
+        // Arrange - ValidationUtil.validateRecipeName returns false for names longer than 100 characters
+        String longName = "A".repeat(101); // 101 characters - exceeds max length of 100
+        StoreRecipeInputData inputData = new StoreRecipeInputData(
+                longName,
+                Arrays.asList("Ingredient 1"),
+                Arrays.asList("Step 1"),
+                4
+        );
+
+        // Act
+        interactor.execute(inputData);
+
+        // Assert
+        assertTrue(presenter.errorCalled, "Error should be called");
+        assertEquals("Recipe name is invalid", presenter.errorMessage);
+        assertFalse(repository.saveCalled);
+    }
+
+    @Test
     public void testStoreRecipeNullIngredients() {
         // Arrange
         StoreRecipeInputData inputData = new StoreRecipeInputData(
