@@ -58,7 +58,11 @@ public class Main {
         // Recipe Detail menu item
         JMenuItem recipeDetailItem = new JMenuItem("Recipe Detail");
         recipeDetailItem.addActionListener(e -> viewManager.switchToView(com.mealplanner.view.ViewManager.RECIPE_DETAIL_VIEW));
-        
+
+        //Schedule menu item
+        JMenuItem scheduleItem = new JMenuItem("Schedule");
+        scheduleItem.addActionListener(e -> viewManager.switchToView(com.mealplanner.view.ViewManager.SCHEDULE_VIEW));
+
         // Separator
         viewMenu.addSeparator();
         
@@ -71,6 +75,7 @@ public class Main {
         viewMenu.add(browseRecipeItem);
         viewMenu.add(searchByIngredientsItem);
         viewMenu.add(recipeDetailItem);
+        viewMenu.add(scheduleItem);
         viewMenu.addSeparator();
         viewMenu.add(homeItem);
         

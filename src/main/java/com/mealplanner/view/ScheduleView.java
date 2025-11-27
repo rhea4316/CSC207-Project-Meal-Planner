@@ -6,6 +6,9 @@ package com.mealplanner.view;
 
 import com.mealplanner.entity.MealType;
 import com.mealplanner.entity.Schedule;
+import com.mealplanner.interface_adapter.ViewManagerModel;
+import com.mealplanner.interface_adapter.controller.AdjustServingSizeController;
+import com.mealplanner.interface_adapter.controller.ViewScheduleController;
 import com.mealplanner.interface_adapter.view_model.ScheduleViewModel;
 
 import javax.swing.*;
@@ -24,23 +27,32 @@ import java.util.Map;
 public class ScheduleView extends JPanel implements PropertyChangeListener {
 
     private final ScheduleViewModel scheduleViewModel;
+    private final ViewScheduleController controller;
+    private final ViewManagerModel viewManagerModel;
 
     private final JLabel titleLabel;
     private final JLabel messageLabel;
     private final JTable scheduleTable;
     private final DefaultTableModel tableModel;
+    private JButton saveButton;
+    private JButton loadButton;
+
+    private JPanel buttonPanel;
+    private JPanel headerPanel;
 
     // To map table rows to dates
     private final List<LocalDate> rowDates = new ArrayList<>();
 
-    public ScheduleView(ScheduleViewModel scheduleViewModel) {
+    public ScheduleView(ScheduleViewModel scheduleViewModel, ViewScheduleController controller, ViewManagerModel viewManagerModel) {
         this.scheduleViewModel = scheduleViewModel;
         this.scheduleViewModel.addPropertyChangeListener(this);
+        this.controller = controller;
+        this.viewManagerModel = viewManagerModel;
 
         setLayout(new BorderLayout(10, 10));
 
         // --- Header (title + message) ---
-        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel = new JPanel(new BorderLayout());
         titleLabel = new JLabel("Meal Schedule");
         titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
         titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 18f));
@@ -77,8 +89,28 @@ public class ScheduleView extends JPanel implements PropertyChangeListener {
                 }
             }
         });
-
         add(new JScrollPane(scheduleTable), BorderLayout.CENTER);
+
+        createButtonPanel();
+
+    }
+
+    private void createButtonPanel() {
+        buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+
+        saveButton = new JButton("Save Schedule");
+        loadButton = new JButton("Load Schedule");
+
+        saveButton.addActionListener(e -> controller.saveSchedule(scheduleViewModel.getSchedule()));
+        loadButton.addActionListener(e -> {
+            controller.loadSchedule(scheduleViewModel.getSchedule().getScheduleId());
+            updateFromViewModel();
+        });
+
+        buttonPanel.add(saveButton);
+        buttonPanel.add(loadButton);
+
+        add(buttonPanel, BorderLayout.SOUTH);
     }
 
     private void showMealDetails(int row, int col) {

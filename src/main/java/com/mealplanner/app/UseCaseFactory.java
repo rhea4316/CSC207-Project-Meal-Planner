@@ -7,6 +7,7 @@ import com.mealplanner.data_access.api.EdamamApiClient;
 import com.mealplanner.data_access.api.SpoonacularApiClient;
 import com.mealplanner.data_access.database.AdjustServingSizeDataAccessObject;
 import com.mealplanner.data_access.database.BrowseRecipeAPIParser;
+import com.mealplanner.data_access.database.FileScheduleDataAccessObject;
 import com.mealplanner.data_access.database.SearchByIngredientsDataAccessObject;
 import com.mealplanner.repository.RecipeRepository;
 import com.mealplanner.use_case.adjust_serving_size.AdjustServingSizeDataAccessInterface;
@@ -21,6 +22,9 @@ import com.mealplanner.use_case.search_by_ingredients.SearchByIngredientsOutputB
 import com.mealplanner.use_case.store_recipe.StoreRecipeInputBoundary;
 import com.mealplanner.use_case.store_recipe.StoreRecipeOutputBoundary;
 
+import com.mealplanner.use_case.view_schedule.ViewScheduleDataAccessInterface;
+import com.mealplanner.use_case.view_schedule.ViewScheduleInputBoundary;
+import com.mealplanner.use_case.view_schedule.ViewScheduleOutputBoundary;
 import okhttp3.OkHttpClient;
 
 public class UseCaseFactory {
@@ -73,6 +77,10 @@ public class UseCaseFactory {
         return new AdjustServingSizeDataAccessObject(apiClient);
     }
 
+    public static FileScheduleDataAccessObject createViewScheduleDataAccess() {
+        return new FileScheduleDataAccessObject();
+    }
+
     /**
      * Creates a SearchByIngredientsDataAccessInterface instance.
      */
@@ -103,6 +111,14 @@ public class UseCaseFactory {
         }
         AdjustServingSizeDataAccessInterface dataAccess = createAdjustServingSizeDataAccess();
         return new com.mealplanner.use_case.adjust_serving_size.AdjustServingSizeInteractor(dataAccess, presenter);
+    }
+
+    public static ViewScheduleInputBoundary createViewScheduleInteractor(ViewScheduleOutputBoundary presenter) {
+        if (presenter == null) {
+            throw new IllegalArgumentException("Presenter cannot be null");
+        }
+        FileScheduleDataAccessObject dataAccess = createViewScheduleDataAccess();
+        return new com.mealplanner.use_case.view_schedule.ViewScheduleInteractor(dataAccess, presenter);
     }
 
     /**

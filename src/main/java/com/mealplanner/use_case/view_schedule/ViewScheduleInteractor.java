@@ -1,5 +1,6 @@
 package com.mealplanner.use_case.view_schedule;
 
+import com.mealplanner.data_access.database.FileScheduleDataAccessObject;
 import com.mealplanner.entity.Schedule;
 import com.mealplanner.entity.User;
 import com.mealplanner.exception.UserNotFoundException;
@@ -10,10 +11,10 @@ import com.mealplanner.exception.UserNotFoundException;
 
 public class ViewScheduleInteractor implements ViewScheduleInputBoundary {
 
-    private final ViewScheduleDataAccessInterface dataAccess;
+    private final FileScheduleDataAccessObject dataAccess;
     private final ViewScheduleOutputBoundary presenter;
 
-    public ViewScheduleInteractor(ViewScheduleDataAccessInterface dataAccess, ViewScheduleOutputBoundary presenter) {
+    public ViewScheduleInteractor(FileScheduleDataAccessObject dataAccess, ViewScheduleOutputBoundary presenter) {
         this.dataAccess = dataAccess;
         this.presenter = presenter;
     }
@@ -50,6 +51,20 @@ public class ViewScheduleInteractor implements ViewScheduleInputBoundary {
 
         }
     }
+    @Override
+    public void saveSchedule(ViewScheduleInputData inputData) {
+        Schedule schedule = inputData.getSchedule();
+        if (schedule == null) {
+            presenter.presentError("Schedule cannot be empty");
+            return;
+        }
+        dataAccess.saveSchedule(schedule);
+    }
 
-
+    @Override
+    public void loadSchedule(ViewScheduleInputData inputData) {
+        Schedule schedule = dataAccess.loadSchedule(inputData.getUsername());
+        ViewScheduleOutputData outputData = new ViewScheduleOutputData(null,schedule);
+        presenter.presentSchedule(outputData);
+    }
 }
