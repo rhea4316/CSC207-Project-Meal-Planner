@@ -1,0 +1,13 @@
+{
+  "name": "Steak",
+  "ingredients": [
+    "500 g flank",
+    "2 pinch salt"
+  ],
+  "steps": [
+    "Grill at 500"
+  ],
+  "servingSize": 1,
+  "dietaryRestrictions": [],
+  "recipeId": "recipe-f4b01678-3c9f-4b2f-a5db-273882807c64"
+}
