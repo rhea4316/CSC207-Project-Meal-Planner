@@ -4,6 +4,8 @@ import com.mealplanner.entity.MealType;
 import com.mealplanner.entity.Schedule;
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.view_model.ScheduleViewModel;
+import com.mealplanner.view.style.ModernUI;
+
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -11,6 +13,10 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontPosture;
+import javafx.scene.text.FontWeight;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -23,45 +29,49 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
     private final ScheduleViewModel scheduleViewModel;
 
     // Dynamic UI Components
-    private HBox mealsBox;
+    private VBox mealsContainer;
     private ProgressBar progressBar;
-    private Label progressLabel;
+    private Label calorieValueLabel; // e.g. "1,200 / 2,000"
 
     public DashboardView(ViewManagerModel viewManagerModel, ScheduleViewModel scheduleViewModel) {
         this.viewManagerModel = viewManagerModel;
         this.scheduleViewModel = scheduleViewModel;
         this.scheduleViewModel.addPropertyChangeListener(this);
-        
-        setPadding(new Insets(20));
-        getStyleClass().add("bg-light-gray");
+
+        // 1. Layout & Background
+        setBackground(new Background(new BackgroundFill(
+            ModernUI.BACKGROUND_COLOR, 
+            CornerRadii.EMPTY, 
+            Insets.EMPTY
+        )));
+        setPadding(new Insets(30));
 
         // Title
-        Label titleLabel = new Label("Dashboard");
-        titleLabel.getStyleClass().add("title-label");
+        Label titleLabel = ModernUI.createHeaderLabel("Dashboard");
         setTop(titleLabel);
+        BorderPane.setMargin(titleLabel, new Insets(0, 0, 20, 0));
 
-        // Content Area (Grid)
+        // Content Grid
         GridPane contentGrid = new GridPane();
-        contentGrid.setHgap(20);
-        contentGrid.setVgap(20);
-        
+        contentGrid.setHgap(30); // 30px Gap
+        contentGrid.setVgap(30);
+
         // Left: Today's Menu
-        VBox menuPanel = createSectionPanel("Today's Menu");
-        mealsBox = new HBox(15);
-        mealsBox.setAlignment(Pos.CENTER_LEFT);
-        menuPanel.getChildren().add(mealsBox);
+        VBox menuSection = createSectionHeader("Today's Menu");
+        mealsContainer = new VBox(20); // Spacing between cards
+        menuSection.getChildren().add(mealsContainer);
         
-        GridPane.setHgrow(menuPanel, Priority.ALWAYS);
-        contentGrid.add(menuPanel, 0, 0);
+        GridPane.setHgrow(menuSection, Priority.ALWAYS);
+        contentGrid.add(menuSection, 0, 0);
 
         // Right: Nutrition Progress
-        VBox nutritionPanel = createSectionPanel("Nutrition Progress");
-        nutritionPanel.getChildren().add(createNutritionContent());
+        VBox nutritionSection = createSectionHeader("Nutrition Progress");
+        nutritionSection.getChildren().add(createNutritionContent());
         
-        GridPane.setHgrow(nutritionPanel, Priority.ALWAYS);
-        contentGrid.add(nutritionPanel, 1, 0);
-        
-        // Column Constraints
+        GridPane.setHgrow(nutritionSection, Priority.ALWAYS);
+        contentGrid.add(nutritionSection, 1, 0);
+
+        // Column Constraints (70% Left, 30% Right)
         ColumnConstraints col1 = new ColumnConstraints();
         col1.setPercentWidth(70);
         ColumnConstraints col2 = new ColumnConstraints();
@@ -69,65 +79,107 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         contentGrid.getColumnConstraints().addAll(col1, col2);
 
         setCenter(contentGrid);
-        
+
         // Initial Update
         updateView();
     }
 
-    private VBox createSectionPanel(String title) {
-        VBox panel = new VBox(10);
-        panel.getStyleClass().add("card-panel");
-        panel.setPadding(new Insets(20));
-        
-        Label titleLabel = new Label(title);
-        titleLabel.getStyleClass().add("section-title");
-        panel.getChildren().add(titleLabel);
-
-        return panel;
-    }
-
-    private VBox createMealCard(String mealType, String mealName) {
-        VBox card = new VBox(10);
-        card.getStyleClass().add("card-panel"); // Nested card look
-        card.setPrefWidth(200);
-        card.setAlignment(Pos.CENTER);
-        
-        Label typeLabel = new Label(mealType);
-        typeLabel.getStyleClass().add("meal-card-title");
-        
-        Label nameLabel = new Label(mealName);
-        nameLabel.setWrapText(true);
-        nameLabel.getStyleClass().add("meal-card-name");
-
-        Button viewBtn = new Button("View Recipe");
-        viewBtn.getStyleClass().add("modern-button");
-        viewBtn.setOnAction(e -> viewManagerModel.setActiveView(ViewManager.BROWSE_RECIPE_VIEW));
-        
-        if (mealName.equals("Not Planned")) {
-             nameLabel.getStyleClass().remove("meal-card-name");
-             nameLabel.getStyleClass().add("meal-card-name-empty");
-             viewBtn.setText("Plan Meal");
-             viewBtn.getStyleClass().add("action-button");
-             viewBtn.setOnAction(e -> viewManagerModel.setActiveView(ViewManager.SCHEDULE_VIEW));
-        }
-
-        card.getChildren().addAll(typeLabel, nameLabel, viewBtn);
-        return card;
+    private VBox createSectionHeader(String title) {
+        VBox container = new VBox(15);
+        Label label = new Label(title);
+        label.setFont(Font.font("Segoe UI", FontWeight.BOLD, 18));
+        label.setTextFill(ModernUI.TEXT_COLOR);
+        container.getChildren().add(label);
+        return container;
     }
 
     private VBox createNutritionContent() {
-        VBox panel = new VBox(10);
-        
-        progressLabel = new Label("Calories: 0 / 2000 kcal");
-        progressLabel.setStyle("-fx-font-size: 16px;"); // Keep inline for dynamic content
-        
+        VBox card = ModernUI.createCardPanel();
+        card.setSpacing(15);
+        card.setAlignment(Pos.CENTER_LEFT);
+
+        // Header
+        Label header = new Label("Total Calories");
+        header.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 14));
+        header.setTextFill(Color.GRAY);
+
+        // Value
+        calorieValueLabel = new Label("0 / 2000");
+        calorieValueLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 32));
+        calorieValueLabel.setTextFill(ModernUI.PRIMARY_COLOR);
+
+        // Progress Bar
         progressBar = new ProgressBar(0);
-        progressBar.getStyleClass().add("progress-bar");
         progressBar.setMaxWidth(Double.MAX_VALUE);
         progressBar.setPrefHeight(20);
+        // CSS styling for rounded corners is tricky purely in code without CSS file update,
+        // but we can try inline styles for basic properties.
+        progressBar.setStyle("-fx-accent: " + toHexString(ModernUI.PRIMARY_COLOR) + "; -fx-control-inner-background: #E0E0E0; -fx-background-radius: 10; -fx-background-insets: 0; -fx-padding: 0;");
+
+        card.getChildren().addAll(header, calorieValueLabel, progressBar);
+        return card;
+    }
+
+    private VBox createMealCard(String mealType, String mealName, String icon, int calories) {
+        VBox card = ModernUI.createCardPanel();
+        card.setSpacing(10);
+
+        // Header Row: Icon + Meal Type
+        HBox headerBox = new HBox(10);
+        headerBox.setAlignment(Pos.CENTER_LEFT);
         
-        panel.getChildren().addAll(progressLabel, progressBar);
-        return panel;
+        Label iconLabel = new Label(icon);
+        iconLabel.setFont(Font.font("Segoe UI Emoji", 20)); // Use Emoji font if available
+        
+        Label typeLabel = new Label(mealType);
+        typeLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
+        typeLabel.setTextFill(Color.GRAY);
+        
+        headerBox.getChildren().addAll(iconLabel, typeLabel);
+        card.getChildren().add(headerBox);
+
+        // Content
+        boolean isPlanned = !mealName.equals("Not Planned") && mealName != null && !mealName.isEmpty();
+
+        if (isPlanned) {
+            // Meal Name
+            Label nameLabel = new Label(mealName);
+            nameLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 16));
+            nameLabel.setTextFill(ModernUI.TEXT_COLOR);
+            nameLabel.setWrapText(true);
+
+            // Calories (Mock)
+            Label calLabel = new Label(calories + " kcal");
+            calLabel.setFont(Font.font("Segoe UI", 12));
+            calLabel.setTextFill(Color.GRAY);
+
+            // Action Button
+            Button viewBtn = ModernUI.createPrimaryButton("View Recipe");
+            viewBtn.setMaxWidth(Double.MAX_VALUE);
+            viewBtn.setOnAction(e -> viewManagerModel.setActiveView(ViewManager.BROWSE_RECIPE_VIEW));
+
+            card.getChildren().addAll(nameLabel, calLabel, viewBtn);
+        } else {
+            // Empty State
+            Label emptyLabel = new Label("Not Planned");
+            emptyLabel.setFont(Font.font("Segoe UI", FontPosture.ITALIC, 14));
+            emptyLabel.setTextFill(Color.GRAY);
+
+            Button planBtn = ModernUI.createGhostButton("Plan Meal");
+            planBtn.setMaxWidth(Double.MAX_VALUE);
+            planBtn.setOnAction(e -> viewManagerModel.setActiveView(ViewManager.SCHEDULE_VIEW));
+
+            card.getChildren().addAll(emptyLabel, planBtn);
+        }
+
+        return card;
+    }
+
+    private String toHexString(Color color) {
+        return String.format("#%02X%02X%02X",
+            (int) (color.getRed() * 255),
+            (int) (color.getGreen() * 255),
+            (int) (color.getBlue() * 255));
     }
 
     @Override
@@ -136,7 +188,7 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
     }
 
     private void updateView() {
-        mealsBox.getChildren().clear();
+        mealsContainer.getChildren().clear();
 
         Schedule schedule = scheduleViewModel.getSchedule();
         LocalDate today = LocalDate.now();
@@ -146,6 +198,10 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         String dinnerName = "Not Planned";
         
         int currentCalories = 0;
+        // Estimated calories for display (matching previous logic)
+        int breakfastCals = 0;
+        int lunchCals = 0;
+        int dinnerCals = 0;
 
         if (schedule != null) {
             Map<LocalDate, Map<MealType, String>> allMeals = schedule.getAllMeals();
@@ -154,25 +210,43 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
             if (todaysMeals != null) {
                 if (todaysMeals.containsKey(MealType.BREAKFAST)) {
                     breakfastName = todaysMeals.get(MealType.BREAKFAST);
-                    currentCalories += 500; 
+                    breakfastCals = 500;
+                    currentCalories += breakfastCals;
                 }
                 if (todaysMeals.containsKey(MealType.LUNCH)) {
                     lunchName = todaysMeals.get(MealType.LUNCH);
-                    currentCalories += 700; 
+                    lunchCals = 700;
+                    currentCalories += lunchCals;
                 }
                 if (todaysMeals.containsKey(MealType.DINNER)) {
                     dinnerName = todaysMeals.get(MealType.DINNER);
-                    currentCalories += 600; 
+                    dinnerCals = 600;
+                    currentCalories += dinnerCals;
                 }
             }
         }
 
-        mealsBox.getChildren().add(createMealCard("Breakfast", breakfastName));
-        mealsBox.getChildren().add(createMealCard("Lunch", lunchName));
-        mealsBox.getChildren().add(createMealCard("Dinner", dinnerName));
+        // Add Cards with Icons
+        mealsContainer.getChildren().add(createMealCard("Breakfast", breakfastName, "☀", breakfastCals));
+        mealsContainer.getChildren().add(createMealCard("Lunch", lunchName, "☁", lunchCals));
+        mealsContainer.getChildren().add(createMealCard("Dinner", dinnerName, "☾", dinnerCals));
 
+        // Update Nutrition Progress
         double progress = (double) currentCalories / 2000.0;
         progressBar.setProgress(progress > 1.0 ? 1.0 : progress);
-        progressLabel.setText("Calories: " + currentCalories + " / 2000 kcal");
+        calorieValueLabel.setText(currentCalories + " / 2000");
+
+        // Dynamic Color for Progress Bar
+        String colorHex;
+        if (progress > 1.0) {
+            colorHex = "#F44336"; // Red
+        } else if (progress > 0.8) {
+            colorHex = "#FF9800"; // Orange
+        } else {
+            colorHex = "#4CAF50"; // Green
+        }
+        
+        // Update bar color
+        progressBar.setStyle("-fx-accent: " + colorHex + "; -fx-control-inner-background: #E0E0E0; -fx-background-radius: 10; -fx-padding: 0;");
     }
 }

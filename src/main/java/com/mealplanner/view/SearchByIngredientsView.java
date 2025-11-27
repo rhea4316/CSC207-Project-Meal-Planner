@@ -5,11 +5,17 @@ import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.SearchByIngredientsController;
 import com.mealplanner.interface_adapter.view_model.RecipeSearchViewModel;
 import com.mealplanner.util.StringUtil;
+import com.mealplanner.view.style.ModernUI;
+
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.scene.Cursor;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -21,13 +27,13 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
     @SuppressWarnings("unused")
     private final ViewManagerModel viewManagerModel;
 
-    private TextArea ingredientsTextArea;
+    private TextField ingredientsField;
     private Button searchButton;
 
     // Result Components
     private StackPane resultsContainer; 
-    private VBox listPanel;
     private ScrollPane listScrollPane;
+    private FlowPane listPanel; // Use FlowPane for grid-like card layout
     private VBox loadingPanel;
     private VBox emptyPanel;
     private Label errorLabel;
@@ -42,17 +48,14 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
 
         viewModel.addPropertyChangeListener(this);
 
-        setPadding(new Insets(20));
-        getStyleClass().add("bg-white");
+        setPadding(new Insets(30));
+        setBackground(new Background(new BackgroundFill(ModernUI.BACKGROUND_COLOR, CornerRadii.EMPTY, Insets.EMPTY)));
 
-        // Title
-        Label titleLabel = new Label("Search by Ingredients");
-        titleLabel.getStyleClass().add("title-label");
+        // Header + Search Area
+        VBox topBox = new VBox(20);
+        Label titleLabel = ModernUI.createHeaderLabel("Search by Ingredients");
         
-        // Search Panel
         VBox searchPanel = createSearchPanel();
-        
-        VBox topBox = new VBox(10);
         topBox.getChildren().addAll(titleLabel, searchPanel);
         setTop(topBox);
 
@@ -62,53 +65,74 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         
         // Error Label
         errorLabel = new Label("");
-        errorLabel.getStyleClass().add("error-label");
+        errorLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
+        errorLabel.setTextFill(Color.RED);
+        errorLabel.setPadding(new Insets(10, 0, 0, 0));
         setBottom(errorLabel);
     }
 
     private VBox createSearchPanel() {
-        VBox panel = new VBox(10);
+        VBox panel = ModernUI.createCardPanel(); // White bg, rounded
+        panel.setPadding(new Insets(20));
         
-        Label label = new Label("Enter ingredients (comma or newline separated):");
-        
-        ingredientsTextArea = new TextArea();
-        ingredientsTextArea.setPrefRowCount(3);
-        ingredientsTextArea.setWrapText(true);
-        
-        searchButton = new Button("Search Recipes");
-        searchButton.getStyleClass().add("modern-button");
-        searchButton.setOnAction(e -> performSearch());
-        
-        HBox btnBox = new HBox(searchButton);
-        btnBox.setAlignment(Pos.CENTER_RIGHT);
+        HBox inputBox = new HBox(15);
+        inputBox.setAlignment(Pos.CENTER_LEFT);
 
-        panel.getChildren().addAll(label, ingredientsTextArea, btnBox);
+        // Input Field
+        ingredientsField = new TextField();
+        ingredientsField.setPromptText("Enter ingredients (comma separated)");
+        ingredientsField.setPrefHeight(45);
+        ingredientsField.setFont(Font.font("Segoe UI", 16));
+        ingredientsField.setStyle("-fx-background-radius: 10; -fx-border-color: #E0E0E0; -fx-border-radius: 10; -fx-padding: 0 0 0 10; -fx-background-color: white;");
+        HBox.setHgrow(ingredientsField, Priority.ALWAYS);
+
+        // Search Button
+        searchButton = ModernUI.createPrimaryButton("Search 🔍");
+        searchButton.setPrefHeight(45);
+        searchButton.setOnAction(e -> performSearch());
+
+        inputBox.getChildren().addAll(ingredientsField, searchButton);
+        panel.getChildren().add(inputBox);
+        
         return panel;
     }
 
     private void createResultsPanel() {
         resultsContainer = new StackPane();
-        resultsContainer.setPadding(new Insets(20, 0, 0, 0));
+        resultsContainer.setPadding(new Insets(30, 0, 0, 0));
 
-        // 1. List View
-        listPanel = new VBox(15);
+        // 1. List View (FlowPane inside ScrollPane)
+        listPanel = new FlowPane();
+        listPanel.setHgap(20);
+        listPanel.setVgap(20);
+        listPanel.setPadding(new Insets(10));
+        listPanel.setBackground(new Background(new BackgroundFill(Color.TRANSPARENT, CornerRadii.EMPTY, Insets.EMPTY)));
+
         listScrollPane = new ScrollPane(listPanel);
         listScrollPane.setFitToWidth(true);
-        listScrollPane.getStyleClass().add("scroll-pane-transparent");
+        listScrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
+        listScrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
 
         // 2. Loading View
         loadingPanel = new VBox();
         loadingPanel.setAlignment(Pos.CENTER);
-        Label loadingLabel = new Label("Loading...");
-        loadingLabel.getStyleClass().add("loading-label");
+        Label loadingLabel = new Label("Searching recipes...");
+        loadingLabel.setFont(Font.font("Segoe UI", 18));
+        loadingLabel.setTextFill(Color.GRAY);
         loadingPanel.getChildren().add(loadingLabel);
 
         // 3. Empty View
-        emptyPanel = new VBox();
+        emptyPanel = new VBox(15);
         emptyPanel.setAlignment(Pos.CENTER);
-        Label emptyLabel = new Label("No results found.");
-        emptyLabel.getStyleClass().add("empty-label");
-        emptyPanel.getChildren().add(emptyLabel);
+        
+        Label iconLabel = new Label("🍽️");
+        iconLabel.setFont(Font.font("Segoe UI Emoji", 64));
+        
+        Label emptyLabel = new Label("No ingredients entered");
+        emptyLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 20));
+        emptyLabel.setTextFill(Color.LIGHTGRAY);
+        
+        emptyPanel.getChildren().addAll(iconLabel, emptyLabel);
 
         resultsContainer.getChildren().addAll(emptyPanel, loadingPanel, listScrollPane);
         
@@ -119,7 +143,7 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         loadingPanel.setVisible(false);
         emptyPanel.setVisible(false);
         if (listScrollPane != null) {
-            listScrollPane.setVisible(false); // Hide scrollpane
+            listScrollPane.setVisible(false);
         }
         
         switch(viewName) {
@@ -134,7 +158,7 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
     }
 
     private void performSearch() {
-        String ingredientsRaw = StringUtil.safeTrim(ingredientsTextArea.getText());
+        String ingredientsRaw = StringUtil.safeTrim(ingredientsField.getText());
 
         if (StringUtil.isNullOrEmpty(ingredientsRaw)) {
             errorLabel.setText("Please enter at least one ingredient");
@@ -153,6 +177,8 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
 
         if (recipes == null || recipes.isEmpty()) {
             showView("EMPTY");
+            // Update empty text for no results
+            ((Label) emptyPanel.getChildren().get(1)).setText("No recipes found");
         } else {
             for (Recipe recipe : recipes) {
                 listPanel.getChildren().add(createRecipeCard(recipe));
@@ -161,38 +187,56 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         }
     }
 
-    private HBox createRecipeCard(Recipe recipe) {
-        HBox card = new HBox(15);
-        card.getStyleClass().add("card-panel");
-        card.setAlignment(Pos.CENTER_LEFT);
+    private VBox createRecipeCard(Recipe recipe) {
+        VBox card = ModernUI.createCardPanel();
+        card.setPrefWidth(250); // Fixed width for card grid
+        card.setMinWidth(250);
+        card.setSpacing(10);
+        card.setCursor(Cursor.HAND);
 
-        // Placeholder Image
-        Region imgPlaceholder = new Region();
-        imgPlaceholder.setPrefSize(80, 80);
-        imgPlaceholder.getStyleClass().add("image-panel");
-        card.getChildren().add(imgPlaceholder);
+        // Thumbnail Placeholder
+        StackPane thumbnail = new StackPane();
+        thumbnail.setPrefHeight(140);
+        thumbnail.setStyle("-fx-background-color: #E0E0E0; -fx-background-radius: 10;");
+        Label imgIcon = new Label("🍲");
+        imgIcon.setFont(Font.font("Segoe UI Emoji", 48));
+        thumbnail.getChildren().add(imgIcon);
+        card.getChildren().add(thumbnail);
 
-        // Info
-        VBox infoBox = new VBox(5);
+        // Title
         Label title = new Label(recipe.getName());
-        title.getStyleClass().add("recipe-card-title");
-        
-        String summary = "Ingredients: " + recipe.getIngredients().size();
-        if (recipe.getNutritionInfo() != null) {
-            summary += " | " + recipe.getNutritionInfo().getCalories() + " kcal";
-        }
-        Label subTitle = new Label(summary);
-        subTitle.getStyleClass().add("recipe-card-subtitle");
-        
-        infoBox.getChildren().addAll(title, subTitle);
-        HBox.setHgrow(infoBox, Priority.ALWAYS);
-        card.getChildren().add(infoBox);
+        title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 16));
+        title.setTextFill(ModernUI.TEXT_COLOR);
+        title.setWrapText(true);
+        card.getChildren().add(title);
 
-        // Button
-        Button viewBtn = new Button("View");
-        viewBtn.getStyleClass().add("modern-button");
+        // Summary Info
+        String ingredientCount = recipe.getIngredients() != null ? String.valueOf(recipe.getIngredients().size()) : "0";
+        String calInfo = (recipe.getNutritionInfo() != null) ? recipe.getNutritionInfo().getCalories() + " kcal" : "N/A";
+        
+        Label infoLabel = new Label("Ingredients: " + ingredientCount + "\n" + calInfo);
+        infoLabel.setFont(Font.font("Segoe UI", 12));
+        infoLabel.setTextFill(Color.GRAY);
+        card.getChildren().add(infoLabel);
+
+        // View Button
+        Button viewBtn = ModernUI.createGhostButton("View Details");
+        viewBtn.setMaxWidth(Double.MAX_VALUE);
         viewBtn.setOnAction(e -> System.out.println("View Recipe: " + recipe.getName()));
         card.getChildren().add(viewBtn);
+
+        // Hover Effect
+        card.setOnMouseEntered(e -> {
+            card.setBorder(new Border(new BorderStroke(
+                ModernUI.PRIMARY_COLOR, BorderStrokeStyle.SOLID, new CornerRadii(15), new BorderWidths(2)
+            )));
+        });
+        
+        card.setOnMouseExited(e -> {
+             card.setBorder(new Border(new BorderStroke(
+                Color.rgb(220, 220, 220), BorderStrokeStyle.SOLID, new CornerRadii(15), new BorderWidths(1)
+            )));
+        });
 
         return card;
     }
