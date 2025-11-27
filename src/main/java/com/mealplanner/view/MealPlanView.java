@@ -2,6 +2,9 @@ package com.mealplanner.view;
 
 import com.mealplanner.entity.MealType;
 import com.mealplanner.interface_adapter.ViewManagerModel;
+import com.mealplanner.interface_adapter.controller.AddMealController;
+import com.mealplanner.interface_adapter.controller.DeleteMealController;
+import com.mealplanner.interface_adapter.controller.EditMealController;
 import com.mealplanner.interface_adapter.view_model.MealPlanViewModel;
 
 import javax.swing.*;
@@ -17,6 +20,9 @@ import java.util.Map;
 public class MealPlanView extends JPanel implements PropertyChangeListener, ActionListener {
     private final MealPlanViewModel mealPlanViewModel;
     private final ViewManagerModel viewManagerModel;
+    private final AddMealController addMealController;
+    private final EditMealController editMealController;
+    private final DeleteMealController deleteMealController;
 
     private JPanel calendarPanel;
     private JPanel controlPanel;
@@ -28,13 +34,27 @@ public class MealPlanView extends JPanel implements PropertyChangeListener, Acti
     private JButton deleteButton;
     private JSpinner dateSpinner;
 
-    public MealPlanView(MealPlanViewModel mealPlanViewModel, ViewManagerModel viewManagerModel) {
+    public MealPlanView(MealPlanViewModel mealPlanViewModel, ViewManagerModel viewManagerModel,
+                        AddMealController addMealController, EditMealController editMealController,
+                        DeleteMealController deleteMealController) {
         if (mealPlanViewModel == null) {
             throw new IllegalArgumentException("ViewModel cannot be null");
+        }
+        if (addMealController == null) {
+            throw new IllegalArgumentException("AddMealController cannot be null");
+        }
+        if (editMealController == null) {
+            throw new IllegalArgumentException("EditMealController cannot be null");
+        }
+        if (deleteMealController == null) {
+            throw new IllegalArgumentException("DeleteMealController cannot be null");
         }
 
         this.mealPlanViewModel = mealPlanViewModel;
         this.viewManagerModel = viewManagerModel;
+        this.addMealController = addMealController;
+        this.editMealController = editMealController;
+        this.deleteMealController = deleteMealController;
 
         mealPlanViewModel.addPropertyChangeListener(this);
 
@@ -198,8 +218,16 @@ public class MealPlanView extends JPanel implements PropertyChangeListener, Acti
             return;
         }
 
-        JOptionPane.showMessageDialog(this, "Add meal functionality not yet connected to controller",
-                "Info", JOptionPane.INFORMATION_MESSAGE);
+        try {
+            java.util.Date selectedDate = (java.util.Date) dateSpinner.getValue();
+            LocalDate date = selectedDate.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+            String mealTypeStr = (String) mealTypeComboBox.getSelectedItem();
+            
+            addMealController.execute(date.toString(), mealTypeStr, recipeId);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error adding meal: " + e.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void handleEditMeal() {
@@ -209,13 +237,29 @@ public class MealPlanView extends JPanel implements PropertyChangeListener, Acti
             return;
         }
 
-        JOptionPane.showMessageDialog(this, "Edit meal functionality not yet connected to controller",
-                "Info", JOptionPane.INFORMATION_MESSAGE);
+        try {
+            java.util.Date selectedDate = (java.util.Date) dateSpinner.getValue();
+            LocalDate date = selectedDate.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+            String mealTypeStr = (String) mealTypeComboBox.getSelectedItem();
+            
+            editMealController.execute(date.toString(), mealTypeStr, recipeId);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error editing meal: " + e.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void handleDeleteMeal() {
-        JOptionPane.showMessageDialog(this, "Delete meal functionality not yet connected to controller",
-                "Info", JOptionPane.INFORMATION_MESSAGE);
+        try {
+            java.util.Date selectedDate = (java.util.Date) dateSpinner.getValue();
+            LocalDate date = selectedDate.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+            String mealTypeStr = (String) mealTypeComboBox.getSelectedItem();
+            
+            deleteMealController.execute(date.toString(), mealTypeStr);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error deleting meal: " + e.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     @Override

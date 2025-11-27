@@ -3,11 +3,19 @@ package com.mealplanner.app;
 // Application entry point - launches the Meal Planner application.
 // Responsible: Everyone
 
+import com.formdev.flatlaf.FlatLightLaf;
 import javax.swing.*;
 import java.awt.*;
 
 public class Main {
     public static void main(String[] args) {
+        // Set modern FlatLaf look and feel
+        try {
+            UIManager.setLookAndFeel(new FlatLightLaf());
+        } catch (Exception ex) {
+            System.err.println("Failed to initialize FlatLaf");
+        }
+        
         SwingUtilities.invokeLater(() -> {
             try {
                 createAndShowGui();

@@ -2,7 +2,6 @@ package com.mealplanner.use_case.store_recipe;
 
 // Data access interface for saving recipes to persistent storage.
 // Responsible: Aaryan (interface), Everyone (implementation via FileRecipeDataAccessObject)
-// TODO: Define method to save Recipe entity to database/file storage
 import com.mealplanner.entity.Recipe;
 import com.mealplanner.exception.DataAccessException;
 
@@ -15,8 +14,8 @@ public interface StoreRecipeDataAccessInterface {
 	/**
 	 * Save the provided recipe to persistent storage.
 	 * @param recipe recipe to save
-	 * @throws DataAccessException on persistence errors
+	 * @throws DataAccessException on persistence errors (unchecked)
 	 */
-	void save(Recipe recipe) throws DataAccessException;
+	void save(Recipe recipe);
 
 }
