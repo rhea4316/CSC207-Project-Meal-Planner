@@ -52,7 +52,7 @@ public class MealPlanView extends BorderPane implements PropertyChangeListener {
         this.mealPlanViewModel.addPropertyChangeListener(this);
 
         setPadding(new Insets(20));
-        setStyle("-fx-background-color: #F5F5F5;");
+        getStyleClass().add("bg-light-gray");
 
         createHeader();
         createForm();
@@ -135,9 +135,9 @@ public class MealPlanView extends BorderPane implements PropertyChangeListener {
 
         // Status Labels
         errorLabel = new Label("");
-        errorLabel.setStyle("-fx-text-fill: red;");
+        errorLabel.getStyleClass().add("error-label");
         successLabel = new Label("");
-        successLabel.setStyle("-fx-text-fill: green;");
+        successLabel.getStyleClass().add("success-label");
         
         VBox statusBox = new VBox(5);
         statusBox.getChildren().addAll(errorLabel, successLabel);
@@ -284,7 +284,7 @@ public class MealPlanView extends BorderPane implements PropertyChangeListener {
                     dateBox.setPadding(new Insets(10));
                     
                     Label dateLabel = new Label(date.format(formatter));
-                    dateLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
+                    dateLabel.getStyleClass().add("date-label");
                     dateBox.getChildren().add(dateLabel);
                     
                     for (Map.Entry<MealType, String> mealEntry : meals.entrySet()) {
@@ -292,7 +292,7 @@ public class MealPlanView extends BorderPane implements PropertyChangeListener {
                         mealRow.setAlignment(Pos.CENTER_LEFT);
                         
                         Label mealTypeLabel = new Label(mealEntry.getKey().toString() + ":");
-                        mealTypeLabel.setStyle("-fx-font-weight: bold; -fx-min-width: 80;");
+                        mealTypeLabel.getStyleClass().add("meal-type-label");
                         
                         Label recipeLabel = new Label(mealEntry.getValue());
                         recipeLabel.setWrapText(true);
@@ -306,7 +306,7 @@ public class MealPlanView extends BorderPane implements PropertyChangeListener {
             }
         } else {
             Label emptyLabel = new Label("No meals planned yet");
-            emptyLabel.setStyle("-fx-text-fill: gray;");
+            emptyLabel.getStyleClass().add("empty-label");
             mealsListBox.getChildren().add(emptyLabel);
         }
     }

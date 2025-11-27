@@ -47,7 +47,7 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         }
 
         setPadding(new Insets(20));
-        setStyle("-fx-background-color: white;");
+        getStyleClass().add("bg-white");
 
         // Title
         Label titleLabel = new Label("Create New Recipe");
@@ -178,10 +178,12 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         Platform.runLater(() -> {
             if (RecipeStoreViewModel.PROP_SUCCESS_MESSAGE.equals(evt.getPropertyName())) {
                 statusLabel.setText((String) evt.getNewValue());
-                statusLabel.setStyle("-fx-text-fill: green;");
+                statusLabel.getStyleClass().remove("error-label");
+                statusLabel.getStyleClass().add("success-label");
             } else if (RecipeStoreViewModel.PROP_ERROR_MESSAGE.equals(evt.getPropertyName())) {
                 statusLabel.setText((String) evt.getNewValue());
-                statusLabel.setStyle("-fx-text-fill: red;");
+                statusLabel.getStyleClass().remove("success-label");
+                statusLabel.getStyleClass().add("error-label");
             }
         });
     }

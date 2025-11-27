@@ -40,7 +40,7 @@ public class SignupView extends BorderPane implements PropertyChangeListener {
         this.signupViewModel.addPropertyChangeListener(this);
 
         setPadding(new Insets(40));
-        setStyle("-fx-background-color: white;");
+        getStyleClass().add("bg-white");
 
         VBox centerBox = new VBox(20);
         centerBox.setAlignment(Pos.CENTER);
@@ -48,7 +48,7 @@ public class SignupView extends BorderPane implements PropertyChangeListener {
 
         // Title
         Label titleLabel = new Label("Create Account");
-        titleLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #333333;");
+        titleLabel.getStyleClass().add("title-label");
         
         // Form
         GridPane formGrid = new GridPane();
@@ -88,10 +88,10 @@ public class SignupView extends BorderPane implements PropertyChangeListener {
 
         // Status
         statusLabel = new Label("Please enter your username and password");
-        statusLabel.setStyle("-fx-text-fill: gray;");
+        statusLabel.getStyleClass().add("status-label");
         
         errorLabel = new Label("");
-        errorLabel.setStyle("-fx-text-fill: red;");
+        errorLabel.getStyleClass().add("error-label");
 
         centerBox.getChildren().addAll(titleLabel, formGrid, buttonBox, statusLabel, errorLabel);
         setCenter(centerBox);
@@ -132,7 +132,8 @@ public class SignupView extends BorderPane implements PropertyChangeListener {
                 } else if (registeredUser != null && !registeredUser.isEmpty()) {
                     errorLabel.setText("");
                     statusLabel.setText("Success! Welcome, " + registeredUser + "!");
-                    statusLabel.setStyle("-fx-text-fill: green;");
+                    statusLabel.getStyleClass().remove("status-label");
+                    statusLabel.getStyleClass().add("success-label");
                     // Optional: Auto-redirect to login or dashboard
                 }
             }

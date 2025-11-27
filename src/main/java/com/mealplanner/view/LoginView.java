@@ -38,7 +38,7 @@ public class LoginView extends BorderPane implements PropertyChangeListener {
         this.loginViewModel.addPropertyChangeListener(this);
 
         setPadding(new Insets(40));
-        setStyle("-fx-background-color: white;");
+        getStyleClass().add("bg-white");
 
         VBox centerBox = new VBox(20);
         centerBox.setAlignment(Pos.CENTER);
@@ -84,10 +84,10 @@ public class LoginView extends BorderPane implements PropertyChangeListener {
 
         // Status
         statusLabel = new Label("Please enter your username and password");
-        statusLabel.setStyle("-fx-text-fill: gray;");
+        statusLabel.getStyleClass().add("status-label");
         
         errorLabel = new Label("");
-        errorLabel.setStyle("-fx-text-fill: red;");
+        errorLabel.getStyleClass().add("error-label");
 
         centerBox.getChildren().addAll(titleLabel, formGrid, buttonBox, statusLabel, errorLabel);
         setCenter(centerBox);
@@ -123,7 +123,8 @@ public class LoginView extends BorderPane implements PropertyChangeListener {
                 } else if (loggedInUser != null && !loggedInUser.isEmpty()) {
                     errorLabel.setText("");
                     statusLabel.setText("Welcome, " + loggedInUser + "!");
-                    statusLabel.setStyle("-fx-text-fill: green;");
+                    statusLabel.getStyleClass().remove("status-label");
+                    statusLabel.getStyleClass().add("success-label");
                     // Navigation is handled by LoginPresenter
                 }
             }
