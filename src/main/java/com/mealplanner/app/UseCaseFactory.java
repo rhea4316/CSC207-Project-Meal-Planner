@@ -22,7 +22,6 @@ import com.mealplanner.use_case.search_by_ingredients.SearchByIngredientsOutputB
 import com.mealplanner.use_case.store_recipe.StoreRecipeInputBoundary;
 import com.mealplanner.use_case.store_recipe.StoreRecipeOutputBoundary;
 
-import com.mealplanner.use_case.view_schedule.ViewScheduleDataAccessInterface;
 import com.mealplanner.use_case.view_schedule.ViewScheduleInputBoundary;
 import com.mealplanner.use_case.view_schedule.ViewScheduleOutputBoundary;
 import okhttp3.OkHttpClient;

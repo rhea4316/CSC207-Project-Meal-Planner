@@ -1,86 +1,47 @@
 package com.mealplanner.app;
 
-// Application entry point - launches the Meal Planner application.
-// Responsible: Everyone
+import javafx.application.Application;
+import javafx.scene.Scene;
+import javafx.scene.layout.BorderPane;
+import javafx.stage.Stage;
+import com.mealplanner.view.SidebarPanel;
+import com.mealplanner.view.ViewManager;
 
-import javax.swing.*;
-import java.awt.*;
+public class Main extends Application {
 
-public class Main {
+    @Override
+    public void start(Stage primaryStage) {
+        try {
+            // Create AppBuilder and build the application core
+            AppBuilder appBuilder = new AppBuilder();
+            ViewManager viewManager = appBuilder.build();
+
+            // Root Layout
+            BorderPane root = new BorderPane();
+            
+            // Sidebar
+            SidebarPanel sidebar = new SidebarPanel(appBuilder.getViewManagerModel());
+            root.setLeft(sidebar);
+            
+            // Main Content Area
+            root.setCenter(viewManager);
+
+            // Scene Setup
+            Scene scene = new Scene(root, 1200, 800);
+            
+            // Add CSS
+            scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
+            
+            primaryStage.setTitle("Meal Planner");
+            primaryStage.setScene(scene);
+            primaryStage.show();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            try {
-                createAndShowGui();
-            } catch (Exception e) {
-                System.err.println("Error starting application: " + e.getMessage());
-                e.printStackTrace();
-            }
-        });
-    }
-
-    private static void createAndShowGui() {
-        // Create AppBuilder and build the application
-        AppBuilder appBuilder = new AppBuilder();
-        com.mealplanner.view.ViewManager viewManager = appBuilder.build();
-
-        // Create and configure main window
-        JFrame frame = new JFrame("Meal Planner");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        
-        // Create and set menu bar
-        JMenuBar menuBar = createMenuBar(viewManager);
-        frame.setJMenuBar(menuBar);
-        
-        frame.getContentPane().add(viewManager, BorderLayout.CENTER);
-        frame.setSize(1200, 800);
-        frame.setLocationRelativeTo(null);
-        frame.setVisible(true);
-    }
-    
-    private static JMenuBar createMenuBar(com.mealplanner.view.ViewManager viewManager) {
-        JMenuBar menuBar = new JMenuBar();
-        
-        // Create "View" menu
-        JMenu viewMenu = new JMenu("View");
-        
-        // Store Recipe menu item
-        JMenuItem storeRecipeItem = new JMenuItem("Store Recipe");
-        storeRecipeItem.addActionListener(e -> viewManager.switchToView(com.mealplanner.view.ViewManager.STORE_RECIPE_VIEW));
-        
-        // Browse Recipes menu item
-        JMenuItem browseRecipeItem = new JMenuItem("Browse Recipes");
-        browseRecipeItem.addActionListener(e -> viewManager.switchToView(com.mealplanner.view.ViewManager.BROWSE_RECIPE_VIEW));
-        
-        // Search by Ingredients menu item
-        JMenuItem searchByIngredientsItem = new JMenuItem("Search by Ingredients");
-        searchByIngredientsItem.addActionListener(e -> viewManager.switchToView(com.mealplanner.view.ViewManager.SEARCH_BY_INGREDIENTS_VIEW));
-        
-        // Recipe Detail menu item
-        JMenuItem recipeDetailItem = new JMenuItem("Recipe Detail");
-        recipeDetailItem.addActionListener(e -> viewManager.switchToView(com.mealplanner.view.ViewManager.RECIPE_DETAIL_VIEW));
-
-        //Schedule menu item
-        JMenuItem scheduleItem = new JMenuItem("Schedule");
-        scheduleItem.addActionListener(e -> viewManager.switchToView(com.mealplanner.view.ViewManager.SCHEDULE_VIEW));
-
-        // Separator
-        viewMenu.addSeparator();
-        
-        // Home menu item
-        JMenuItem homeItem = new JMenuItem("Home");
-        homeItem.addActionListener(e -> viewManager.switchToView(com.mealplanner.view.ViewManager.STORE_RECIPE_VIEW));
-        
-        // Add all items to menu
-        viewMenu.add(storeRecipeItem);
-        viewMenu.add(browseRecipeItem);
-        viewMenu.add(searchByIngredientsItem);
-        viewMenu.add(recipeDetailItem);
-        viewMenu.add(scheduleItem);
-        viewMenu.addSeparator();
-        viewMenu.add(homeItem);
-        
-        menuBar.add(viewMenu);
-        
-        return menuBar;
+        launch(args);
     }
 }

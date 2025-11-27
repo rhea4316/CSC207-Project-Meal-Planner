@@ -1,49 +1,38 @@
 package com.mealplanner.view;
 
-// Swing view for ingredient search feature - displays ingredient input form and search results.
-// Responsible: Jerry (functionality), Everyone (GUI implementation)
-
 import com.mealplanner.entity.Recipe;
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.SearchByIngredientsController;
 import com.mealplanner.interface_adapter.view_model.RecipeSearchViewModel;
 import com.mealplanner.util.StringUtil;
+import javafx.application.Platform;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
 
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.List;
 
-public class SearchByIngredientsView extends JPanel implements PropertyChangeListener, ActionListener {
+public class SearchByIngredientsView extends BorderPane implements PropertyChangeListener {
     private final RecipeSearchViewModel viewModel;
     private final SearchByIngredientsController controller;
     private final ViewManagerModel viewManagerModel;
 
-    private JPanel searchPanel;
-    private JTextArea ingredientsTextArea;
-    private JButton searchButton;
+    private TextArea ingredientsTextArea;
+    private Button searchButton;
 
-    private JPanel resultsPanel;
-    private JTextArea resultsTextArea;
-    private JScrollPane resultsScrollPane;
+    // Result Components
+    private StackPane resultsContainer; 
+    private VBox listPanel; 
+    private VBox loadingPanel;
+    private VBox emptyPanel;
+    private Label errorLabel;
 
-    private JLabel errorLabel;
-    private JLabel loadingLabel;
-
-    public SearchByIngredientsView(SearchByIngredientsController controller, RecipeSearchViewModel viewModel) {
-        this(controller, viewModel, null);
-    }
-    
     public SearchByIngredientsView(SearchByIngredientsController controller, RecipeSearchViewModel viewModel, ViewManagerModel viewManagerModel) {
-        if (viewModel == null) {
-            throw new IllegalArgumentException("ViewModel cannot be null");
-        }
-        if (controller == null) {
-            throw new IllegalArgumentException("Controller cannot be null");
-        }
+        if (viewModel == null) throw new IllegalArgumentException("ViewModel cannot be null");
+        if (controller == null) throw new IllegalArgumentException("Controller cannot be null");
 
         this.viewModel = viewModel;
         this.controller = controller;
@@ -51,82 +40,88 @@ public class SearchByIngredientsView extends JPanel implements PropertyChangeLis
 
         viewModel.addPropertyChangeListener(this);
 
-        setLayout(new BorderLayout());
-        
-        createSearchPanel();
-        createResultsPanel();
-        createErrorLabel();
-        createLoadingLabel();
+        setPadding(new Insets(20));
+        setStyle("-fx-background-color: white;");
 
-        // Create navigation panel
-        JPanel navPanel = createNavigationPanel();
+        // Title
+        Label titleLabel = new Label("Search by Ingredients");
+        titleLabel.getStyleClass().add("title-label");
         
-        // Arrange layout: navPanel at top, then searchPanel, then results
-        JPanel topPanel = new JPanel(new BorderLayout());
-        if (navPanel != null) {
-            topPanel.add(navPanel, BorderLayout.NORTH);
-        }
-        topPanel.add(searchPanel, BorderLayout.CENTER);
+        // Search Panel
+        VBox searchPanel = createSearchPanel();
         
-        add(topPanel, BorderLayout.NORTH);
-        add(resultsPanel, BorderLayout.CENTER);
+        VBox topBox = new VBox(10);
+        topBox.getChildren().addAll(titleLabel, searchPanel);
+        setTop(topBox);
+
+        // Results Area
+        createResultsPanel();
+        setCenter(resultsContainer);
         
-        JPanel bottomPanel = new JPanel(new BorderLayout());
-        bottomPanel.add(loadingLabel, BorderLayout.WEST);
-        bottomPanel.add(errorLabel, BorderLayout.CENTER);
-        add(bottomPanel, BorderLayout.SOUTH);
+        // Error Label
+        errorLabel = new Label("");
+        errorLabel.setStyle("-fx-text-fill: red;");
+        setBottom(errorLabel);
     }
 
-    private void createSearchPanel() {
-        searchPanel = new JPanel(new BorderLayout());
-        searchPanel.setBorder(BorderFactory.createTitledBorder("Search by Ingredients"));
-
-        JPanel inputPanel = new JPanel(new BorderLayout());
-        inputPanel.add(new JLabel("Enter ingredients (comma or newline separated):"), BorderLayout.NORTH);
+    private VBox createSearchPanel() {
+        VBox panel = new VBox(10);
         
-        ingredientsTextArea = new JTextArea(3, 40);
-        ingredientsTextArea.setLineWrap(true);
-        ingredientsTextArea.setWrapStyleWord(true);
-        inputPanel.add(new JScrollPane(ingredientsTextArea), BorderLayout.CENTER);
+        Label label = new Label("Enter ingredients (comma or newline separated):");
+        
+        ingredientsTextArea = new TextArea();
+        ingredientsTextArea.setPrefRowCount(3);
+        ingredientsTextArea.setWrapText(true);
+        
+        searchButton = new Button("Search Recipes");
+        searchButton.getStyleClass().add("modern-button");
+        searchButton.setOnAction(e -> performSearch());
+        
+        HBox btnBox = new HBox(searchButton);
+        btnBox.setAlignment(Pos.CENTER_RIGHT);
 
-        searchButton = new JButton("Search Recipes");
-        searchButton.addActionListener(this);
-        searchButton.setActionCommand("search");
-
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.add(searchButton);
-
-        searchPanel.add(inputPanel, BorderLayout.CENTER);
-        searchPanel.add(buttonPanel, BorderLayout.SOUTH);
+        panel.getChildren().addAll(label, ingredientsTextArea, btnBox);
+        return panel;
     }
 
     private void createResultsPanel() {
-        resultsPanel = new JPanel(new BorderLayout());
-        resultsPanel.setBorder(BorderFactory.createTitledBorder("Search Results"));
+        resultsContainer = new StackPane();
+        resultsContainer.setPadding(new Insets(20, 0, 0, 0));
 
-        resultsTextArea = new JTextArea();
-        resultsTextArea.setEditable(false);
-        resultsTextArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        // 1. List View
+        listPanel = new VBox(15);
+        ScrollPane scrollPane = new ScrollPane(listPanel);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
 
-        resultsScrollPane = new JScrollPane(resultsTextArea);
-        resultsScrollPane.setPreferredSize(new Dimension(600, 400));
-        resultsPanel.add(resultsScrollPane, BorderLayout.CENTER);
+        // 2. Loading View
+        loadingPanel = new VBox();
+        loadingPanel.setAlignment(Pos.CENTER);
+        Label loadingLabel = new Label("Loading...");
+        loadingLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: #4CAF50; -fx-font-weight: bold;");
+        loadingPanel.getChildren().add(loadingLabel);
+
+        // 3. Empty View
+        emptyPanel = new VBox();
+        emptyPanel.setAlignment(Pos.CENTER);
+        Label emptyLabel = new Label("No results found.");
+        emptyLabel.setStyle("-fx-text-fill: gray; -fx-font-size: 16px;");
+        emptyPanel.getChildren().add(emptyLabel);
+
+        resultsContainer.getChildren().addAll(emptyPanel, loadingPanel, scrollPane);
+        
+        showView("EMPTY");
     }
-
-    private void createErrorLabel() {
-        errorLabel = new JLabel();
-        errorLabel.setForeground(Color.RED);
-    }
-
-    private void createLoadingLabel() {
-        loadingLabel = new JLabel();
-        loadingLabel.setForeground(Color.BLUE);
-    }
-
-    @Override
-    public void actionPerformed(ActionEvent e) {
-        if ("search".equals(e.getActionCommand())) {
-            performSearch();
+    
+    private void showView(String viewName) {
+        loadingPanel.setVisible(false);
+        emptyPanel.setVisible(false);
+        listPanel.getParent().setVisible(false); // Hide scrollpane
+        
+        switch(viewName) {
+            case "LOADING": loadingPanel.setVisible(true); break;
+            case "EMPTY": emptyPanel.setVisible(true); break;
+            case "LIST": listPanel.getParent().setVisible(true); break;
         }
     }
 
@@ -134,99 +129,88 @@ public class SearchByIngredientsView extends JPanel implements PropertyChangeLis
         String ingredientsRaw = StringUtil.safeTrim(ingredientsTextArea.getText());
 
         if (StringUtil.isNullOrEmpty(ingredientsRaw)) {
-            JOptionPane.showMessageDialog(this,
-                    "Please enter at least one ingredient", "Error", JOptionPane.ERROR_MESSAGE);
+            errorLabel.setText("Please enter at least one ingredient");
             return;
         }
-
+        
+        errorLabel.setText("");
         viewModel.setLoading(true);
         viewModel.setErrorMessage("");
+        
         controller.execute(ingredientsRaw);
     }
 
     private void displayRecipes(List<Recipe> recipes) {
+        listPanel.getChildren().clear();
+
         if (recipes == null || recipes.isEmpty()) {
-            resultsTextArea.setText("No recipes found.");
-            return;
-        }
-
-        StringBuilder results = new StringBuilder();
-        results.append("Found ").append(recipes.size()).append(" recipe(s):\n\n");
-
-        for (Recipe recipe : recipes) {
-            if (recipe != null) {
-                results.append("Recipe: ").append(recipe.getName()).append("\n");
-                results.append("Serving Size: ").append(recipe.getServingSize()).append("\n");
-                
-                if (recipe.getIngredients() != null && !recipe.getIngredients().isEmpty()) {
-                    results.append("Ingredients: ");
-                    results.append(String.join(", ", recipe.getIngredients()));
-                    results.append("\n");
-                }
-                
-                if (recipe.getNutritionInfo() != null) {
-                    results.append("Calories: ").append(recipe.getNutritionInfo().getCalories()).append("\n");
-                }
-                
-                String steps = recipe.getSteps();
-                if (StringUtil.hasContent(steps)) {
-                    String stepsPreview = steps.length() > 150 ? steps.substring(0, 150) + "..." : steps;
-                    results.append("Instructions: ").append(stepsPreview).append("\n");
-                }
-                
-                results.append("\n").append("-".repeat(50)).append("\n");
+            showView("EMPTY");
+        } else {
+            for (Recipe recipe : recipes) {
+                listPanel.getChildren().add(createRecipeCard(recipe));
             }
+            showView("LIST");
         }
+    }
 
-        resultsTextArea.setText(results.toString());
-        resultsTextArea.setCaretPosition(0);
+    private HBox createRecipeCard(Recipe recipe) {
+        HBox card = new HBox(15);
+        card.getStyleClass().add("card-panel");
+        card.setAlignment(Pos.CENTER_LEFT);
+
+        // Placeholder Image
+        Region imgPlaceholder = new Region();
+        imgPlaceholder.setPrefSize(80, 80);
+        imgPlaceholder.setStyle("-fx-background-color: #E0E0E0; -fx-background-radius: 5;");
+        card.getChildren().add(imgPlaceholder);
+
+        // Info
+        VBox infoBox = new VBox(5);
+        Label title = new Label(recipe.getName());
+        title.setStyle("-fx-font-weight: bold; -fx-font-size: 16px;");
+        
+        String summary = "Ingredients: " + recipe.getIngredients().size();
+        if (recipe.getNutritionInfo() != null) {
+            summary += " | " + recipe.getNutritionInfo().getCalories() + " kcal";
+        }
+        Label subTitle = new Label(summary);
+        subTitle.setStyle("-fx-text-fill: gray; -fx-font-size: 12px;");
+        
+        infoBox.getChildren().addAll(title, subTitle);
+        HBox.setHgrow(infoBox, Priority.ALWAYS);
+        card.getChildren().add(infoBox);
+
+        // Button
+        Button viewBtn = new Button("View");
+        viewBtn.getStyleClass().add("modern-button");
+        viewBtn.setOnAction(e -> System.out.println("View Recipe: " + recipe.getName()));
+        card.getChildren().add(viewBtn);
+
+        return card;
     }
 
     @Override
     public void propertyChange(PropertyChangeEvent evt) {
-        String propertyName = evt.getPropertyName();
-        
-        if (RecipeSearchViewModel.PROP_RECIPES.equals(propertyName)) {
-            displayRecipes(viewModel.getRecipes());
-            errorLabel.setText("");
-        } else if (RecipeSearchViewModel.PROP_ERROR_MESSAGE.equals(propertyName)) {
-            String errorMsg = viewModel.getErrorMessage();
-            if (StringUtil.hasContent(errorMsg)) {
-                resultsTextArea.setText("");
-                errorLabel.setText(errorMsg);
-            } else {
-                errorLabel.setText("");
+        Platform.runLater(() -> {
+            String propertyName = evt.getPropertyName();
+            
+            if (RecipeSearchViewModel.PROP_LOADING.equals(propertyName)) {
+                if (viewModel.isLoading()) {
+                    showView("LOADING");
+                    searchButton.setDisable(true);
+                } else {
+                    searchButton.setDisable(false);
+                }
+            } else if (RecipeSearchViewModel.PROP_RECIPES.equals(propertyName)) {
+                displayRecipes(viewModel.getRecipes());
+            } else if (RecipeSearchViewModel.PROP_ERROR_MESSAGE.equals(propertyName)) {
+                String errorMsg = viewModel.getErrorMessage();
+                if (StringUtil.hasContent(errorMsg)) {
+                    errorLabel.setText(errorMsg);
+                } else {
+                    errorLabel.setText("");
+                }
             }
-        } else if (RecipeSearchViewModel.PROP_LOADING.equals(propertyName)) {
-            if (viewModel.isLoading()) {
-                loadingLabel.setText("Searching...");
-            } else {
-                loadingLabel.setText("");
-            }
-        }
-    }
-    
-    private JPanel createNavigationPanel() {
-        if (viewManagerModel == null) {
-            return null;
-        }
-        
-        JPanel navPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        navPanel.setBorder(BorderFactory.createTitledBorder("Navigation"));
-        
-        JButton browseButton = new JButton("Browse Recipes");
-        browseButton.addActionListener(e -> viewManagerModel.setActiveView("BrowseRecipeView"));
-        
-        JButton createButton = new JButton("Create Recipe");
-        createButton.addActionListener(e -> viewManagerModel.setActiveView("StoreRecipeView"));
-        
-        JButton homeButton = new JButton("Home");
-        homeButton.addActionListener(e -> viewManagerModel.setActiveView("StoreRecipeView"));
-        
-        navPanel.add(browseButton);
-        navPanel.add(createButton);
-        navPanel.add(homeButton);
-        
-        return navPanel;
+        });
     }
 }

@@ -4,7 +4,7 @@ package com.mealplanner.use_case.view_schedule;
 // Responsible: Mona
 // done: Define methods for presentSchedule (success with schedule data) and presentError (schedule not found, etc.)
 
-import com.mealplanner.entity.Schedule;
+
 
 public interface ViewScheduleOutputBoundary {
 

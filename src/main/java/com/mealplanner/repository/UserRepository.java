@@ -2,8 +2,6 @@ package com.mealplanner.repository;
 
 import com.mealplanner.entity.User;
 import com.mealplanner.exception.DataAccessException;
-import com.mealplanner.exception.UserNotFoundException;
-
 import java.util.List;
 import java.util.Optional;
 

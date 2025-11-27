@@ -1,225 +1,244 @@
 package com.mealplanner.view;
 
-// Swing view for viewing user's saved meal schedule - displays weekly meal plan.
-// Responsible: Mona (functionality), Everyone (GUI implementation)
-// Note: Adjust later because I can't test it
-
 import com.mealplanner.entity.MealType;
 import com.mealplanner.entity.Schedule;
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.ViewScheduleController;
 import com.mealplanner.interface_adapter.view_model.ScheduleViewModel;
+import javafx.application.Platform;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.layout.*;
 
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAdjusters;
 import java.util.Map;
 
-public class ScheduleView extends JPanel implements PropertyChangeListener {
+public class ScheduleView extends BorderPane implements PropertyChangeListener {
 
     private final ScheduleViewModel scheduleViewModel;
     private final ViewScheduleController controller;
     private final ViewManagerModel viewManagerModel;
 
-    private final JLabel titleLabel;
-    private final JLabel messageLabel;
-    private final JTable scheduleTable;
-    private final DefaultTableModel tableModel;
-    private JButton saveButton;
-    private JButton loadButton;
+    // UI Components
+    private Label dateRangeLabel;
+    private GridPane gridPane;
+    private MealSlotPanel[][] mealSlots; // [row][col] -> row=meal, col=day
 
-    private JPanel buttonPanel;
-    private JPanel headerPanel;
-
-    // To map table rows to dates
-    private final List<LocalDate> rowDates = new ArrayList<>();
+    // State
+    private LocalDate currentWeekStart;
 
     public ScheduleView(ScheduleViewModel scheduleViewModel, ViewScheduleController controller, ViewManagerModel viewManagerModel) {
         this.scheduleViewModel = scheduleViewModel;
         this.scheduleViewModel.addPropertyChangeListener(this);
         this.controller = controller;
         this.viewManagerModel = viewManagerModel;
+        
+        this.currentWeekStart = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
 
-        setLayout(new BorderLayout(10, 10));
+        setPadding(new Insets(20));
+        setStyle("-fx-background-color: #F5F5F5;");
 
-        // --- Header (title + message) ---
-        headerPanel = new JPanel(new BorderLayout());
-        titleLabel = new JLabel("Meal Schedule");
-        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 18f));
-
-        messageLabel = new JLabel(" ");
-        messageLabel.setHorizontalAlignment(SwingConstants.CENTER);
-
-        headerPanel.add(titleLabel, BorderLayout.NORTH);
-        headerPanel.add(messageLabel, BorderLayout.SOUTH);
-
-        add(headerPanel, BorderLayout.NORTH);
-
-        // --- Table ---
-        tableModel = new DefaultTableModel(new Object[]{"Date", "Breakfast", "Lunch", "Dinner"}, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false; // read-only
-            }
-        };
-
-        scheduleTable = new JTable(tableModel);
-        scheduleTable.setFillsViewportHeight(true);
-
-        // Double-click to show basic details of a cell (recipe ID for now)
-        scheduleTable.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2) {
-                    int row = scheduleTable.getSelectedRow();
-                    int col = scheduleTable.getSelectedColumn();
-                    if (row >= 0 && col > 0) { // col 0 is date
-                        showMealDetails(row, col);
-                    }
-                }
-            }
-        });
-        add(new JScrollPane(scheduleTable), BorderLayout.CENTER);
-
-        createButtonPanel();
-
+        createHeader();
+        createGrid();
+        createFooter();
+        
+        updateView(); 
     }
 
-    private void createButtonPanel() {
-        buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+    private void createHeader() {
+        BorderPane headerPanel = new BorderPane();
+        headerPanel.setPadding(new Insets(0, 0, 20, 0));
 
-        saveButton = new JButton("Save Schedule");
-        loadButton = new JButton("Load Schedule");
+        // Title
+        Label titleLabel = new Label("Weekly Plan");
+        titleLabel.getStyleClass().add("title-label");
+        titleLabel.setPadding(new Insets(0));
+        headerPanel.setLeft(titleLabel);
 
-        saveButton.addActionListener(e -> controller.saveSchedule(scheduleViewModel.getSchedule()));
-        loadButton.addActionListener(e -> {
-            controller.loadSchedule(scheduleViewModel.getSchedule().getScheduleId());
-            updateFromViewModel();
+        // Navigation
+        HBox navPanel = new HBox(20);
+        navPanel.setAlignment(Pos.CENTER);
+
+        Button prevBtn = new Button("<");
+        prevBtn.getStyleClass().add("secondary-button");
+        prevBtn.setOnAction(e -> {
+            currentWeekStart = currentWeekStart.minusWeeks(1);
+            updateView();
         });
 
-        buttonPanel.add(saveButton);
-        buttonPanel.add(loadButton);
+        Button nextBtn = new Button(">");
+        nextBtn.getStyleClass().add("secondary-button");
+        nextBtn.setOnAction(e -> {
+            currentWeekStart = currentWeekStart.plusWeeks(1);
+            updateView();
+        });
 
-        add(buttonPanel, BorderLayout.SOUTH);
+        dateRangeLabel = new Label();
+        dateRangeLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
+
+        navPanel.getChildren().addAll(prevBtn, dateRangeLabel, nextBtn);
+        headerPanel.setCenter(navPanel);
+
+        setTop(headerPanel);
     }
 
-    private void showMealDetails(int row, int col) {
-        Schedule schedule = scheduleViewModel.getSchedule();
-        if (schedule == null || row < 0 || row >= rowDates.size()) {
-            return;
+    private void createGrid() {
+        gridPane = new GridPane();
+        gridPane.setHgap(1);
+        gridPane.setVgap(1);
+        gridPane.setStyle("-fx-background-color: #E0E0E0; -fx-border-color: #E0E0E0;"); // Gap color
+        
+        mealSlots = new MealSlotPanel[3][7]; 
+
+        // 1. Top Left Corner
+        gridPane.add(createHeaderCell(""), 0, 0);
+
+        // 2. Day Headers
+        String[] days = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
+        for (int i = 0; i < 7; i++) {
+            gridPane.add(createHeaderCell(days[i]), i + 1, 0);
         }
 
-        LocalDate date = rowDates.get(row);
-        Map<LocalDate, Map<MealType, String>> allMeals = schedule.getAllMeals();
-        Map<MealType, String> mealsForDate = allMeals.get(date);
-        if (mealsForDate == null) {
-            JOptionPane.showMessageDialog(this,
-                    "No meals scheduled for this date.",
-                    "Meal Details",
-                    JOptionPane.INFORMATION_MESSAGE);
-            return;
+        // 3. Rows
+        MealType[] mealTypes = {MealType.BREAKFAST, MealType.LUNCH, MealType.DINNER};
+        for (int r = 0; r < 3; r++) {
+            gridPane.add(createHeaderCell(mealTypes[r].toString()), 0, r + 1);
+
+            for (int c = 0; c < 7; c++) {
+                MealSlotPanel slot = new MealSlotPanel(r, c);
+                mealSlots[r][c] = slot;
+                gridPane.add(slot, c + 1, r + 1);
+            }
+        }
+        
+        // Grow constraints
+        for (int i = 0; i < 8; i++) {
+            ColumnConstraints col = new ColumnConstraints();
+            col.setHgrow(Priority.ALWAYS);
+            col.setPercentWidth(12.5);
+            gridPane.getColumnConstraints().add(col);
+        }
+        for (int i = 0; i < 4; i++) {
+            RowConstraints row = new RowConstraints();
+            row.setVgrow(Priority.ALWAYS);
+            row.setPercentHeight(25);
+            gridPane.getRowConstraints().add(row);
         }
 
-        MealType mealType;
-        String mealLabel;
-        switch (col) {
-            case 1:
-                mealType = MealType.BREAKFAST;
-                mealLabel = "Breakfast";
-                break;
-            case 2:
-                mealType = MealType.LUNCH;
-                mealLabel = "Lunch";
-                break;
-            case 3:
-                mealType = MealType.DINNER;
-                mealLabel = "Dinner";
-                break;
-            default:
-                return;
-        }
+        setCenter(gridPane);
+    }
+    
+    private StackPane createHeaderCell(String text) {
+        StackPane panel = new StackPane();
+        panel.getStyleClass().add("grid-header");
+        panel.getChildren().add(new Label(text));
+        return panel;
+    }
 
-        String recipeId = mealsForDate.get(mealType);
-        if (recipeId == null || recipeId.isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                    "No " + mealLabel.toLowerCase() + " scheduled.",
-                    "Meal Details",
-                    JOptionPane.INFORMATION_MESSAGE);
-        } else {
-            // For now we only know the recipe ID. Later you can look up the Recipe entity by ID.
-            JOptionPane.showMessageDialog(this,
-                    "Recipe ID: " + recipeId,
-                    mealLabel + " on " + date,
-                    JOptionPane.INFORMATION_MESSAGE);
-        }
+    private void createFooter() {
+        HBox footerPanel = new HBox();
+        footerPanel.setAlignment(Pos.CENTER_RIGHT);
+        footerPanel.setPadding(new Insets(20, 0, 0, 0));
+
+        Button saveButton = new Button("Save Schedule");
+        saveButton.getStyleClass().add("modern-button");
+        saveButton.setOnAction(e -> controller.saveSchedule(scheduleViewModel.getSchedule()));
+
+        footerPanel.getChildren().add(saveButton);
+        setBottom(footerPanel);
     }
 
     @Override
     public void propertyChange(PropertyChangeEvent evt) {
-        // ViewModel fired a change; update the UI
-        updateFromViewModel();
+        Platform.runLater(this::updateView);
     }
 
-    private void updateFromViewModel() {
-        // --- Title ---
-        String username = scheduleViewModel.getUsername();
-        if (username != null && !username.isEmpty()) {
-            titleLabel.setText("Meal Schedule for " + username);
-        } else {
-            titleLabel.setText("Meal Schedule");
-        }
+    private void updateView() {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM d");
+        LocalDate weekEnd = currentWeekStart.plusDays(6);
+        dateRangeLabel.setText(currentWeekStart.format(formatter) + " - " + weekEnd.format(formatter));
 
-        // --- Error / message label ---
-        String error = scheduleViewModel.getError();
-        if (error != null) {
-            messageLabel.setForeground(Color.RED);
-            messageLabel.setText(error);
-        } else {
-            messageLabel.setForeground(Color.BLACK);
-            messageLabel.setText(" ");
+        for (int r = 0; r < 3; r++) {
+            for (int c = 0; c < 7; c++) {
+                mealSlots[r][c].clear();
+            }
         }
-
-        // --- Table contents ---
-        tableModel.setRowCount(0);
-        rowDates.clear();
 
         Schedule schedule = scheduleViewModel.getSchedule();
-        if (schedule == null || schedule.isEmpty()) {
-            return;
+        if (schedule != null) {
+            Map<LocalDate, Map<MealType, String>> allMeals = schedule.getAllMeals();
+            
+            for (int i = 0; i < 7; i++) {
+                LocalDate date = currentWeekStart.plusDays(i);
+                Map<MealType, String> mealsForDate = allMeals.get(date);
+                
+                if (mealsForDate != null) {
+                    if (mealsForDate.containsKey(MealType.BREAKFAST)) 
+                        mealSlots[0][i].setMeal(mealsForDate.get(MealType.BREAKFAST), "500 kcal");
+                    if (mealsForDate.containsKey(MealType.LUNCH)) 
+                        mealSlots[1][i].setMeal(mealsForDate.get(MealType.LUNCH), "700 kcal");
+                    if (mealsForDate.containsKey(MealType.DINNER)) 
+                        mealSlots[2][i].setMeal(mealsForDate.get(MealType.DINNER), "600 kcal");
+                }
+            }
+        }
+    }
+
+    private class MealSlotPanel extends VBox {
+        private final int row; 
+        private final int col; 
+        
+        private final Label contentLabel;
+        private final Label calLabel;
+        
+        public MealSlotPanel(int row, int col) {
+            this.row = row;
+            this.col = col;
+            
+            getStyleClass().add("grid-cell");
+            setAlignment(Pos.CENTER);
+            setSpacing(5);
+            
+            contentLabel = new Label("+");
+            contentLabel.setStyle("-fx-font-size: 20px; -fx-text-fill: #CCCCCC; -fx-font-weight: bold;");
+            
+            calLabel = new Label("");
+            calLabel.setStyle("-fx-font-size: 10px; -fx-text-fill: gray;");
+
+            getChildren().addAll(contentLabel, calLabel);
+
+            setOnMouseClicked(e -> handleSlotClick());
+            
+            // Hover effect via CSS pseudo-class is easier, but inline works too
+            setOnMouseEntered(e -> setStyle("-fx-background-color: #F5F5F5; -fx-border-color: #E0E0E0;"));
+            setOnMouseExited(e -> setStyle("-fx-background-color: white; -fx-border-color: #E0E0E0;"));
         }
 
-        Map<LocalDate, Map<MealType, String>> allMeals = schedule.getAllMeals();
-        if (allMeals == null || allMeals.isEmpty()) {
-            return;
+        public void setMeal(String recipeName, String calories) {
+            contentLabel.setText(recipeName);
+            contentLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: black; -fx-wrap-text: true; -fx-text-alignment: center;");
+            calLabel.setText(calories);
         }
 
-        // Sort dates for stable display
-        java.util.List<LocalDate> dates = new ArrayList<>(allMeals.keySet());
-        Collections.sort(dates);
+        public void clear() {
+            contentLabel.setText("+");
+            contentLabel.setStyle("-fx-font-size: 20px; -fx-text-fill: #CCCCCC; -fx-font-weight: bold;");
+            calLabel.setText("");
+        }
 
-        for (LocalDate date : dates) {
-            Map<MealType, String> mealsForDate = allMeals.get(date);
-
-            String breakfastId = mealsForDate != null ? mealsForDate.getOrDefault(MealType.BREAKFAST, "") : "";
-            String lunchId = mealsForDate != null ? mealsForDate.getOrDefault(MealType.LUNCH, "") : "";
-            String dinnerId = mealsForDate != null ? mealsForDate.getOrDefault(MealType.DINNER, "") : "";
-
-            rowDates.add(date);
-            tableModel.addRow(new Object[]{
-                    date,        // LocalDate's toString() is fine
-                    breakfastId,
-                    lunchId,
-                    dinnerId
-            });
+        private void handleSlotClick() {
+            LocalDate date = currentWeekStart.plusDays(col);
+            MealType type = MealType.values()[row];
+            
+            System.out.println("Clicked: " + date + " " + type);
+            // Future: Open recipe selector dialog
         }
     }
 }

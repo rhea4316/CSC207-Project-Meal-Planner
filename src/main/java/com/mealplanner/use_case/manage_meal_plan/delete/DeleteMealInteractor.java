@@ -2,8 +2,6 @@ package com.mealplanner.use_case.manage_meal_plan.delete;
 
 import com.mealplanner.entity.Schedule;
 import com.mealplanner.entity.MealType;
-import com.mealplanner.use_case.manage_meal_plan.edit.EditMealOutputData;
-
 import java.time.LocalDate;
 
 // Main business logic for deleting a meal from the schedule.

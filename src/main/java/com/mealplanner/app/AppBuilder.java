@@ -1,14 +1,12 @@
 package com.mealplanner.app;
 
-// Builder class for assembling all application components and wiring dependencies.
-// Responsible: Everyone
-
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.*;
 import com.mealplanner.interface_adapter.presenter.*;
 import com.mealplanner.interface_adapter.view_model.*;
 import com.mealplanner.repository.impl.FileRecipeRepository;
 import com.mealplanner.view.*;
+import javafx.scene.Node;
 
 public class AppBuilder {
     private ViewManager viewManager;
@@ -19,129 +17,75 @@ public class AppBuilder {
         this.viewManager = new ViewManager(viewManagerModel);
     }
 
+    public ViewManagerModel getViewManagerModel() {
+        return viewManagerModel;
+    }
+
     /**
      * Builds the complete application with all components wired together.
      */
     public ViewManager build() {
+        // Note: We need to defer view creation until JavaFX toolkit is initialized if they use controls directly.
+        // Since AppBuilder is called from start(), toolkit is ready.
+        
         buildStoreRecipeFlow();
         buildBrowseRecipeFlow();
         buildSearchByIngredientsFlow();
         buildAdjustServingSizeFlow();
-        buildScheduleFlow();
+        // Schedule flow is special due to shared ViewModel
         
+        ScheduleViewModel scheduleViewModel = new ScheduleViewModel();
+        ViewSchedulePresenter schedulePresenter = new ViewSchedulePresenter(scheduleViewModel);
+        var scheduleInteractor = UseCaseFactory.createViewScheduleInteractor(schedulePresenter);
+        ViewScheduleController scheduleController = new ViewScheduleController(scheduleInteractor);
+        // ScheduleView will need to be JavaFX
+        // ScheduleView scheduleView = new ScheduleView(scheduleViewModel, scheduleController, viewManagerModel);
+        // viewManager.addView(ViewManager.SCHEDULE_VIEW, scheduleView);
+
+        // DashboardView will need to be JavaFX
+        // DashboardView dashboardView = new DashboardView(viewManagerModel, scheduleViewModel);
+        // viewManager.addView(ViewManager.DASHBOARD_VIEW, dashboardView);
+
         // Set initial view - use ViewManager's switchToView to ensure proper display
-        viewManager.switchToView(ViewManager.STORE_RECIPE_VIEW);
+        viewManager.switchToView(ViewManager.DASHBOARD_VIEW);
         
         return viewManager;
     }
 
-    /**
-     * Builds the StoreRecipe flow.
-     */
     private void buildStoreRecipeFlow() {
-        // 1. ViewModel
         RecipeStoreViewModel viewModel = new RecipeStoreViewModel();
-
-        // 2. Presenter
         StoreRecipePresenter presenter = new StoreRecipePresenter(viewModel);
-
-        // 3. Repository
         FileRecipeRepository repository = new FileRecipeRepository();
-
-        // 4. Interactor (UseCaseFactory 사용)
         var interactor = UseCaseFactory.createStoreRecipeInteractor(presenter, repository);
-
-        // 5. Controller
         StoreRecipeController controller = new StoreRecipeController(interactor);
-
-        // 6. View (ViewManagerModel 전달)
-        StoreRecipeView view = new StoreRecipeView(controller, viewModel, viewManagerModel);
-
-        // 7. ViewManager에 등록
-        viewManager.addView(ViewManager.STORE_RECIPE_VIEW, view);
+        // StoreRecipeView view = new StoreRecipeView(controller, viewModel, viewManagerModel);
+        // viewManager.addView(ViewManager.STORE_RECIPE_VIEW, view);
     }
 
-    /**
-     * Builds the BrowseRecipe flow.
-     */
     private void buildBrowseRecipeFlow() {
-        // 1. ViewModel
         RecipeBrowseViewModel viewModel = new RecipeBrowseViewModel();
-
-        // 2. Presenter (ViewManagerModel 필요)
         BrowseRecipePresenter presenter = new BrowseRecipePresenter(viewModel, viewManagerModel);
-
-        // 3. Interactor (UseCaseFactory 사용)
         var interactor = UseCaseFactory.createBrowseRecipeInteractor(presenter);
-
-        // 4. Controller
         BrowseRecipeController controller = new BrowseRecipeController(interactor);
-
-        // 5. View (ViewManagerModel 전달)
-        BrowseRecipeView view = new BrowseRecipeView(viewModel, controller, viewManagerModel);
-
-        // 6. ViewManager에 등록
-        viewManager.addView(ViewManager.BROWSE_RECIPE_VIEW, view);
+        // BrowseRecipeView view = new BrowseRecipeView(viewModel, controller, viewManagerModel);
+        // viewManager.addView(ViewManager.BROWSE_RECIPE_VIEW, view);
     }
 
-    /**
-     * Builds the SearchByIngredients flow.
-     */
     private void buildSearchByIngredientsFlow() {
-        // 1. ViewModel
         RecipeSearchViewModel viewModel = new RecipeSearchViewModel();
-
-        // 2. Presenter (ViewManagerModel 필요)
         SearchByIngredientsPresenter presenter = new SearchByIngredientsPresenter(viewModel, viewManagerModel);
-
-        // 3. Interactor (UseCaseFactory 사용)
         var interactor = UseCaseFactory.createSearchByIngredientsInteractor(presenter);
-
-        // 4. Controller
         SearchByIngredientsController controller = new SearchByIngredientsController(interactor);
-
-        // 5. View (ViewManagerModel 전달)
-        SearchByIngredientsView view = new SearchByIngredientsView(controller, viewModel, viewManagerModel);
-
-        // 6. ViewManager에 등록
-        viewManager.addView(ViewManager.SEARCH_BY_INGREDIENTS_VIEW, view);
+        // SearchByIngredientsView view = new SearchByIngredientsView(controller, viewModel, viewManagerModel);
+        // viewManager.addView(ViewManager.SEARCH_BY_INGREDIENTS_VIEW, view);
     }
 
-    /**
-     * Builds the AdjustServingSize flow.
-     */
     private void buildAdjustServingSizeFlow() {
-        // 1. ViewModel
         RecipeDetailViewModel viewModel = new RecipeDetailViewModel();
-
-        // 2. Presenter
         AdjustServingSizePresenter presenter = new AdjustServingSizePresenter(viewModel);
-
-        // 3. Interactor (UseCaseFactory 사용)
         var interactor = UseCaseFactory.createAdjustServingSizeInteractor(presenter);
-
-        // 4. Controller
         AdjustServingSizeController controller = new AdjustServingSizeController(interactor);
-
-        // 5. View (ViewManagerModel 전달)
-        RecipeDetailView view = new RecipeDetailView(viewModel, controller, viewManagerModel);
-
-        // 6. ViewManager에 등록
-        viewManager.addView(ViewManager.RECIPE_DETAIL_VIEW, view);
-    }
-
-    private void buildScheduleFlow() {
-        //View Model
-        ScheduleViewModel viewModel = new ScheduleViewModel();
-        //Presenter
-        ViewSchedulePresenter presenter = new ViewSchedulePresenter(viewModel);
-        //Interactor
-        var interactor =UseCaseFactory.createViewScheduleInteractor(presenter);
-        //Controller
-        ViewScheduleController controller = new ViewScheduleController(interactor);
-        //View
-        ScheduleView view = new ScheduleView(viewModel, controller, viewManagerModel);
-        //Adding to view manager
-        viewManager.addView(ViewManager.SCHEDULE_VIEW, view);
+        // RecipeDetailView view = new RecipeDetailView(viewModel, controller, viewManagerModel);
+        // viewManager.addView(ViewManager.RECIPE_DETAIL_VIEW, view);
     }
 }
