@@ -3,6 +3,7 @@ package com.mealplanner.data_access.database;
 import com.mealplanner.entity.User;
 import com.mealplanner.exception.UserNotFoundException;
 import com.mealplanner.use_case.login.LoginDataAccessInterface;
+import com.mealplanner.use_case.signup.SignupDataAccessInterface;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,7 +13,7 @@ import java.nio.file.Paths;
 // Data access object for user persistence - reads/writes user data to JSON files.
 // Responsible: Mona (primary), Everyone (database shared responsibility)
 
-public class FileUserDataAccessObject implements LoginDataAccessInterface {
+public class FileUserDataAccessObject implements LoginDataAccessInterface, SignupDataAccessInterface {
 
     private static final String USERS_DIRECTORY = "data/users/";
     private static final String FILE_EXTENSION = ".json";
@@ -76,5 +77,27 @@ public class FileUserDataAccessObject implements LoginDataAccessInterface {
      */
     private String sanitizeFileName(String username) {
         return username.trim().replaceAll("[^a-zA-Z0-9_-]", "_");
+    }
+
+    // SignupDataAccessInterface implementation
+
+    @Override
+    public void save(User user) {
+        if (user == null) {
+            throw new IllegalArgumentException("User cannot be null");
+        }
+
+        try {
+            String fileName = sanitizeFileName(user.getUsername()) + FILE_EXTENSION;
+            File file = new File(USERS_DIRECTORY + fileName);
+
+            // Convert user to JSON
+            String json = JsonConverter.userToJson(user);
+
+            // Write to file
+            Files.write(Paths.get(file.getPath()), json.getBytes());
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to save user: " + e.getMessage(), e);
+        }
     }
 }

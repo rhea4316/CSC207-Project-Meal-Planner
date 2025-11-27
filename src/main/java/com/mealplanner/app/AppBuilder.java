@@ -23,14 +23,17 @@ public class AppBuilder {
      * Builds the complete application with all components wired together.
      */
     public ViewManager build() {
+        buildLoginFlow();
+        buildSignupFlow();
         buildStoreRecipeFlow();
         buildBrowseRecipeFlow();
         buildSearchByIngredientsFlow();
         buildAdjustServingSizeFlow();
         buildScheduleFlow();
+        buildMealPlanFlow();
         
         // Set initial view - use ViewManager's switchToView to ensure proper display
-        viewManager.switchToView(ViewManager.STORE_RECIPE_VIEW);
+        viewManager.switchToView(ViewManager.LOGIN_VIEW);
         
         return viewManager;
     }
@@ -143,5 +146,80 @@ public class AppBuilder {
         ScheduleView view = new ScheduleView(viewModel, controller, viewManagerModel);
         //Adding to view manager
         viewManager.addView(ViewManager.SCHEDULE_VIEW, view);
+    }
+
+    /**
+     * Builds the Login flow.
+     */
+    private void buildLoginFlow() {
+        // 1. ViewModel
+        LoginViewModel viewModel = new LoginViewModel();
+
+        // 2. Presenter (ViewManagerModel 필요)
+        LoginPresenter presenter = new LoginPresenter(viewModel, viewManagerModel);
+
+        // 3. Interactor (UseCaseFactory 사용)
+        var interactor = UseCaseFactory.createLoginInteractor(presenter);
+
+        // 4. Controller
+        LoginController controller = new LoginController(interactor);
+
+        // 5. View (ViewManagerModel 전달)
+        LoginView view = new LoginView(viewModel, controller, viewManagerModel);
+
+        // 6. ViewManager에 등록
+        viewManager.addView(ViewManager.LOGIN_VIEW, view);
+    }
+
+    /**
+     * Builds the Signup flow.
+     */
+    private void buildSignupFlow() {
+        // 1. ViewModel
+        SignupViewModel viewModel = new SignupViewModel();
+
+        // 2. Presenter (ViewManagerModel 필요)
+        SignupPresenter presenter = new SignupPresenter(viewModel, viewManagerModel);
+
+        // 3. Interactor (UseCaseFactory 사용)
+        com.mealplanner.use_case.signup.SignupInputBoundary interactor = 
+            UseCaseFactory.createSignupInteractor(presenter);
+
+        // 4. Controller
+        SignupController controller = new SignupController(interactor);
+
+        // 5. View (ViewManagerModel 전달)
+        SignupView view = new SignupView(viewModel, controller, viewManagerModel);
+
+        // 6. ViewManager에 등록
+        viewManager.addView(ViewManager.SIGNUP_VIEW, view);
+    }
+
+    /**
+     * Builds the MealPlan flow.
+     */
+    private void buildMealPlanFlow() {
+        // 1. ViewModel
+        MealPlanViewModel viewModel = new MealPlanViewModel();
+
+        // 2. Presenter
+        MealPlanPresenter presenter = new MealPlanPresenter(viewModel, viewManagerModel);
+
+        // 3. Interactors (UseCaseFactory 사용, ViewManagerModel 전달)
+        var addMealInteractor = UseCaseFactory.createAddMealInteractor(presenter, viewManagerModel);
+        var editMealInteractor = UseCaseFactory.createEditMealInteractor(presenter, viewManagerModel);
+        var deleteMealInteractor = UseCaseFactory.createDeleteMealInteractor(presenter, viewManagerModel);
+
+        // 4. Controllers
+        AddMealController addMealController = new AddMealController(addMealInteractor);
+        EditMealController editMealController = new EditMealController(editMealInteractor);
+        DeleteMealController deleteMealController = new DeleteMealController(deleteMealInteractor);
+
+        // 5. View (컨트롤러들 전달)
+        MealPlanView view = new MealPlanView(viewModel, viewManagerModel,
+                addMealController, editMealController, deleteMealController);
+
+        // 6. ViewManager에 등록
+        viewManager.addView(ViewManager.MEAL_PLAN_VIEW, view);
     }
 }

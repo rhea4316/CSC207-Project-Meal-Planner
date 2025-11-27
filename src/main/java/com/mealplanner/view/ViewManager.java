@@ -14,6 +14,7 @@ import java.util.Map;
 
 public class ViewManager extends JPanel implements PropertyChangeListener {
     public static final String LOGIN_VIEW = "LoginView";
+    public static final String SIGNUP_VIEW = "SignupView";
     public static final String BROWSE_RECIPE_VIEW = "BrowseRecipeView";
     public static final String RECIPE_DETAIL_VIEW = "RecipeDetailView";
     public static final String STORE_RECIPE_VIEW = "StoreRecipeView";
