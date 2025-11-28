@@ -5,18 +5,20 @@ import com.mealplanner.entity.Schedule;
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.ViewScheduleController;
 import com.mealplanner.interface_adapter.view_model.ScheduleViewModel;
-import com.mealplanner.view.component.Calendar;
-import com.mealplanner.view.component.StyledToggleGroup;
 import com.mealplanner.view.component.StyledTooltip;
-
+import com.mealplanner.view.util.SvgIconLoader;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Cursor;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.*;
-import javafx.scene.Cursor;
+import javafx.scene.paint.Color;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -24,14 +26,12 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
-import java.util.Arrays;
 import java.util.Locale;
 import java.util.Map;
 
 public class ScheduleView extends BorderPane implements PropertyChangeListener {
 
     private final ScheduleViewModel scheduleViewModel;
-    @SuppressWarnings("unused")
     private final ViewScheduleController controller;
     private final ViewManagerModel viewManagerModel;
 
@@ -39,6 +39,8 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
     private Label dateRangeLabel;
     private GridPane gridPane;
     private MealSlotPanel[][] mealSlots; // [row][col] -> row=meal, col=day
+    private ProgressBar mealsPlannedProgress;
+    private Label mealsPlannedLabel;
 
     // State
     private LocalDate currentWeekStart;
@@ -48,77 +50,195 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
         this.scheduleViewModel.addPropertyChangeListener(this);
         this.controller = controller;
         this.viewManagerModel = viewManagerModel;
+        this.viewManagerModel.addPropertyChangeListener(this);
         
         this.currentWeekStart = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
 
+        // Initial Load
+        this.controller.execute("Eden Chang");
+
         // Root Styles
         getStyleClass().add("root");
+        setBackground(new Background(new BackgroundFill(Color.web("#f7f8f9"), CornerRadii.EMPTY, Insets.EMPTY)));
         setPadding(new Insets(30, 40, 30, 40));
 
-        createHeader();
-        createGrid();
+        // Main Layout
+        VBox mainContainer = new VBox(24);
+        
+        mainContainer.getChildren().add(createHeader());
+        mainContainer.getChildren().add(createStatsSection());
+        
+        // Calendar Grid wrapped in ScrollPane if needed, but usually fits
+        ScrollPane scrollPane = new ScrollPane(createGrid());
+        scrollPane.setFitToWidth(true);
+        scrollPane.setFitToHeight(true); // Allow full height
+        scrollPane.setStyle("-fx-background-color: transparent; -fx-background: transparent; -fx-padding: 0;");
+        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+
+        mainContainer.getChildren().add(scrollPane);
+        setCenter(mainContainer);
         
         updateView(); 
     }
 
-    private void createHeader() {
-        HBox headerPanel = new HBox();
-        headerPanel.setAlignment(Pos.CENTER_LEFT);
-        headerPanel.setSpacing(20);
-        headerPanel.getStyleClass().add("dashboard-header");
-        BorderPane.setMargin(headerPanel, new Insets(0, 0, 20, 0));
+    private VBox createHeader() {
+        VBox container = new VBox(16);
 
-        // Date Range Label
+        // Top Row: Title and Controls
+        HBox topRow = new HBox();
+        topRow.setAlignment(Pos.CENTER_LEFT);
+        
+        // Title Section
+        VBox titleBox = new VBox(4);
+        Label title = new Label("Weekly Plan");
+        title.getStyleClass().add("section-title");
+        title.setStyle("-fx-font-size: 24px;");
+        
         dateRangeLabel = new Label();
-        dateRangeLabel.getStyleClass().add("section-title");
-        dateRangeLabel.setStyle("-fx-font-size: 24px;");
+        dateRangeLabel.getStyleClass().add("text-gray-500");
+        dateRangeLabel.setStyle("-fx-font-size: 14px;");
         
-        VBox titleBox = new VBox(dateRangeLabel);
-        HBox.setHgrow(titleBox, Priority.ALWAYS);
-
-        // View Toggle
-        StyledToggleGroup viewToggle = new StyledToggleGroup(Arrays.asList("Weekly", "Daily"));
+        titleBox.getChildren().addAll(title, dateRangeLabel);
         
-        // Calendar Picker
-        Calendar datePicker = new Calendar();
-        datePicker.setValue(currentWeekStart);
-        datePicker.setOnAction(e -> {
-            LocalDate selected = datePicker.getValue();
-            if (selected != null) {
-                currentWeekStart = selected.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-                updateView();
-                updateDayHeaders();
-            }
+        Region spacer1 = new Region();
+        HBox.setHgrow(spacer1, Priority.ALWAYS);
+        
+        // Navigation Center
+        HBox navBox = new HBox(8);
+        navBox.setAlignment(Pos.CENTER);
+        
+        Button prevBtn = createIconButton("/svg/angle-left.svg");
+        prevBtn.setOnAction(e -> {
+            currentWeekStart = currentWeekStart.minusWeeks(1);
+            updateView();
         });
-
-        // Create New Plan Button
-        Button createButton = new Button("Create New Plan");
-        createButton.getStyleClass().add("primary-button");
-        createButton.setOnAction(e -> {
-            viewManagerModel.setActiveView(ViewManager.MEAL_PLAN_VIEW);
+        
+        Button thisWeekBtn = new Button("This Week");
+        thisWeekBtn.setStyle("-fx-background-color: white; -fx-text-fill: -fx-theme-primary; -fx-border-color: -fx-theme-primary; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-cursor: hand; -fx-font-weight: 600;");
+        thisWeekBtn.setOnAction(e -> {
+            currentWeekStart = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+            updateView();
         });
+        
+        Button nextBtn = createIconButton("/svg/angle-right.svg");
+        nextBtn.setOnAction(e -> {
+            currentWeekStart = currentWeekStart.plusWeeks(1);
+            updateView();
+        });
+        
+        navBox.getChildren().addAll(prevBtn, thisWeekBtn, nextBtn);
+        
+        Region spacer2 = new Region();
+        HBox.setHgrow(spacer2, Priority.ALWAYS);
 
-        headerPanel.getChildren().addAll(titleBox, viewToggle, datePicker, createButton);
-        setTop(headerPanel);
+        // Actions Right
+        HBox actionBox = new HBox(12);
+        actionBox.setAlignment(Pos.CENTER_RIGHT);
+        
+        Button copyBtn = createActionButton("Copy Last Week", "/svg/calendar.svg"); // Fallback icon
+        Button autoFillBtn = createActionButton("Auto-fill", "/svg/star.svg");
+        
+        Button newPlanBtn = new Button("New Plan");
+        newPlanBtn.setStyle("-fx-background-color: -fx-theme-primary; -fx-text-fill: white; -fx-background-radius: 8px; -fx-font-weight: 600; -fx-cursor: hand; -fx-padding: 8 16;");
+        newPlanBtn.setOnAction(e -> viewManagerModel.setActiveView(ViewManager.BROWSE_RECIPE_VIEW));
+        
+        actionBox.getChildren().addAll(copyBtn, autoFillBtn, newPlanBtn);
+        
+        topRow.getChildren().addAll(titleBox, spacer1, navBox, spacer2, actionBox);
+        container.getChildren().add(topRow);
+        
+        return container;
     }
 
-    private void createGrid() {
+    private Button createIconButton(String iconPath) {
+        Button btn = new Button();
+        btn.setStyle("-fx-background-color: white; -fx-border-color: -fx-color-gray-200; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-cursor: hand; -fx-padding: 8;");
+        Node icon = SvgIconLoader.loadIcon(iconPath, 16, Color.web("#374151"));
+        btn.setGraphic(icon);
+        return btn;
+    }
+
+    private Button createActionButton(String text, String iconPath) {
+        Button btn = new Button(text);
+        btn.setStyle("-fx-background-color: white; -fx-text-fill: -fx-color-gray-700; -fx-border-color: -fx-color-gray-200; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-cursor: hand; -fx-padding: 8 12; -fx-font-size: 13px;");
+        Node icon = SvgIconLoader.loadIcon(iconPath, 14, Color.web("#374151"));
+        if (icon != null) {
+            btn.setGraphic(icon);
+            btn.setGraphicTextGap(8);
+        }
+        return btn;
+    }
+
+    private HBox createStatsSection() {
+        HBox container = new HBox(24);
+        
+        // Meals Planned Card
+        VBox plannedCard = new VBox(12);
+        plannedCard.getStyleClass().add("card-panel");
+        plannedCard.setPadding(new Insets(20));
+        HBox.setHgrow(plannedCard, Priority.ALWAYS);
+        
+        Label plannedTitle = new Label("Meals Planned");
+        plannedTitle.getStyleClass().add("text-gray-500");
+        plannedTitle.setStyle("-fx-font-size: 14px;");
+        
+        mealsPlannedLabel = new Label("7/21");
+        mealsPlannedLabel.getStyleClass().add("text-gray-900");
+        mealsPlannedLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
+        
+        mealsPlannedProgress = new ProgressBar(0.33);
+        mealsPlannedProgress.setMaxWidth(Double.MAX_VALUE);
+        mealsPlannedProgress.setStyle("-fx-accent: -fx-theme-primary; -fx-control-inner-background: -fx-color-gray-100; -fx-text-box-border: transparent;");
+        mealsPlannedProgress.setPrefHeight(8);
+        
+        plannedCard.getChildren().addAll(plannedTitle, mealsPlannedLabel, mealsPlannedProgress);
+        
+        // Weekly Calories Card
+        VBox calCard = new VBox(12);
+        calCard.getStyleClass().add("card-panel");
+        calCard.setPadding(new Insets(20));
+        HBox.setHgrow(calCard, Priority.ALWAYS);
+        
+        Label calTitle = new Label("Weekly Calories");
+        calTitle.getStyleClass().add("text-gray-500");
+        calTitle.setStyle("-fx-font-size: 14px;");
+        
+        HBox calValueBox = new HBox(4);
+        calValueBox.setAlignment(Pos.BASELINE_LEFT);
+        Label calValue = new Label("2770");
+        calValue.getStyleClass().add("text-gray-900");
+        calValue.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
+        
+        Label calUnit = new Label("cal");
+        calUnit.getStyleClass().add("text-gray-500");
+        calUnit.setStyle("-fx-font-size: 16px;");
+        calValueBox.getChildren().addAll(calValue, calUnit);
+        
+        Label calAvg = new Label("Average: 396 cal/day");
+        calAvg.getStyleClass().add("text-gray-400");
+        calAvg.setStyle("-fx-font-size: 13px;");
+        
+        calCard.getChildren().addAll(calTitle, calValueBox, calAvg);
+        
+        container.getChildren().addAll(plannedCard, calCard);
+        return container;
+    }
+
+    private GridPane createGrid() {
         gridPane = new GridPane();
-        gridPane.setHgap(16);
-        gridPane.setVgap(16);
+        gridPane.setHgap(12);
+        gridPane.setVgap(12);
+        gridPane.setAlignment(Pos.TOP_CENTER);
         
         mealSlots = new MealSlotPanel[3][7]; 
 
-        // 1. Top Left Corner (Empty)
-        gridPane.add(new Pane(), 0, 0);
-
-        // 2. Rows Headers
-        String[] mealLabels = {"Breakfast", "Lunch", "Dinner"};
-        for (int r = 0; r < 3; r++) {
-            gridPane.add(createRowHeader(mealLabels[r]), 0, r + 1);
-        }
+        // 1. Row Headers (Meal Types)
+        gridPane.add(createRowHeader("Breakfast", "/svg/mug-hot.svg", "blue"), 0, 1);
+        gridPane.add(createRowHeader("Lunch", "/svg/brightness.svg", "amber"), 0, 2);
+        gridPane.add(createRowHeader("Dinner", "/svg/moon.svg", "rose"), 0, 3);
         
-        // 3. Slots and Day Headers setup
+        // 2. Slots setup
         for (int c = 0; c < 7; c++) {
             // Slots
             for (int r = 0; r < 3; r++) {
@@ -127,74 +247,104 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
                 gridPane.add(slot, c + 1, r + 1);
             }
         }
-        updateDayHeaders();
         
         // Column Constraints
         ColumnConstraints labelCol = new ColumnConstraints();
-        labelCol.setMinWidth(80);
-        labelCol.setPrefWidth(80);
-        labelCol.setMaxWidth(80);
+        labelCol.setMinWidth(100); // Fixed width for meal type labels
+        labelCol.setPrefWidth(100);
         gridPane.getColumnConstraints().add(labelCol);
 
         for (int i = 0; i < 7; i++) {
             ColumnConstraints col = new ColumnConstraints();
             col.setHgrow(Priority.ALWAYS);
-            col.setMinWidth(120);
+            col.setMinWidth(140); // Minimum width for cards
             gridPane.getColumnConstraints().add(col);
         }
         
         // Row Constraints
         RowConstraints headerRow = new RowConstraints();
-        headerRow.setMinHeight(60);
-        headerRow.setPrefHeight(60);
+        headerRow.setMinHeight(80); // Day header height
         gridPane.getRowConstraints().add(headerRow);
 
         for (int i = 0; i < 3; i++) {
             RowConstraints row = new RowConstraints();
             row.setVgrow(Priority.ALWAYS);
-            row.setMinHeight(160);
+            row.setMinHeight(160); // Card height
             gridPane.getRowConstraints().add(row);
         }
 
-        setCenter(gridPane);
+        return gridPane;
+    }
+
+    private VBox createRowHeader(String text, String iconPath, String colorTheme) {
+        VBox panel = new VBox(8);
+        panel.setAlignment(Pos.CENTER);
+        panel.setPadding(new Insets(10));
+        
+        // Apply specific theme styling
+        String bgHex, textHex;
+        if (colorTheme.equals("blue")) {
+            bgHex = "#eff6ff"; textHex = "#2563eb"; // blue-50, blue-600
+        } else if (colorTheme.equals("amber")) {
+            bgHex = "#fffbeb"; textHex = "#d97706"; // amber-50, amber-600
+        } else {
+            bgHex = "#fff1f2"; textHex = "#e11d48"; // rose-50, rose-600
+        }
+        
+        panel.setStyle("-fx-background-color: " + bgHex + "; -fx-background-radius: 12px;");
+        panel.setPrefHeight(160);
+        
+        Node icon = SvgIconLoader.loadIcon(iconPath, 24, Color.web(textHex));
+        Label label = new Label(text);
+        label.setStyle("-fx-text-fill: " + textHex + "; -fx-font-weight: 500; -fx-font-size: 14px;");
+        
+        if (icon != null) panel.getChildren().add(icon);
+        panel.getChildren().add(label);
+        
+        return panel;
     }
 
     private VBox createDayHeader(String dayName, LocalDate date, boolean isActive) {
         VBox panel = new VBox(4);
-        panel.getStyleClass().add("day-header");
+        panel.setAlignment(Pos.CENTER);
+        panel.setPadding(new Insets(10));
+        panel.setPrefHeight(70);
+        
         if (isActive) {
-            panel.getStyleClass().add("active");
+            panel.setStyle("-fx-background-color: #f7fee7; -fx-background-radius: 12px; -fx-border-color: transparent;");
+        } else {
+            panel.setStyle("-fx-background-color: transparent;");
         }
         
         Label dayLabel = new Label(dayName);
-        dayLabel.getStyleClass().add("day-header-label");
+        dayLabel.getStyleClass().add(isActive ? "text-lime-700" : "text-gray-500");
+        dayLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: 500;");
         
         Label dateLabel = new Label(String.valueOf(date.getDayOfMonth()));
-        dateLabel.getStyleClass().add("day-header-date");
+        dateLabel.getStyleClass().add(isActive ? "text-lime-700" : "text-gray-900");
+        dateLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
         
-        panel.getChildren().addAll(dayLabel, dateLabel);
-        return panel;
-    }
-
-    private VBox createRowHeader(String text) {
-        VBox panel = new VBox();
-        panel.setAlignment(Pos.CENTER_LEFT);
+        Label calLabel = new Label("770 cal"); // Placeholder, real logic would sum cals
+        calLabel.getStyleClass().add(isActive ? "text-lime-600" : "text-gray-400");
+        calLabel.setStyle("-fx-font-size: 11px;");
         
-        Label label = new Label(text);
-        label.getStyleClass().add("label");
-        label.setStyle("-fx-font-weight: 600; -fx-text-fill: -fx-theme-muted-foreground;");
-        
-        panel.getChildren().add(label);
+        panel.getChildren().addAll(dayLabel, dateLabel, calLabel);
         return panel;
     }
 
     @Override
     public void propertyChange(PropertyChangeEvent evt) {
+        if ("view".equals(evt.getPropertyName())) {
+            if (ViewManager.SCHEDULE_VIEW.equals(evt.getNewValue())) {
+                this.controller.execute("Eden Chang");
+            }
+        }
         Platform.runLater(this::updateView);
     }
 
     private void updateDayHeaders() {
-        gridPane.getChildren().removeIf(node -> GridPane.getRowIndex(node) == 0 && GridPane.getColumnIndex(node) > 0);
+        // Clear existing headers (row 0, col > 0)
+        gridPane.getChildren().removeIf(node -> GridPane.getRowIndex(node) != null && GridPane.getRowIndex(node) == 0 && GridPane.getColumnIndex(node) != null && GridPane.getColumnIndex(node) > 0);
 
         String[] dayNames = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
         LocalDate today = LocalDate.now();
@@ -207,16 +357,20 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
     }
 
     private void updateView() {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM d", Locale.ENGLISH);
-        LocalDate weekEnd = currentWeekStart.plusDays(6);
-        dateRangeLabel.setText("Weekly Plan: " + currentWeekStart.format(formatter) + " - " + weekEnd.format(formatter));
+        updateDayHeaders();
         
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM d", Locale.ENGLISH);
+        LocalDate weekEnd = currentWeekStart.plusDays(6);
+        dateRangeLabel.setText(currentWeekStart.format(formatter) + " - " + weekEnd.format(formatter) + ", " + currentWeekStart.getYear());
+        
+        // Clear all slots first
         for (int r = 0; r < 3; r++) {
             for (int c = 0; c < 7; c++) {
                 mealSlots[r][c].clear();
             }
         }
 
+        int filledCount = 0;
         Schedule schedule = scheduleViewModel.getSchedule();
         if (schedule != null) {
             Map<LocalDate, Map<MealType, String>> allMeals = schedule.getAllMeals();
@@ -226,15 +380,25 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
                 Map<MealType, String> mealsForDate = allMeals.get(date);
                 
                 if (mealsForDate != null) {
-                    if (mealsForDate.containsKey(MealType.BREAKFAST)) 
-                        mealSlots[0][i].setMeal(mealsForDate.get(MealType.BREAKFAST), "150 kcal");
-                    if (mealsForDate.containsKey(MealType.LUNCH)) 
-                        mealSlots[1][i].setMeal(mealsForDate.get(MealType.LUNCH), "180 kcal");
-                    if (mealsForDate.containsKey(MealType.DINNER)) 
-                        mealSlots[2][i].setMeal(mealsForDate.get(MealType.DINNER), "250 kcal");
+                    if (mealsForDate.containsKey(MealType.BREAKFAST)) {
+                        mealSlots[0][i].setMeal(mealsForDate.get(MealType.BREAKFAST), "320 cal"); // Mock cal
+                        filledCount++;
+                    }
+                    if (mealsForDate.containsKey(MealType.LUNCH)) {
+                        mealSlots[1][i].setMeal(mealsForDate.get(MealType.LUNCH), "450 cal");
+                        filledCount++;
+                    }
+                    if (mealsForDate.containsKey(MealType.DINNER)) {
+                        mealSlots[2][i].setMeal(mealsForDate.get(MealType.DINNER), "520 cal");
+                        filledCount++;
+                    }
                 }
             }
         }
+        
+        // Update Stats
+        mealsPlannedLabel.setText(filledCount + "/21");
+        mealsPlannedProgress.setProgress(filledCount / 21.0);
     }
 
     private class MealSlotPanel extends VBox {
@@ -252,8 +416,8 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
             
             setAlignment(Pos.CENTER);
             setCursor(Cursor.HAND);
-            setMinHeight(160);
-            setPrefHeight(160);
+            setMinHeight(140);
+            setPrefHeight(140);
             
             setupEmptyState();
             
@@ -262,30 +426,34 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
         
         private void setupEmptyState() {
             getChildren().clear();
-            getStyleClass().setAll("meal-slot", "empty");
+            
+            // Dashed Border Style
+            setStyle("-fx-background-color: transparent; -fx-border-color: #e5e7eb; -fx-border-width: 2px; -fx-border-style: dashed; -fx-border-radius: 12px;");
             
             if (currentTooltip != null) {
                 Tooltip.uninstall(this, currentTooltip);
                 currentTooltip = null;
             }
             
-            VBox emptyContent = new VBox(5);
-            emptyContent.setAlignment(Pos.CENTER);
+            // Dashed Circle with Plus
+            StackPane circle = new StackPane();
+            circle.setPrefSize(40, 40);
+            circle.setMaxSize(40, 40);
+            circle.setStyle("-fx-border-color: #e5e7eb; -fx-border-width: 2px; -fx-border-style: dashed; -fx-border-radius: 50%; -fx-background-color: transparent;");
             
-            Label contentLabel = new Label("+");
-            contentLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: -fx-theme-muted-foreground;");
+            Node plusIcon = SvgIconLoader.loadIcon("/svg/plus.svg", 16, Color.web("#9ca3af"));
+            if (plusIcon != null) circle.getChildren().add(plusIcon);
+            else circle.getChildren().add(new Label("+"));
             
-            Label planLabel = new Label("Plan Meal");
-            planLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: -fx-theme-muted-foreground;");
-            
-            emptyContent.getChildren().addAll(contentLabel, planLabel);
-            getChildren().add(emptyContent);
+            getChildren().add(circle);
         }
 
         public void setMeal(String recipeName, String calories) {
             this.isFilled = true;
             getChildren().clear();
-            getStyleClass().setAll("meal-slot");
+            
+            // Filled Card Style
+            setStyle("-fx-background-color: white; -fx-background-radius: 12px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 4, 0, 0, 2); -fx-border-width: 0;");
             
             // Tooltip
             if (currentTooltip != null) {
@@ -296,10 +464,10 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
             
             // Image placeholder
             Region imagePlaceholder = new Region();
-            imagePlaceholder.setPrefHeight(90);
-            imagePlaceholder.setMaxHeight(90);
-            imagePlaceholder.setStyle("-fx-background-color: -fx-theme-muted; -fx-background-radius: 8px 8px 0 0;");
-            VBox.setVgrow(imagePlaceholder, Priority.ALWAYS);
+            imagePlaceholder.setPrefHeight(80);
+            imagePlaceholder.setMinHeight(80);
+            imagePlaceholder.setStyle("-fx-background-color: #e5e7eb; -fx-background-radius: 12px 12px 0 0;");
+            // TODO: Load actual image if available
             
             // Content section
             VBox filledContent = new VBox(4);
@@ -307,11 +475,13 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
             filledContent.setAlignment(Pos.CENTER_LEFT);
             
             Label contentLabel = new Label(recipeName);
-            contentLabel.getStyleClass().add("meal-card-title");
+            contentLabel.getStyleClass().add("text-gray-900");
+            contentLabel.setStyle("-fx-font-weight: 600; -fx-font-size: 13px;");
             contentLabel.setWrapText(true);
             
             Label calLabel = new Label(calories);
-            calLabel.getStyleClass().add("meal-card-subtitle");
+            calLabel.getStyleClass().add("text-gray-500");
+            calLabel.setStyle("-fx-font-size: 11px;");
             
             filledContent.getChildren().addAll(contentLabel, calLabel);
             
@@ -327,7 +497,7 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
             if (isFilled) {
                 viewManagerModel.setActiveView(ViewManager.RECIPE_DETAIL_VIEW);
             } else {
-                viewManagerModel.setActiveView(ViewManager.MEAL_PLAN_VIEW);
+                viewManagerModel.setActiveView(ViewManager.BROWSE_RECIPE_VIEW);
             }
         }
     }

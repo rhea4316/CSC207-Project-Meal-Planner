@@ -31,7 +31,7 @@ public class MealPlanPresenter implements AddMealOutputBoundary, EditMealOutputB
         mealPlanViewModel.setSuccessMessage(outputData.getMessage());
 
         if (viewManager != null) {
-            viewManager.setActiveView("MealPlanView");
+            viewManager.setActiveView(com.mealplanner.view.ViewManager.SCHEDULE_VIEW);
         }
     }
 
@@ -51,7 +51,7 @@ public class MealPlanPresenter implements AddMealOutputBoundary, EditMealOutputB
         mealPlanViewModel.setSuccessMessage(outputData.getMessage());
 
         if (viewManager != null) {
-            viewManager.setActiveView("MealPlanView");
+            viewManager.setActiveView(com.mealplanner.view.ViewManager.SCHEDULE_VIEW);
         }
     }
 
@@ -71,7 +71,7 @@ public class MealPlanPresenter implements AddMealOutputBoundary, EditMealOutputB
         mealPlanViewModel.setSuccessMessage(outputData.getMessage());
 
         if (viewManager != null) {
-            viewManager.setActiveView("MealPlanView");
+            viewManager.setActiveView(com.mealplanner.view.ViewManager.SCHEDULE_VIEW);
         }
     }
 

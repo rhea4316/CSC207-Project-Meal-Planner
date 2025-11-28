@@ -5,7 +5,7 @@ import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.SearchByIngredientsController;
 import com.mealplanner.interface_adapter.view_model.RecipeSearchViewModel;
 import com.mealplanner.util.StringUtil;
-
+import com.mealplanner.view.util.SvgIconLoader;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -15,6 +15,7 @@ import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -58,18 +59,29 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         // Root Style
         getStyleClass().add("root");
         setPadding(new Insets(30, 40, 30, 40));
+        setBackground(new Background(new BackgroundFill(Color.web("#f7f8f9"), CornerRadii.EMPTY, Insets.EMPTY)));
 
-        // Header + Search Area
-        VBox topBox = new VBox(20);
+        // 1. Header Title
+        VBox headerBox = new VBox(8);
         Label titleLabel = new Label("Find by Ingredients");
         titleLabel.getStyleClass().add("section-title");
-        titleLabel.setStyle("-fx-font-size: 32px;");
+        titleLabel.setStyle("-fx-font-size: 24px; -fx-text-fill: -fx-theme-foreground;");
         
+        Label subTitle = new Label("Enter ingredients you have to discover recipes you can make");
+        subTitle.getStyleClass().add("text-gray-500");
+        subTitle.setStyle("-fx-font-size: 14px;");
+        
+        headerBox.getChildren().addAll(titleLabel, subTitle);
+        
+        // 2. Search Panel (White Card)
         VBox searchPanel = createSearchPanel();
-        topBox.getChildren().addAll(titleLabel, searchPanel);
-        setTop(topBox);
+        VBox.setMargin(searchPanel, new Insets(24, 0, 24, 0));
+        
+        VBox topSection = new VBox();
+        topSection.getChildren().addAll(headerBox, searchPanel);
+        setTop(topSection);
 
-        // Results Area
+        // 3. Results Area
         createResultsPanel();
         setCenter(resultsContainer);
         
@@ -81,27 +93,36 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
     }
 
     private VBox createSearchPanel() {
-        VBox panel = new VBox();
+        VBox panel = new VBox(20);
         panel.getStyleClass().add("card-panel");
-        panel.setSpacing(15);
+        panel.setPadding(new Insets(24));
         
-        // 1. Chips Container (Where tags appear)
-        chipsContainer = new FlowPane();
-        chipsContainer.setHgap(8);
-        chipsContainer.setVgap(8);
-        chipsContainer.setPadding(new Insets(0, 0, 5, 0));
-
-        // 2. Input Field + Search Button
-        HBox inputBox = new HBox(15);
+        // 1. Input Field + Search Button
+        HBox inputBox = new HBox(16);
         inputBox.setAlignment(Pos.CENTER_LEFT);
 
-        ingredientsField = new TextField();
-        ingredientsField.setPromptText("Type an ingredient and press Enter (e.g., 'Egg')");
-        ingredientsField.setPrefHeight(45);
-        ingredientsField.getStyleClass().add("text-field");
-        HBox.setHgrow(ingredientsField, Priority.ALWAYS);
+        // Search Input Container
+        HBox searchFieldContainer = new HBox(10);
+        searchFieldContainer.setAlignment(Pos.CENTER_LEFT);
+        searchFieldContainer.setStyle("-fx-background-color: white; -fx-border-color: -fx-color-gray-200; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 0 12px;");
+        searchFieldContainer.setPrefHeight(48);
+        HBox.setHgrow(searchFieldContainer, Priority.ALWAYS);
 
-        // Handle Enter Key for Chip Creation
+        Node searchIcon = SvgIconLoader.loadIcon("/svg/search.svg", 20, Color.web("#9ca3af"));
+        if (searchIcon != null) searchFieldContainer.getChildren().add(searchIcon);
+
+        ingredientsField = new TextField();
+        ingredientsField.setPromptText("Type an ingredient and press Enter...");
+        ingredientsField.setStyle("-fx-background-color: transparent; -fx-border-width: 0; -fx-font-size: 14px;");
+        ingredientsField.setPrefHeight(40);
+        HBox.setHgrow(ingredientsField, Priority.ALWAYS);
+        
+        // Chips Container inside input box (optional, or below) - Design shows below as tags
+        // So field is just text
+        
+        searchFieldContainer.getChildren().add(ingredientsField);
+
+        // Handle Enter Key
         ingredientsField.setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.ENTER) {
                 addIngredientChip(ingredientsField.getText());
@@ -109,65 +130,139 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
             }
         });
 
-        searchButton = new Button("Find Recipes 🔍");
-        searchButton.getStyleClass().add("primary-button");
-        searchButton.setPrefHeight(45);
+        searchButton = new Button("Search");
+        searchButton.getStyleClass().add("primary-button"); // Green button
+        searchButton.setStyle("-fx-background-color: #4ade80; -fx-text-fill: white; -fx-font-weight: 600; -fx-background-radius: 8px; -fx-padding: 10 24; -fx-font-size: 14px;");
+        Node btnIcon = SvgIconLoader.loadIcon("/svg/search.svg", 16, Color.WHITE);
+        if (btnIcon != null) {
+            searchButton.setGraphic(btnIcon);
+            searchButton.setGraphicTextGap(8);
+        }
+        searchButton.setPrefHeight(48);
         searchButton.setOnAction(e -> performSearch());
 
-        inputBox.getChildren().addAll(ingredientsField, searchButton);
+        inputBox.getChildren().addAll(searchFieldContainer, searchButton);
+
+        // 2. Popular Ingredients Tags
+        VBox popularSection = new VBox(8);
         
-        // 3. Quick Filters
+        HBox popularHeader = new HBox(6);
+        popularHeader.setAlignment(Pos.CENTER_LEFT);
+        Node sparkIcon = SvgIconLoader.loadIcon("/svg/star.svg", 14, Color.web("#6b7280"));
+        Label popularLabel = new Label("Popular ingredients");
+        popularLabel.getStyleClass().add("text-gray-500");
+        popularLabel.setStyle("-fx-font-size: 13px;");
+        if (sparkIcon != null) popularHeader.getChildren().add(sparkIcon);
+        popularHeader.getChildren().add(popularLabel);
+        
+        FlowPane popularTags = new FlowPane();
+        popularTags.setHgap(8);
+        popularTags.setVgap(8);
+        
+        String[] popularItems = {"Egg", "Chicken", "Tomato", "Onion", "Garlic", "Pasta", "Rice", "Milk", "Cheese", "Potato"};
+        for (String item : popularItems) {
+            Button tagBtn = new Button("+ " + item);
+            tagBtn.setStyle("-fx-background-color: -fx-color-gray-50; -fx-text-fill: -fx-color-gray-700; -fx-background-radius: 20px; -fx-border-color: -fx-color-gray-200; -fx-border-radius: 20px; -fx-padding: 6 12; -fx-font-size: 13px; -fx-cursor: hand;");
+            tagBtn.setOnAction(e -> addIngredientChip(item));
+            
+            // Hover effect
+            tagBtn.setOnMouseEntered(e -> tagBtn.setStyle("-fx-background-color: -fx-color-gray-100; -fx-text-fill: -fx-color-gray-900; -fx-background-radius: 20px; -fx-border-color: -fx-color-gray-300; -fx-border-radius: 20px; -fx-padding: 6 12; -fx-font-size: 13px; -fx-cursor: hand;"));
+            tagBtn.setOnMouseExited(e -> tagBtn.setStyle("-fx-background-color: -fx-color-gray-50; -fx-text-fill: -fx-color-gray-700; -fx-background-radius: 20px; -fx-border-color: -fx-color-gray-200; -fx-border-radius: 20px; -fx-padding: 6 12; -fx-font-size: 13px; -fx-cursor: hand;"));
+            
+            popularTags.getChildren().add(tagBtn);
+        }
+        
+        popularSection.getChildren().addAll(popularHeader, popularTags);
+
+        // 3. Active Chips Display Area (The user's selected ingredients)
+        chipsContainer = new FlowPane();
+        chipsContainer.setHgap(8);
+        chipsContainer.setVgap(8);
+        // Only show if there are chips
+        chipsContainer.managedProperty().bind(chipsContainer.visibleProperty());
+        chipsContainer.visibleProperty().bind(javafx.beans.binding.Bindings.isNotEmpty(chipsContainer.getChildren()));
+
+        // 4. Quick Filters
+        VBox filtersSection = new VBox(8);
+        Label filtersLabel = new Label("Quick Filters");
+        filtersLabel.getStyleClass().add("text-gray-500");
+        filtersLabel.setStyle("-fx-font-size: 13px;");
+        
         quickFiltersContainer = new FlowPane();
         quickFiltersContainer.setHgap(10);
         quickFiltersContainer.setVgap(10);
         
-        String[] filters = {"Breakfast", "Lunch", "Dinner", "Vegetarian", "Gluten Free", "Quick (< 30min)"};
-        for (String filter : filters) {
-            ToggleButton filterBtn = createFilterButton(filter);
-            quickFiltersContainer.getChildren().add(filterBtn);
-        }
+        // Filters with Icons
+        addFilterButton("Breakfast", "/svg/mug-hot.svg");
+        addFilterButton("Lunch", "/svg/brightness.svg");
+        addFilterButton("Dinner", "/svg/moon.svg");
+        addFilterButton("Vegetarian", "/svg/leaf.svg");
+        addFilterButton("Quick (< 30min)", "/svg/time-fast.svg"); // Assumed icon
+        
+        filtersSection.getChildren().addAll(filtersLabel, quickFiltersContainer);
 
-        panel.getChildren().addAll(chipsContainer, inputBox, quickFiltersContainer);
+        panel.getChildren().addAll(inputBox, chipsContainer, popularSection, filtersSection);
         return panel;
     }
 
-    private ToggleButton createFilterButton(String text) {
+    private void addFilterButton(String text, String iconPath) {
         ToggleButton btn = new ToggleButton(text);
-        btn.getStyleClass().add("filter-toggle");
+        btn.setStyle("-fx-background-color: white; -fx-text-fill: -fx-color-gray-600; -fx-border-color: -fx-color-gray-200; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 8 12; -fx-font-size: 13px; -fx-cursor: hand;");
         
+        Node icon = SvgIconLoader.loadIcon(iconPath, 16, Color.web("#6b7280"));
+        if (icon != null) {
+            btn.setGraphic(icon);
+            btn.setGraphicTextGap(8);
+        }
+
         btn.selectedProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal) {
-                btn.setStyle("-fx-background-color: -fx-theme-secondary; -fx-text-fill: -fx-theme-primary; -fx-border-color: -fx-theme-primary; -fx-font-weight: bold;");
+                // Active State
+                btn.setStyle("-fx-background-color: #f0fdf4; -fx-text-fill: #166534; -fx-border-color: #22c55e; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 8 12; -fx-font-size: 13px; -fx-cursor: hand;");
+                if (btn.getGraphic() != null) {
+                    // Tint icon green (simplified by reloading or assuming SvgIconLoader returns a new node each time? 
+                    // SvgIconLoader loads new node, so we'd need to set a new graphic. 
+                    // For simplicity, let's just change the button style first. 
+                    // Ideally we reload icon with green color.)
+                     Node activeIcon = SvgIconLoader.loadIcon(iconPath, 16, Color.web("#166534"));
+                     btn.setGraphic(activeIcon);
+                }
                 activeFilters.add(text);
             } else {
-                btn.setStyle(""); // Revert to CSS class style
+                // Inactive State
+                btn.setStyle("-fx-background-color: white; -fx-text-fill: -fx-color-gray-600; -fx-border-color: -fx-color-gray-200; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 8 12; -fx-font-size: 13px; -fx-cursor: hand;");
+                if (btn.getGraphic() != null) {
+                     Node inactiveIcon = SvgIconLoader.loadIcon(iconPath, 16, Color.web("#6b7280"));
+                     btn.setGraphic(inactiveIcon);
+                }
                 activeFilters.remove(text);
             }
-            // Optional: Trigger search immediately
-            if (!ingredientList.isEmpty()) {
-                performSearch();
-            }
+            // Trigger search logic if needed
         });
         
-        return btn;
+        quickFiltersContainer.getChildren().add(btn);
     }
 
     private void addIngredientChip(String text) {
         String ingredient = StringUtil.safeTrim(text);
         if (StringUtil.isNullOrEmpty(ingredient)) return;
-        if (ingredientList.contains(ingredient)) return;
+        
+        // Case-insensitive check
+        boolean exists = ingredientList.stream().anyMatch(i -> i.equalsIgnoreCase(ingredient));
+        if (exists) return;
 
         ingredientList.add(ingredient);
 
-        // Create Chip UI using CSS
-        HBox chip = new HBox(5);
-        chip.getStyleClass().add("chip");
+        // Create Chip UI
+        HBox chip = new HBox(6);
+        chip.setAlignment(Pos.CENTER_LEFT);
+        chip.setStyle("-fx-background-color: #ecfccb; -fx-background-radius: 20px; -fx-padding: 6 12; -fx-border-color: #bef264; -fx-border-radius: 20px;");
         
         Label label = new Label(ingredient);
-        label.getStyleClass().add("label");
+        label.setStyle("-fx-text-fill: #3f6212; -fx-font-weight: 600; -fx-font-size: 13px;");
 
         Label closeBtn = new Label("✕");
-        closeBtn.getStyleClass().add("close-button");
+        closeBtn.setStyle("-fx-text-fill: #3f6212; -fx-font-size: 10px; -fx-cursor: hand;");
         closeBtn.setOnMouseClicked(e -> removeIngredientChip(chip, ingredient));
 
         chip.getChildren().addAll(label, closeBtn);
@@ -181,7 +276,8 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
 
     private void createResultsPanel() {
         resultsContainer = new StackPane();
-        resultsContainer.setPadding(new Insets(30, 0, 0, 0));
+        resultsContainer.getStyleClass().add("card-panel");
+        resultsContainer.setStyle(resultsContainer.getStyle() + "-fx-background-color: #f0fdf4; -fx-border-color: #dcfce7; -fx-border-width: 1px; -fx-border-radius: 16px; -fx-padding: 40;"); // Light green background for empty state area
 
         // 1. List View
         listPanel = new FlowPane();
@@ -202,17 +298,31 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         loadingLabel.setStyle("-fx-font-size: 18px; -fx-text-fill: -fx-theme-muted-foreground;");
         loadingPanel.getChildren().add(loadingLabel);
 
-        // 3. Empty View
-        emptyPanel = new VBox(15);
+        // 3. Empty View (Initial State)
+        emptyPanel = new VBox(16);
         emptyPanel.setAlignment(Pos.CENTER);
         
-        Label iconLabel = new Label("🍽️");
-        iconLabel.setStyle("-fx-font-size: 64px;");
+        // Icon Circle
+        StackPane iconCircle = new StackPane();
+        Circle bg = new Circle(32);
+        bg.setFill(Color.web("#4ade80")); // Bright green
+        bg.setEffect(new javafx.scene.effect.DropShadow(10, Color.rgb(74, 222, 128, 0.4)));
         
-        Label emptyLabel = new Label("Add ingredients to start searching");
-        emptyLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: -fx-theme-muted-foreground;");
+        Node chefIcon = SvgIconLoader.loadIcon("/svg/restaurant.svg", 32, Color.WHITE); // Assuming chef/restaurant icon
+        if (chefIcon != null) iconCircle.getChildren().addAll(bg, chefIcon);
+        else iconCircle.getChildren().add(bg); // Fallback
+
+        Label startTitle = new Label("Start by adding your ingredients!");
+        startTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: 600; -fx-text-fill: -fx-color-gray-800;");
         
-        emptyPanel.getChildren().addAll(iconLabel, emptyLabel);
+        Label startSub = new Label("We'll help you find recipes you can make");
+        startSub.setStyle("-fx-font-size: 14px; -fx-text-fill: -fx-color-gray-500;");
+        
+        Label hintLabel = new Label("✨ Click popular ingredients above to add them quickly");
+        hintLabel.setStyle("-fx-background-color: #ecfccb; -fx-text-fill: #3f6212; -fx-padding: 8 16; -fx-background-radius: 20px; -fx-font-size: 13px; -fx-font-weight: 500;");
+        VBox.setMargin(hintLabel, new Insets(20, 0, 0, 0));
+
+        emptyPanel.getChildren().addAll(iconCircle, startTitle, startSub, hintLabel);
 
         resultsContainer.getChildren().addAll(emptyPanel, loadingPanel, listScrollPane);
         
@@ -229,11 +339,17 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         switch(viewName) {
             case "LOADING": loadingPanel.setVisible(true); break;
             case "EMPTY": emptyPanel.setVisible(true); break;
-            case "LIST": if (listScrollPane != null) listScrollPane.setVisible(true); break;
+            case "LIST": 
+                if (listScrollPane != null) listScrollPane.setVisible(true);
+                // Reset container style to default card panel or transparent if list is shown?
+                // Design keeps the container but maybe white bg for results? 
+                // For now, keep it consistent.
+                break;
         }
     }
 
     private void performSearch() {
+        // Add current text if exists
         String currentText = ingredientsField.getText();
         if (StringUtil.hasContent(currentText)) {
             addIngredientChip(currentText);
@@ -241,7 +357,8 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         }
 
         if (ingredientList.isEmpty()) {
-            errorLabel.setText("Please add at least one ingredient");
+            // Show visual feedback? 
+            // errorLabel.setText("Please add at least one ingredient");
             return;
         }
         
@@ -259,7 +376,11 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
 
         if (recipes == null || recipes.isEmpty()) {
             showView("EMPTY");
-            ((Label) emptyPanel.getChildren().get(1)).setText("No recipes found for these ingredients");
+            // Optional: Change empty message to "No results"
+            Label title = (Label) emptyPanel.getChildren().get(1);
+            title.setText("No recipes found matching your ingredients");
+            Label sub = (Label) emptyPanel.getChildren().get(2);
+            sub.setText("Try removing some filters or adding different ingredients");
         } else {
             for (Recipe recipe : recipes) {
                 listPanel.getChildren().add(createRecipeCard(recipe));
@@ -271,72 +392,50 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
     private VBox createRecipeCard(Recipe recipe) {
         VBox card = new VBox();
         card.getStyleClass().add("meal-card");
-        card.setPrefWidth(250);
-        card.setMinWidth(250);
+        // Same card style as Dashboard or similar
+        card.setPrefWidth(220);
+        card.setMinWidth(220);
         card.setSpacing(10);
+        card.setPadding(new Insets(12));
         card.setCursor(Cursor.HAND);
 
-        // Thumbnail
+        // 1. Image Placeholder
         Region thumbnail = new Region();
-        thumbnail.setPrefHeight(140);
-        thumbnail.setStyle("-fx-background-color: -fx-theme-muted; -fx-background-radius: 8px;");
+        thumbnail.setPrefHeight(120);
+        thumbnail.setStyle("-fx-background-color: #e5e7eb; -fx-background-radius: 8px;");
         card.getChildren().add(thumbnail);
 
-        // Title
+        // 2. Title
         Label title = new Label(recipe.getName());
-        title.getStyleClass().add("meal-card-title");
+        title.getStyleClass().add("text-gray-900");
+        title.setStyle("-fx-font-weight: 600; -fx-font-size: 14px;");
         title.setWrapText(true);
         card.getChildren().add(title);
 
-        // Matching Logic Display
-        int matchCount = 0;
+        // 3. Match Badge (Logic)
+        // Simplified for UI demo: Check overlap count
+        long matchCount = 0;
         List<String> recipeIngredients = recipe.getIngredients();
         if (recipeIngredients != null) {
-            for (String rIng : recipeIngredients) {
-                for (String uIng : ingredientList) {
-                    if (rIng.toLowerCase().contains(uIng.toLowerCase())) {
-                        matchCount++;
-                        break;
-                    }
-                }
-            }
+            matchCount = recipeIngredients.stream()
+                .filter(rIng -> ingredientList.stream().anyMatch(uIng -> rIng.toLowerCase().contains(uIng.toLowerCase())))
+                .count();
         }
         
-        int totalIngredients = recipeIngredients != null ? recipeIngredients.size() : 0;
-        int missingCount = totalIngredients - matchCount;
+        Label badge = new Label(matchCount > 0 ? matchCount + " ingredients match" : "Suggested");
+        badge.setStyle("-fx-background-color: #dcfce7; -fx-text-fill: #166534; -fx-padding: 2 6; -fx-background-radius: 4px; -fx-font-size: 11px; -fx-font-weight: 600;");
+        card.getChildren().add(badge);
         
-        Label badge = new Label();
-        badge.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-padding: 4px 8px; -fx-background-radius: 12;");
+        // 4. Meta Info
+        HBox metaBox = new HBox(10);
+        metaBox.setAlignment(Pos.CENTER_LEFT);
         
-        if (missingCount == 0) {
-            badge.setText("Perfect Match! ⭐");
-            badge.setTextFill(Color.web("#065F46"));
-            badge.setStyle(badge.getStyle() + "-fx-background-color: #D1FAE5;");
-        } else {
-            badge.setText("Missing " + missingCount + " items");
-            badge.setTextFill(Color.web("#92400E"));
-            badge.setStyle(badge.getStyle() + "-fx-background-color: #FEF3C7;");
-        }
+        Label calLabel = new Label((recipe.getNutritionInfo() != null ? recipe.getNutritionInfo().getCalories() : "N/A") + " kcal");
+        calLabel.getStyleClass().add("text-gray-500");
+        calLabel.setStyle("-fx-font-size: 11px;");
         
-        HBox badgeContainer = new HBox(badge);
-        badgeContainer.setAlignment(Pos.CENTER_LEFT);
-        card.getChildren().add(badgeContainer);
-
-        // Info
-        Label infoLabel = new Label("Ingredients: " + totalIngredients + "\n" + 
-            ((recipe.getNutritionInfo() != null) ? recipe.getNutritionInfo().getCalories() + " kcal" : "N/A"));
-        infoLabel.getStyleClass().add("meal-card-subtitle");
-        card.getChildren().add(infoLabel);
-
-        // Button
-        Button viewBtn = new Button("View Details");
-        viewBtn.getStyleClass().add("ghost-button");
-        viewBtn.setMaxWidth(Double.MAX_VALUE);
-        card.getChildren().add(viewBtn);
-
-        // Hover
-        card.setOnMouseEntered(e -> card.setStyle("-fx-border-color: -fx-theme-primary; -fx-border-width: 2px;"));
-        card.setOnMouseExited(e -> card.setStyle(""));
+        metaBox.getChildren().add(calLabel);
+        card.getChildren().add(metaBox);
 
         return card;
     }

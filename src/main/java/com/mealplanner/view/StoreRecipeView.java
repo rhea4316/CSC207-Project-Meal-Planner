@@ -1,18 +1,20 @@
 package com.mealplanner.view;
 
-import com.mealplanner.entity.Unit;
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.StoreRecipeController;
 import com.mealplanner.interface_adapter.view_model.RecipeStoreViewModel;
 import com.mealplanner.util.NumberUtil;
 import com.mealplanner.util.StringUtil;
 import com.mealplanner.view.component.*;
-// Remove ambiguous Button import, use full class names or standard Button
+import com.mealplanner.view.util.SvgIconLoader;
 
 import javafx.application.Platform;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -27,15 +29,30 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
     @SuppressWarnings("unused")
     private final ViewManagerModel viewManagerModel;
 
+    // Editor Form Components
     private Input nameField;
-    private Input ingredientQtyField;
-    private Select<Unit> unitCombo;
-    private Input ingredientNameField;
-    private ListView<String> ingredientList;
-    private com.mealplanner.view.component.Textarea stepsArea;
+    private TextArea descField;
+    private Input imgUrlField;
+    private ComboBox<String> categoryCombo;
+    private ComboBox<String> difficultyCombo;
+    
+    private Input timeField;
+    private Input caloriesField;
     private Input servingSizeField;
     
-    // Notifications
+    private Input proteinField;
+    private Input carbsField;
+    private Input fatField;
+    
+    // Dynamic Containers
+    private FlowPane ingredientsContainer;
+    private VBox instructionsContainer;
+    private FlowPane tagsContainer;
+    
+    // Cookbook UI Components
+    private VBox cookbookContent;
+    private ScrollPane editorContent;
+    
     private Sonner sonner;
 
     public StoreRecipeView(StoreRecipeController controller, RecipeStoreViewModel viewModel, ViewManagerModel viewManagerModel) {
@@ -51,115 +68,325 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
 
         // Root Style
         getStyleClass().add("root");
-        setPadding(new Insets(30, 40, 30, 40));
+        setBackground(new Background(new BackgroundFill(Color.web("#F5F7FA"), CornerRadii.EMPTY, Insets.EMPTY)));
+        setPadding(new Insets(0)); // Reset padding for scroll layout
 
-        // Title
-        Label titleLabel = new Label("Create New Recipe");
-        titleLabel.getStyleClass().add("section-title");
-        titleLabel.setStyle("-fx-font-size: 32px;"); 
-        setTop(titleLabel);
-
-        // Form
-        createForm();
+        // Initialize Views
+        createCookbookView();
+        createEditorView();
         
-        // Setup Sonner for notifications
+        // Set initial view
+        setCenter(cookbookContent);
+        setPadding(new Insets(30, 40, 30, 40)); // Default padding for cookbook view
+        
+        // Setup Sonner
         sonner = new Sonner();
     }
-
-    private void createForm() {
-        VBox container = new VBox();
-        container.getStyleClass().add("card-panel");
-        container.setPadding(new Insets(30));
-        container.setMaxWidth(800);
-        
-        Form form = new Form();
-        form.setPadding(new Insets(0));
-
-        // 1. Name
-        nameField = new Input();
-        nameField.setPromptText("Recipe Name (e.g., Grilled Chicken Salad)");
-        form.addField("Recipe Name", nameField);
-
-        // 2. Ingredients
-        VBox ingSection = new VBox(10);
-        Label ingLabel = new Label("Ingredients");
-        ingLabel.getStyleClass().add("form-label");
-        
-        HBox ingBox = new HBox(10);
-        
-        ingredientQtyField = new Input();
-        ingredientQtyField.setPromptText("Qty");
-        ingredientQtyField.setPrefWidth(80);
-        
-        unitCombo = new Select<>();
-        unitCombo.getItems().addAll(Unit.values());
-        unitCombo.setPromptText("Unit");
-        unitCombo.setPrefHeight(40);
-        unitCombo.setPrefWidth(100);
-        
-        ingredientNameField = new Input();
-        ingredientNameField.setPromptText("Ingredient Name");
-        HBox.setHgrow(ingredientNameField, Priority.ALWAYS);
-        
-        javafx.scene.control.Button addIngBtn = new javafx.scene.control.Button("Add");
-        addIngBtn.getStyleClass().add("secondary-button");
-        addIngBtn.setPrefHeight(40);
-        addIngBtn.setOnAction(e -> addIngredient());
-        
-        ingBox.getChildren().addAll(ingredientQtyField, unitCombo, ingredientNameField, addIngBtn);
-        
-        ingredientList = new ListView<>();
-        ingredientList.setPrefHeight(150);
-        ingredientList.getStyleClass().add("text-field"); 
-        
-        ingSection.getChildren().addAll(ingLabel, ingBox, ingredientList);
-        form.getChildren().add(ingSection);
-
-        // 3. Instructions
-        stepsArea = new com.mealplanner.view.component.Textarea();
-        stepsArea.setPromptText("Step 1: ...");
-        stepsArea.setPrefRowCount(5);
-        form.addField("Instructions", stepsArea);
-
-        // 4. Serving Size
-        servingSizeField = new Input("1");
-        servingSizeField.setMaxWidth(100);
-        form.addField("Serving Size", servingSizeField);
-
-        // 5. Actions
-        javafx.scene.control.Button saveBtn = new javafx.scene.control.Button("Save Recipe");
-        saveBtn.getStyleClass().add("primary-button");
-        saveBtn.setPrefHeight(45);
-        saveBtn.setPrefWidth(200);
-        saveBtn.setOnAction(e -> saveRecipe());
-        
-        HBox actionBox = new HBox(saveBtn);
-        actionBox.setPadding(new Insets(20, 0, 0, 0));
-        
-        container.getChildren().addAll(form, actionBox);
-        setCenter(container);
+    
+    private void toggleView(boolean showCookbook) {
+        if (showCookbook) {
+            setCenter(cookbookContent);
+            setPadding(new Insets(30, 40, 30, 40));
+        } else {
+            setCenter(editorContent);
+            setPadding(new Insets(0)); // Full width for editor scroll
+        }
     }
 
-    private void addIngredient() {
-        String name = StringUtil.safeTrim(ingredientNameField.getText());
-        if (StringUtil.isNullOrEmpty(name)) {
-            sonner.show("Error", "Please enter an ingredient name", Sonner.Type.ERROR);
-            return;
+    // --- 1. Cookbook List View (Existing) ---
+    private void createCookbookView() {
+        cookbookContent = new VBox(24);
+        // ... (Existing cookbook UI code - simplified here to focus on editor) ...
+        // Header
+        HBox header = new HBox(); header.setAlignment(Pos.CENTER_LEFT);
+        VBox titles = new VBox(4);
+        Label titleLabel = new Label("My Cookbook"); titleLabel.setStyle("-fx-font-family: 'Poppins'; -fx-font-weight: bold; -fx-font-size: 24px; -fx-text-fill: #1A1A1A;");
+        Label subLabel = new Label("Your personal collection of bookmarked and custom recipes"); subLabel.setStyle("-fx-font-family: 'Poppins'; -fx-font-size: 14px; -fx-text-fill: #888888;");
+        titles.getChildren().addAll(titleLabel, subLabel);
+        Region spacer = new Region(); HBox.setHgrow(spacer, Priority.ALWAYS);
+        Button createBtn = new Button("Create Recipe");
+        createBtn.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: 600; -fx-background-radius: 8px; -fx-padding: 10 20; -fx-cursor: hand;");
+        createBtn.setOnAction(e -> toggleView(false));
+        header.getChildren().addAll(titles, spacer, createBtn);
+        
+        cookbookContent.getChildren().addAll(header, new Label("List content here...")); 
+    }
+
+    // --- 2. Recipe Editor View (New) ---
+    private void createEditorView() {
+        VBox mainContainer = new VBox();
+        mainContainer.setStyle("-fx-background-color: #F5F7FA;");
+        mainContainer.setPadding(new Insets(30, 40, 30, 40));
+        
+        // A. Header
+        HBox header = new HBox();
+        header.setAlignment(Pos.CENTER_LEFT);
+        header.setPadding(new Insets(0, 0, 24, 0));
+        
+        Button backBtn = new Button();
+        backBtn.setStyle("-fx-background-color: white; -fx-background-radius: 50%; -fx-min-width: 40px; -fx-min-height: 40px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 4, 0, 0, 1); -fx-cursor: hand;");
+        Node arrowIcon = SvgIconLoader.loadIcon("/svg/arrow-small-left.svg", 20, Color.GRAY);
+        if (arrowIcon != null) backBtn.setGraphic(arrowIcon);
+        backBtn.setOnAction(e -> toggleView(true));
+        
+        VBox titleBox = new VBox(2);
+        Label editTitle = new Label("Edit Recipe"); // Or Create New Recipe
+        editTitle.setStyle("-fx-font-weight: bold; -fx-font-size: 20px; -fx-text-fill: #1A1A1A;");
+        Label editSub = new Label("Update recipe details");
+        editSub.setStyle("-fx-font-size: 14px; -fx-text-fill: #888888;");
+        titleBox.getChildren().addAll(editTitle, editSub);
+        HBox.setMargin(titleBox, new Insets(0, 0, 0, 16));
+        
+        Region headerSpacer = new Region();
+        HBox.setHgrow(headerSpacer, Priority.ALWAYS);
+        
+        Button cancelBtn = new Button("Cancel");
+        cancelBtn.getStyleClass().add("secondary-button");
+        cancelBtn.setOnAction(e -> toggleView(true));
+        
+        Button saveBtn = new Button("Save Changes");
+        saveBtn.getStyleClass().add("primary-button");
+        saveBtn.setOnAction(e -> saveRecipe()); // Bind save action
+        
+        HBox actionBtns = new HBox(10, cancelBtn, saveBtn);
+        
+        header.getChildren().addAll(backBtn, titleBox, headerSpacer, actionBtns);
+        
+        // B. Content Grid (2 Columns)
+        GridPane grid = new GridPane();
+        grid.setHgap(24);
+        grid.setVgap(24);
+        
+        ColumnConstraints col1 = new ColumnConstraints(); col1.setPercentWidth(65);
+        ColumnConstraints col2 = new ColumnConstraints(); col2.setPercentWidth(35);
+        grid.getColumnConstraints().addAll(col1, col2);
+        
+        // -- Left Column (Ingredients & Instructions) --
+        VBox leftCol = new VBox(24);
+        
+        // Ingredients Section
+        VBox ingCard = createCardPanel("Ingredients");
+        ingredientsContainer = new FlowPane();
+        ingredientsContainer.setHgap(10); ingredientsContainer.setVgap(10);
+        
+        // Dynamic Add Row
+        HBox ingAddRow = createDynamicInputRow("Add ingredient (press Enter to add)", text -> addChipItem(ingredientsContainer, text, false));
+        
+        ingCard.getChildren().addAll(ingredientsContainer, ingAddRow);
+        
+        // Instructions Section
+        VBox instCard = createCardPanel("Instructions");
+        instructionsContainer = new VBox(15);
+        
+        HBox instAddRow = createDynamicInputRow("Add instruction step (press Enter to add)", text -> addInstructionStep(text));
+        
+        instCard.getChildren().addAll(instructionsContainer, instAddRow);
+        
+        leftCol.getChildren().addAll(ingCard, instCard);
+        
+        // -- Right Column (Basic Info, etc) --
+        VBox rightCol = new VBox(24);
+        
+        // Basic Information
+        VBox basicCard = createCardPanel("Basic Information");
+        nameField = new Input(); nameField.setPromptText("Avocado Toast");
+        descField = new TextArea(); descField.setPromptText("Short description..."); descField.setPrefRowCount(3); descField.getStyleClass().add("text-area");
+        imgUrlField = new Input(); imgUrlField.setPromptText("https://image.url...");
+        
+        categoryCombo = new ComboBox<>();
+        categoryCombo.getItems().addAll("Breakfast", "Lunch", "Dinner", "Snack", "Dessert");
+        categoryCombo.setValue("Breakfast");
+        categoryCombo.setMaxWidth(Double.MAX_VALUE);
+        categoryCombo.getStyleClass().add("text-field"); // Reuse text field style
+        
+        difficultyCombo = new ComboBox<>();
+        difficultyCombo.getItems().addAll("Easy", "Medium", "Hard");
+        difficultyCombo.setValue("Easy");
+        difficultyCombo.setMaxWidth(Double.MAX_VALUE);
+        difficultyCombo.getStyleClass().add("text-field");
+
+        basicCard.getChildren().addAll(
+            createLabel("Recipe Name *"), nameField,
+            createLabel("Description"), descField,
+            createLabel("Image URL"), imgUrlField,
+            createLabel("Category *"), categoryCombo,
+            createLabel("Difficulty"), difficultyCombo
+        );
+        
+        // Recipe Details (Time, Cals, Serving)
+        VBox detailCard = createCardPanel("Recipe Details");
+        timeField = new Input(); timeField.setPromptText("e.g. 10 min");
+        servingSizeField = new Input("1");
+        
+        detailCard.getChildren().addAll(
+            createLabel("Time"), timeField,
+            createLabel("Servings"), servingSizeField
+        );
+        
+        // Nutrition (Manual Entry)
+        VBox nutritionCard = createCardPanel("Nutrition (per serving)");
+        caloriesField = new Input(); caloriesField.setPromptText("kcal");
+        proteinField = new Input(); proteinField.setPromptText("g");
+        carbsField = new Input(); carbsField.setPromptText("g");
+        fatField = new Input(); fatField.setPromptText("g");
+        
+        nutritionCard.getChildren().addAll(
+            createLabel("Total Calories"), caloriesField,
+            createLabel("Protein (g)"), proteinField,
+            createLabel("Carbs (g)"), carbsField,
+            createLabel("Fat (g)"), fatField
+        );
+        
+        // Tags
+        VBox tagCard = createCardPanel("Tags");
+        tagsContainer = new FlowPane();
+        tagsContainer.setHgap(8); tagsContainer.setVgap(8);
+        
+        HBox tagAddRow = createDynamicInputRow("Add a tag", text -> addChipItem(tagsContainer, text, true));
+        
+        tagCard.getChildren().addAll(tagsContainer, tagAddRow);
+        
+        rightCol.getChildren().addAll(basicCard, detailCard, nutritionCard, tagCard);
+        
+        grid.add(leftCol, 0, 0);
+        grid.add(rightCol, 1, 0);
+        
+        mainContainer.getChildren().addAll(header, grid);
+        
+        editorContent = new ScrollPane(mainContainer);
+        editorContent.setFitToWidth(true);
+        editorContent.setStyle("-fx-background: #F5F7FA; -fx-background-color: #F5F7FA; -fx-padding: 0;");
+        editorContent.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+    }
+    
+    // --- Helper Methods for Editor Components ---
+    
+    private VBox createCardPanel(String title) {
+        VBox card = new VBox(15);
+        card.getStyleClass().add("card-panel");
+        card.setPadding(new Insets(20));
+        
+        if (title != null) {
+            Label lbl = new Label(title);
+            lbl.setStyle("-fx-font-weight: bold; -fx-font-size: 16px; -fx-text-fill: #374151;");
+            card.getChildren().add(lbl);
         }
+        return card;
+    }
+    
+    private Label createLabel(String text) {
+        Label l = new Label(text);
+        l.setStyle("-fx-font-size: 13px; -fx-text-fill: #6b7280; -fx-padding: 5 0 2 0;");
+        return l;
+    }
+    
+    private HBox createDynamicInputRow(String placeholder, java.util.function.Consumer<String> onAdd) {
+        HBox row = new HBox(10);
         
-        String qty = StringUtil.safeTrim(ingredientQtyField.getText());
-        Unit unit = unitCombo.getValue();
+        TextField input = new TextField();
+        input.setPromptText(placeholder);
+        input.getStyleClass().add("text-field");
+        HBox.setHgrow(input, Priority.ALWAYS);
         
-        String entry = String.format("%s %s %s", 
-            StringUtil.isNullOrEmpty(qty) ? "" : qty, 
-            unit != null ? unit.getAbbreviation() : "", 
-            name).trim();
-            
-        ingredientList.getItems().add(entry);
+        Button addBtn = new Button("Add");
+        addBtn.setStyle("-fx-background-color: #76FF03; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8px;");
+        Node plusIcon = SvgIconLoader.loadIcon("/svg/plus.svg", 14, Color.WHITE);
+        if (plusIcon != null) addBtn.setGraphic(plusIcon);
         
-        ingredientQtyField.clear();
-        ingredientNameField.clear();
-        unitCombo.getSelectionModel().clearSelection();
+        Runnable triggerAdd = () -> {
+            String text = input.getText().trim();
+            if (!text.isEmpty()) {
+                onAdd.accept(text);
+                input.clear();
+            }
+        };
+        
+        addBtn.setOnAction(e -> triggerAdd.run());
+        input.setOnKeyPressed(e -> {
+            if (e.getCode() == javafx.scene.input.KeyCode.ENTER) triggerAdd.run();
+        });
+        
+        row.getChildren().addAll(input, addBtn);
+        return row;
+    }
+    
+    // Core 1: Editable Chip
+    private void addChipItem(FlowPane container, String text, boolean isTag) {
+        HBox chip = new HBox(5);
+        chip.setAlignment(Pos.CENTER_LEFT);
+        chip.getStyleClass().add(isTag ? "tag-chip" : "ingredient-chip");
+        
+        TextField input = new TextField(text);
+        input.getStyleClass().add("chip-input");
+        // Auto-resize width roughly based on text length (simple logic)
+        input.setPrefWidth(Math.max(60, text.length() * 8 + 20));
+        input.textProperty().addListener((obs, old, val) -> input.setPrefWidth(Math.max(60, val.length() * 8 + 20)));
+        
+        Button deleteBtn = new Button("✕"); // or load icon
+        deleteBtn.getStyleClass().add("chip-delete-btn");
+        deleteBtn.setVisible(false);
+        deleteBtn.setOnAction(e -> container.getChildren().remove(chip));
+        
+        // Hover logic
+        chip.setOnMouseEntered(e -> deleteBtn.setVisible(true));
+        chip.setOnMouseExited(e -> {
+            if (!input.isFocused()) deleteBtn.setVisible(false);
+        });
+        
+        chip.getChildren().addAll(input, deleteBtn);
+        container.getChildren().add(chip);
+    }
+    
+    // Core 2: Instruction Item
+    private void addInstructionStep(String text) {
+        int stepNum = instructionsContainer.getChildren().size() + 1;
+        
+        HBox row = new HBox(12);
+        row.setAlignment(Pos.CENTER_LEFT);
+        row.getStyleClass().add("instruction-row");
+        
+        Label badge = new Label(String.valueOf(stepNum));
+        badge.getStyleClass().add("instruction-badge");
+        
+        HBox inputBox = new HBox();
+        inputBox.getStyleClass().add("instruction-input-box");
+        HBox.setHgrow(inputBox, Priority.ALWAYS);
+        
+        TextField input = new TextField(text);
+        input.getStyleClass().add("chip-input");
+        input.setPromptText("Enter instruction step...");
+        HBox.setHgrow(input, Priority.ALWAYS);
+        
+        Button deleteBtn = new Button("✕");
+        deleteBtn.getStyleClass().add("chip-delete-btn");
+        deleteBtn.setVisible(false);
+        deleteBtn.setOnAction(e -> {
+            instructionsContainer.getChildren().remove(row);
+            renumberSteps();
+        });
+        
+        inputBox.getChildren().addAll(input, deleteBtn);
+        
+        // Hover logic
+        inputBox.setOnMouseEntered(e -> deleteBtn.setVisible(true));
+        inputBox.setOnMouseExited(e -> {
+            if (!input.isFocused()) deleteBtn.setVisible(false);
+        });
+        
+        row.getChildren().addAll(badge, inputBox);
+        instructionsContainer.getChildren().add(row);
+    }
+    
+    private void renumberSteps() {
+        int count = 1;
+        for (Node node : instructionsContainer.getChildren()) {
+            if (node instanceof HBox) {
+                HBox row = (HBox) node;
+                if (!row.getChildren().isEmpty() && row.getChildren().get(0) instanceof Label) {
+                    ((Label) row.getChildren().get(0)).setText(String.valueOf(count++));
+                }
+            }
+        }
     }
 
     private void saveRecipe() {
@@ -169,28 +396,51 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
             return;
         }
         
-        List<String> ingredients = new ArrayList<>(ingredientList.getItems());
-        String stepsRaw = stepsArea.getText();
-        List<String> steps = new ArrayList<>();
+        // Harvest Ingredients
+        List<String> ingredients = harvestChips(ingredientsContainer);
         
-        if (stepsRaw != null) {
-            for (String s : stepsRaw.split("\\n")) {
-                if (!s.isBlank()) steps.add(s.trim());
+        // Harvest Steps
+        List<String> steps = new ArrayList<>();
+        for (Node node : instructionsContainer.getChildren()) {
+            if (node instanceof HBox) {
+                HBox row = (HBox) node;
+                if (row.getChildren().size() > 1 && row.getChildren().get(1) instanceof HBox) {
+                    HBox inputBox = (HBox) row.getChildren().get(1);
+                    if (!inputBox.getChildren().isEmpty() && inputBox.getChildren().get(0) instanceof TextField) {
+                        String s = ((TextField) inputBox.getChildren().get(0)).getText();
+                        if (!s.isBlank()) steps.add(s.trim());
+                    }
+                }
             }
         }
-
+        
         int servingSize = NumberUtil.parseInt(servingSizeField.getText(), 1);
-        if (servingSize <= 0) servingSize = 1;
-
+        
         controller.execute(name, ingredients, steps, servingSize);
         clearForm();
     }
+    
+    private List<String> harvestChips(FlowPane container) {
+        List<String> list = new ArrayList<>();
+        for (Node node : container.getChildren()) {
+            if (node instanceof HBox) {
+                HBox chip = (HBox) node;
+                if (!chip.getChildren().isEmpty() && chip.getChildren().get(0) instanceof TextField) {
+                    String s = ((TextField) chip.getChildren().get(0)).getText();
+                    if (!s.isBlank()) list.add(s.trim());
+                }
+            }
+        }
+        return list;
+    }
 
     private void clearForm() {
-        nameField.clear();
-        ingredientList.getItems().clear();
-        stepsArea.clear();
+        nameField.clear(); descField.clear(); imgUrlField.clear();
+        ingredientsContainer.getChildren().clear();
+        instructionsContainer.getChildren().clear();
+        tagsContainer.getChildren().clear();
         servingSizeField.setText("1");
+        timeField.clear(); caloriesField.clear(); proteinField.clear(); carbsField.clear(); fatField.clear();
     }
 
     @Override
@@ -198,6 +448,7 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         Platform.runLater(() -> {
             if (RecipeStoreViewModel.PROP_SUCCESS_MESSAGE.equals(evt.getPropertyName())) {
                 sonner.show("Success", (String) evt.getNewValue(), Sonner.Type.SUCCESS);
+                toggleView(true); // Return to list on success
             } else if (RecipeStoreViewModel.PROP_ERROR_MESSAGE.equals(evt.getPropertyName())) {
                 sonner.show("Error", (String) evt.getNewValue(), Sonner.Type.ERROR);
             }

@@ -1,11 +1,38 @@
 package com.mealplanner.app;
 
 import com.mealplanner.interface_adapter.ViewManagerModel;
-import com.mealplanner.interface_adapter.controller.*;
-import com.mealplanner.interface_adapter.presenter.*;
-import com.mealplanner.interface_adapter.view_model.*;
+import com.mealplanner.interface_adapter.controller.AdjustServingSizeController;
+import com.mealplanner.interface_adapter.controller.BrowseRecipeController;
+import com.mealplanner.interface_adapter.controller.LoginController;
+import com.mealplanner.interface_adapter.controller.SearchByIngredientsController;
+import com.mealplanner.interface_adapter.controller.SignupController;
+import com.mealplanner.interface_adapter.controller.StoreRecipeController;
+import com.mealplanner.interface_adapter.controller.ViewScheduleController;
+import com.mealplanner.interface_adapter.presenter.AdjustServingSizePresenter;
+import com.mealplanner.interface_adapter.presenter.BrowseRecipePresenter;
+import com.mealplanner.interface_adapter.presenter.LoginPresenter;
+import com.mealplanner.interface_adapter.presenter.SearchByIngredientsPresenter;
+import com.mealplanner.interface_adapter.presenter.SignupPresenter;
+import com.mealplanner.interface_adapter.presenter.StoreRecipePresenter;
+import com.mealplanner.interface_adapter.presenter.ViewSchedulePresenter;
+import com.mealplanner.interface_adapter.view_model.LoginViewModel;
+import com.mealplanner.interface_adapter.view_model.RecipeBrowseViewModel;
+import com.mealplanner.interface_adapter.view_model.RecipeDetailViewModel;
+import com.mealplanner.interface_adapter.view_model.RecipeSearchViewModel;
+import com.mealplanner.interface_adapter.view_model.RecipeStoreViewModel;
+import com.mealplanner.interface_adapter.view_model.ScheduleViewModel;
+import com.mealplanner.interface_adapter.view_model.SignupViewModel;
 import com.mealplanner.repository.impl.FileRecipeRepository;
-import com.mealplanner.view.*;
+import com.mealplanner.view.BrowseRecipeView;
+import com.mealplanner.view.DashboardView;
+import com.mealplanner.view.LoginView;
+import com.mealplanner.view.ProfileSettingsView;
+import com.mealplanner.view.RecipeDetailView;
+import com.mealplanner.view.ScheduleView;
+import com.mealplanner.view.SearchByIngredientsView;
+import com.mealplanner.view.SignupView;
+import com.mealplanner.view.StoreRecipeView;
+import com.mealplanner.view.ViewManager;
 
 public class AppBuilder {
     private ViewManager viewManager;
@@ -33,18 +60,24 @@ public class AppBuilder {
         var scheduleInteractor = UseCaseFactory.createViewScheduleInteractor(schedulePresenter);
         ViewScheduleController scheduleController = new ViewScheduleController(scheduleInteractor);
         
+        // Add Meal Flow (Shared Controller)
+        com.mealplanner.interface_adapter.view_model.MealPlanViewModel mealPlanViewModel = new com.mealplanner.interface_adapter.view_model.MealPlanViewModel();
+        com.mealplanner.interface_adapter.presenter.MealPlanPresenter mealPlanPresenter = new com.mealplanner.interface_adapter.presenter.MealPlanPresenter(mealPlanViewModel, viewManagerModel);
+        var addMealInteractor = UseCaseFactory.createAddMealInteractor(mealPlanPresenter, viewManagerModel);
+        com.mealplanner.interface_adapter.controller.AddMealController addMealController = new com.mealplanner.interface_adapter.controller.AddMealController(addMealInteractor);
+
         // Build other flows
         buildStoreRecipeFlow();
         buildBrowseRecipeFlow();
         buildSearchByIngredientsFlow();
-        buildAdjustServingSizeFlow();
+        buildAdjustServingSizeFlow(addMealController);
         buildSignupFlow();
         buildLoginFlow(); // Ensure login is built
         
         // Build Schedule View
         ScheduleView scheduleView = new ScheduleView(scheduleViewModel, scheduleController, viewManagerModel);
         viewManager.addView(ViewManager.SCHEDULE_VIEW, scheduleView);
-
+        
         // Build Dashboard View
         DashboardView dashboardView = new DashboardView(viewManagerModel, scheduleViewModel);
         viewManager.addView(ViewManager.DASHBOARD_VIEW, dashboardView);
@@ -87,12 +120,12 @@ public class AppBuilder {
         viewManager.addView(ViewManager.SEARCH_BY_INGREDIENTS_VIEW, view);
     }
 
-    private void buildAdjustServingSizeFlow() {
+    private void buildAdjustServingSizeFlow(com.mealplanner.interface_adapter.controller.AddMealController addMealController) {
         RecipeDetailViewModel viewModel = new RecipeDetailViewModel();
         AdjustServingSizePresenter presenter = new AdjustServingSizePresenter(viewModel);
         var interactor = UseCaseFactory.createAdjustServingSizeInteractor(presenter);
         AdjustServingSizeController controller = new AdjustServingSizeController(interactor);
-        RecipeDetailView view = new RecipeDetailView(viewModel, controller, viewManagerModel);
+        RecipeDetailView view = new RecipeDetailView(viewModel, controller, addMealController, viewManagerModel);
         viewManager.addView(ViewManager.RECIPE_DETAIL_VIEW, view);
     }
 
