@@ -3,29 +3,30 @@ package com.mealplanner.view;
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.LoginController;
 import com.mealplanner.interface_adapter.view_model.LoginViewModel;
+import com.mealplanner.view.component.AlertBanner;
+import com.mealplanner.view.component.Form;
+import com.mealplanner.view.component.Input;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
-import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 
 public class LoginView extends BorderPane implements PropertyChangeListener {
+    public final String viewName = "LoginView";
     private final LoginViewModel loginViewModel;
     private final LoginController loginController;
     private final ViewManagerModel viewManagerModel;
 
-    private TextField usernameField;
+    private Input usernameField;
     private PasswordField passwordField;
-    private Label errorLabel;
-    private Label statusLabel;
+    private AlertBanner errorBanner;
 
     public LoginView(LoginViewModel loginViewModel, LoginController loginController, ViewManagerModel viewManagerModel) {
         if (loginViewModel == null) throw new IllegalArgumentException("LoginViewModel cannot be null");
@@ -37,41 +38,51 @@ public class LoginView extends BorderPane implements PropertyChangeListener {
 
         this.loginViewModel.addPropertyChangeListener(this);
 
+        // Root Styles
+        getStyleClass().add("root");
         setPadding(new Insets(40));
-        getStyleClass().add("bg-white");
 
-        VBox centerBox = new VBox(20);
+        // Card Container
+        VBox centerBox = new VBox(24);
         centerBox.setAlignment(Pos.CENTER);
         centerBox.setMaxWidth(400);
+        centerBox.getStyleClass().add("card-panel");
+        centerBox.setPadding(new Insets(30));
 
         // Title
         Label titleLabel = new Label("Login");
-        titleLabel.getStyleClass().add("title-label");
+        titleLabel.getStyleClass().add("section-title");
+        titleLabel.setStyle("-fx-font-size: 24px; -fx-alignment: center;");
         
+        // Error Banner (Hidden by default)
+        errorBanner = new AlertBanner("Error", "", AlertBanner.Type.DESTRUCTIVE);
+        errorBanner.setVisible(false);
+        errorBanner.setManaged(false);
+
         // Form
-        GridPane formGrid = new GridPane();
-        formGrid.setHgap(10);
-        formGrid.setVgap(15);
-        formGrid.setAlignment(Pos.CENTER);
+        Form form = new Form();
+        form.setPadding(new Insets(0));
 
-        formGrid.add(new Label("Username:"), 0, 0);
-        usernameField = new TextField();
-        usernameField.getStyleClass().add("text-field");
-        formGrid.add(usernameField, 1, 0);
+        usernameField = new Input();
+        usernameField.setPromptText("Enter your username");
+        form.addField("Username", usernameField);
 
-        formGrid.add(new Label("Password:"), 0, 1);
         passwordField = new PasswordField();
-        passwordField.getStyleClass().add("text-field");
-        formGrid.add(passwordField, 1, 1);
+        passwordField.setPromptText("Enter your password");
+        passwordField.getStyleClass().add("input-field"); // Reuse Input style
+        form.addField("Password", passwordField);
 
         // Buttons
+        VBox buttonBox = new VBox(10);
+        buttonBox.setPadding(new Insets(10, 0, 0, 0));
+
         Button loginButton = new Button("Login");
-        loginButton.getStyleClass().add("modern-button");
+        loginButton.getStyleClass().add("primary-button");
         loginButton.setOnAction(e -> performLogin());
         loginButton.setMaxWidth(Double.MAX_VALUE);
 
         Button signupButton = new Button("Sign Up");
-        signupButton.getStyleClass().add("secondary-button");
+        signupButton.getStyleClass().add("ghost-button");
         signupButton.setOnAction(e -> {
             if (this.viewManagerModel != null) {
                 this.viewManagerModel.setActiveView(ViewManager.SIGNUP_VIEW);
@@ -79,17 +90,9 @@ public class LoginView extends BorderPane implements PropertyChangeListener {
         });
         signupButton.setMaxWidth(Double.MAX_VALUE);
 
-        VBox buttonBox = new VBox(10);
         buttonBox.getChildren().addAll(loginButton, signupButton);
 
-        // Status
-        statusLabel = new Label("Please enter your username and password");
-        statusLabel.getStyleClass().add("status-label");
-        
-        errorLabel = new Label("");
-        errorLabel.getStyleClass().add("error-label");
-
-        centerBox.getChildren().addAll(titleLabel, formGrid, buttonBox, statusLabel, errorLabel);
+        centerBox.getChildren().addAll(titleLabel, errorBanner, form, buttonBox);
         setCenter(centerBox);
     }
 
@@ -98,16 +101,27 @@ public class LoginView extends BorderPane implements PropertyChangeListener {
         String password = passwordField.getText();
 
         if (username == null || username.isBlank()) {
-            errorLabel.setText("Please enter a username");
+            showError("Please enter a username");
             return;
         }
         if (password == null || password.isBlank()) {
-            errorLabel.setText("Please enter a password");
+            showError("Please enter a password");
             return;
         }
 
-        errorLabel.setText("");
+        hideError();
         loginController.execute(username.trim(), password);
+    }
+    
+    private void showError(String message) {
+        errorBanner.setDescription(message);
+        errorBanner.setVisible(true);
+        errorBanner.setManaged(true);
+    }
+    
+    private void hideError() {
+        errorBanner.setVisible(false);
+        errorBanner.setManaged(false);
     }
 
     @Override
@@ -115,20 +129,13 @@ public class LoginView extends BorderPane implements PropertyChangeListener {
         Platform.runLater(() -> {
             if ("login".equals(evt.getPropertyName())) {
                 String error = loginViewModel.getError();
-                String loggedInUser = loginViewModel.getLoggedInUser();
-
+                
                 if (error != null && !error.isEmpty()) {
-                    errorLabel.setText(error);
-                    statusLabel.setText("");
-                } else if (loggedInUser != null && !loggedInUser.isEmpty()) {
-                    errorLabel.setText("");
-                    statusLabel.setText("Welcome, " + loggedInUser + "!");
-                    statusLabel.getStyleClass().remove("status-label");
-                    statusLabel.getStyleClass().add("success-label");
-                    // Navigation is handled by LoginPresenter
+                    showError(error);
+                } else {
+                    hideError();
                 }
             }
         });
     }
 }
-

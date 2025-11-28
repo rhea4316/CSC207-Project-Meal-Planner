@@ -4,27 +4,21 @@ import com.mealplanner.entity.MealType;
 import com.mealplanner.entity.Schedule;
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.view_model.ScheduleViewModel;
-import com.mealplanner.view.style.ModernUI;
-
+import com.mealplanner.view.component.*;
+import com.mealplanner.view.util.SvgIconLoader;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.ProgressBar;
-import javafx.scene.control.TextField;
-import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
 import javafx.scene.effect.BlurType;
 import javafx.scene.effect.DropShadow;
-import com.mealplanner.view.util.SvgIconLoader;
-import javafx.scene.Node;
+import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 import javafx.scene.shape.Arc;
 import javafx.scene.shape.ArcType;
 import javafx.scene.shape.Circle;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontPosture;
-import javafx.scene.text.FontWeight;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -41,7 +35,7 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
     private Label calorieValueLabel; // e.g. "1,200 / 2,000"
     private StackPane circularProgressPane;
     private Label remainingCaloriesLabel;
-    private ProgressBar proteinBar, carbsBar, fatBar;
+    private Progress proteinBar, carbsBar, fatBar;
 
     public DashboardView(ViewManagerModel viewManagerModel, ScheduleViewModel scheduleViewModel) {
         this.viewManagerModel = viewManagerModel;
@@ -49,11 +43,6 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         this.scheduleViewModel.addPropertyChangeListener(this);
 
         // 1. Layout & Background
-        setBackground(new Background(new BackgroundFill(
-            ModernUI.BACKGROUND_COLOR, 
-            CornerRadii.EMPTY, 
-            Insets.EMPTY
-        )));
         setPadding(new Insets(30, 40, 30, 40));
 
         // Header with Search and Profile
@@ -61,12 +50,12 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         setTop(header);
         BorderPane.setMargin(header, new Insets(0, 0, 30, 0));
 
-        // Welcome Title - Poppins Semi-Bold (600)
+        // Welcome Title
         Label welcomeLabel = new Label("Welcome back, Eden!");
-        welcomeLabel.setFont(Font.font("Poppins, Segoe UI", FontWeight.SEMI_BOLD, 32));
-        welcomeLabel.setTextFill(ModernUI.TEXT_COLOR);
+        welcomeLabel.getStyleClass().add("dashboard-header");
+        welcomeLabel.setStyle("-fx-font-size: 32px; -fx-font-weight: 600;"); 
+        
         VBox titleBox = new VBox(welcomeLabel);
-        // Increased margin-bottom as requested (approx 20px)
         titleBox.setPadding(new Insets(0, 0, 20, 0)); 
         setTop(new VBox(header, titleBox));
         BorderPane.setMargin(titleBox, new Insets(20, 0, 0, 0));
@@ -120,56 +109,40 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         HBox header = new HBox();
         header.setAlignment(Pos.CENTER_LEFT);
         header.setSpacing(20);
+        header.getStyleClass().add("dashboard-header");
         HBox.setHgrow(header, Priority.ALWAYS);
 
-        // Search Bar with icon
+        // Search Bar
         HBox searchContainer = new HBox(10);
-        searchContainer.setAlignment(Pos.CENTER_LEFT);
-        searchContainer.setPadding(new Insets(0, 15, 0, 15));
-        // Container Style: Light Gray, Height 40px, Radius 10px
-        searchContainer.setBackground(new Background(new BackgroundFill(
-            Color.web("#E5E7EB"),
-            new CornerRadii(10),
-            Insets.EMPTY
-        )));
+        searchContainer.getStyleClass().add("search-container");
         searchContainer.setPrefHeight(40);
         searchContainer.setMaxHeight(40);
         searchContainer.setPrefWidth(400);
         HBox.setHgrow(searchContainer, Priority.NEVER);
         
         // Search icon
-        Node searchIcon = SvgIconLoader.loadIcon("/svg/search.svg", 18, Color.web("#6B7280"));
+        Node searchIcon = SvgIconLoader.loadIcon("/svg/search.svg", 18, Color.web("#717182"));
         if (searchIcon != null) {
             searchContainer.getChildren().add(searchIcon);
         }
         
-        TextField searchBar = new TextField();
+        Input searchBar = new Input();
         searchBar.setPromptText("Search recipes...");
-        searchBar.setStyle("-fx-background-color: transparent; -fx-border-color: transparent;");
-        searchBar.setFont(Font.font("Inter, Segoe UI", 14));
+        searchBar.setStyle("-fx-background-color: transparent; -fx-border-color: transparent;"); // Override Input style for container
         HBox.setHgrow(searchBar, Priority.ALWAYS);
         searchContainer.getChildren().add(searchBar);
 
-        // User Profile with avatar
+        // User Profile
         HBox profileContainer = new HBox(10);
         profileContainer.setAlignment(Pos.CENTER_RIGHT);
         
-        // Circular avatar placeholder
-        Circle avatar = new Circle(20);
-        avatar.setFill(Color.web("#E5E7EB"));
-        avatar.setStroke(Color.web("#D1D5DB"));
-        avatar.setStrokeWidth(2);
+        Avatar avatar = new Avatar(20, null, "EC");
         
-        // User name
         Label userName = new Label("Eden Chang");
-        userName.getStyleClass().add("user-profile");
-        userName.setFont(Font.font("Inter, Segoe UI", FontWeight.MEDIUM, 14)); // Changed to MEDIUM
-        userName.setTextFill(Color.web("#1F2937"));
+        userName.getStyleClass().add("label");
+        userName.setStyle("-fx-font-weight: 500;");
         
-        // Dropdown icon
         Label dropdown = new Label("⌄");
-        dropdown.setFont(Font.font(14));
-        dropdown.setTextFill(Color.web("#6B7280"));
         
         profileContainer.getChildren().addAll(avatar, userName, dropdown);
 
@@ -178,14 +151,13 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
     }
 
     private VBox createTodayMenuSection() {
-        VBox container = ModernUI.createCardPanel();
+        VBox container = new VBox();
+        container.getStyleClass().add("card-panel");
         container.setSpacing(16);
 
         // Section Title
         Label title = new Label("Today's Menu");
         title.getStyleClass().add("section-title");
-        title.setFont(Font.font("Poppins, Segoe UI", FontWeight.SEMI_BOLD, 20));
-        title.setTextFill(ModernUI.TEXT_COLOR);
 
         // Meals Container (Horizontal Grid)
         mealsContainer = new HBox(16);
@@ -197,39 +169,30 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
     }
 
     private VBox createNutritionProgressSection() {
-        VBox container = ModernUI.createCardPanel();
+        VBox container = new VBox();
+        container.getStyleClass().add("card-panel");
         container.setSpacing(20);
         container.setAlignment(Pos.CENTER);
 
-        // Section Title
         Label title = new Label("Nutrition Progress");
         title.getStyleClass().add("section-title");
-        title.setFont(Font.font("Poppins, Segoe UI", FontWeight.SEMI_BOLD, 20));
-        title.setTextFill(ModernUI.TEXT_COLOR);
         title.setAlignment(Pos.CENTER_LEFT);
 
-        // Circular Progress
         circularProgressPane = createCircularProgress();
         
-        // Remaining Calories
         remainingCaloriesLabel = new Label("Remaining: 750");
-        remainingCaloriesLabel.setFont(Font.font("Inter, Segoe UI", 14));
-        remainingCaloriesLabel.setTextFill(ModernUI.TEXT_LIGHT);
+        remainingCaloriesLabel.setStyle("-fx-text-fill: -fx-theme-muted-foreground;");
 
-        // Nutrient Bars
         VBox nutrientBars = new VBox(12);
         
-        // Protein
-        VBox proteinBox = createNutrientBar("Protein (75g / 120g)", 0.625);
-        proteinBar = (ProgressBar) proteinBox.getChildren().get(1);
+        VBox proteinBox = createNutrientBar("Protein (75g / 120g)", 0.625, "protein");
+        proteinBar = (Progress) proteinBox.getChildren().get(1);
         
-        // Carbs
-        VBox carbsBox = createNutrientBar("Carbs (150g / 250g)", 0.60);
-        carbsBar = (ProgressBar) carbsBox.getChildren().get(1);
+        VBox carbsBox = createNutrientBar("Carbs (150g / 250g)", 0.60, "carbs");
+        carbsBar = (Progress) carbsBox.getChildren().get(1);
         
-        // Fat
-        VBox fatBox = createNutrientBar("Fat (45g / 70g)", 0.643);
-        fatBar = (ProgressBar) fatBox.getChildren().get(1);
+        VBox fatBox = createNutrientBar("Fat (45g / 70g)", 0.643, "fat");
+        fatBar = (Progress) fatBox.getChildren().get(1);
 
         nutrientBars.getChildren().addAll(proteinBox, carbsBox, fatBox);
 
@@ -241,69 +204,53 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         StackPane stackPane = new StackPane();
         stackPane.setPrefSize(150, 150);
 
-        // Outer circle (background) - Track
         Circle backgroundCircle = new Circle(75);
         backgroundCircle.setFill(Color.TRANSPARENT);
-        backgroundCircle.setStroke(Color.web("#E5E7EB")); // Light Gray Track
-        backgroundCircle.setStrokeWidth(15); // Thickness 15px
+        backgroundCircle.setStroke(Color.web("#ececf0")); // -fx-theme-muted
+        backgroundCircle.setStrokeWidth(15);
 
-        // Progress arc (62% = 223.2 degrees) - Donut Chart
-        Arc progressArc = new Arc(0, 0, 75, 75, 90, -223.2); // Start at top, go clockwise
-        progressArc.setType(ArcType.OPEN); // Open for ring style (stroke only)
+        Arc progressArc = new Arc(0, 0, 75, 75, 90, -223.2);
+        progressArc.setType(ArcType.OPEN);
         progressArc.setFill(null);
-        progressArc.setStroke(Color.web("#4ADE80")); // Mint Green Progress
-        progressArc.setStrokeWidth(15); // Thickness 15px
+        progressArc.setStroke(Color.web("#030213")); // -fx-theme-primary
+        progressArc.setStrokeWidth(15);
         progressArc.setStrokeLineCap(javafx.scene.shape.StrokeLineCap.ROUND);
 
-        // Text in center
         VBox textBox = new VBox(5);
         textBox.setAlignment(Pos.CENTER);
         calorieValueLabel = new Label("1250 / 2000");
-        calorieValueLabel.setFont(Font.font("Inter, Segoe UI", FontWeight.SEMI_BOLD, 20)); // Changed to SEMI_BOLD
-        calorieValueLabel.setTextFill(ModernUI.TEXT_COLOR);
+        calorieValueLabel.setStyle("-fx-font-weight: 600; -fx-font-size: 20px;");
         
         Label caloriesLabel = new Label("Calories");
-        caloriesLabel.setFont(Font.font("Inter, Segoe UI", 12));
-        caloriesLabel.setTextFill(ModernUI.TEXT_LIGHT);
+        caloriesLabel.setStyle("-fx-text-fill: -fx-theme-muted-foreground; -fx-font-size: 12px;");
         
         textBox.getChildren().addAll(calorieValueLabel, caloriesLabel);
 
-        // Add elements: background circle, progress arc, then text on top
         stackPane.getChildren().addAll(backgroundCircle, progressArc, textBox);
         return stackPane;
     }
 
-    private VBox createNutrientBar(String labelText, double progress) {
-        VBox container = new VBox(5); // 5px vertical spacing
+    private VBox createNutrientBar(String labelText, double progress, String type) {
+        VBox container = new VBox(5);
         
-        // Label above the bar
         Label label = new Label(labelText);
-        label.setFont(Font.font("Inter, Segoe UI", 14));
-        label.setTextFill(ModernUI.TEXT_COLOR);
+        label.setStyle("-fx-font-size: 14px;");
 
-        // Progress bar
-        ProgressBar bar = new ProgressBar(progress);
-        bar.setPrefHeight(8);
-        bar.setMaxWidth(Double.MAX_VALUE);
-        bar.getStyleClass().add("nutrient-progress-bar");
-        // Mint green fill, light gray track
-        bar.setStyle("-fx-accent: #4ADE80; " +
-                     "-fx-control-inner-background: #E5E7EB; " +
-                     "-fx-background-radius: 4px; " +
-                     "-fx-padding: 0px;");
+        Progress bar = new Progress(progress);
+        // Optional: set color based on type via CSS or setStyle, currently Progress uses primary.
+        // For now, keep default.
 
         container.getChildren().addAll(label, bar);
         return container;
     }
 
     private VBox createRecipeSuggestionsSection() {
-        VBox container = ModernUI.createCardPanel();
+        VBox container = new VBox();
+        container.getStyleClass().add("card-panel");
         container.setSpacing(16);
 
         Label title = new Label("Recipe Suggestions");
         title.getStyleClass().add("section-title");
-        title.setFont(Font.font("Poppins, Segoe UI", FontWeight.SEMI_BOLD, 20));
-        title.setTextFill(ModernUI.TEXT_COLOR);
 
         GridPane recipeGrid = new GridPane();
         recipeGrid.setHgap(16);
@@ -331,20 +278,14 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
 
         Region imagePlaceholder = new Region();
         imagePlaceholder.setPrefSize(60, 60);
-        imagePlaceholder.setBackground(new Background(new BackgroundFill(
-            Color.web("#E5E7EB"),
-            new CornerRadii(8),
-            Insets.EMPTY
-        )));
+        imagePlaceholder.setStyle("-fx-background-color: -fx-theme-muted; -fx-background-radius: 8px;");
 
         VBox textBox = new VBox(4);
         Label nameLabel = new Label(name);
-        nameLabel.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 14));
-        nameLabel.setTextFill(ModernUI.TEXT_COLOR);
+        nameLabel.setStyle("-fx-font-weight: normal; -fx-font-size: 14px;");
         
         Label calLabel = new Label(calories);
-        calLabel.setFont(Font.font("Segoe UI", 12));
-        calLabel.setTextFill(ModernUI.TEXT_LIGHT);
+        calLabel.setStyle("-fx-text-fill: -fx-theme-muted-foreground; -fx-font-size: 12px;");
 
         textBox.getChildren().addAll(nameLabel, calLabel);
         item.getChildren().addAll(imagePlaceholder, textBox);
@@ -352,23 +293,25 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
     }
 
     private VBox createQuickActionsSection() {
-        VBox container = ModernUI.createCardPanel();
+        VBox container = new VBox();
+        container.getStyleClass().add("card-panel");
         container.setSpacing(16);
 
         Label title = new Label("Quick Actions");
         title.getStyleClass().add("section-title");
-        title.setFont(Font.font("Poppins, Segoe UI", FontWeight.SEMI_BOLD, 20));
-        title.setTextFill(ModernUI.TEXT_COLOR);
 
         VBox actionButtons = new VBox(10);
         
-        Button addSnack = createOutlineButton("Add Snack");
+        Button addSnack = new Button("Add Snack");
+        addSnack.getStyleClass().add("outline-button");
         addSnack.setMaxWidth(Double.MAX_VALUE);
         
-        Button logWater = createOutlineButton("Log Water");
+        Button logWater = new Button("Log Water");
+        logWater.getStyleClass().add("outline-button");
         logWater.setMaxWidth(Double.MAX_VALUE);
         
-        Button createRecipe = createOutlineButton("Create Recipe");
+        Button createRecipe = new Button("Create Recipe");
+        createRecipe.getStyleClass().add("outline-button");
         createRecipe.setMaxWidth(Double.MAX_VALUE);
         createRecipe.setOnAction(e -> viewManagerModel.setActiveView(ViewManager.STORE_RECIPE_VIEW));
 
@@ -380,30 +323,17 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
 
     private VBox createMealCard(String mealType, String mealName, String icon, int calories) {
         VBox card = new VBox(10);
-        card.setAlignment(Pos.CENTER);
-        card.setPadding(new Insets(20));
+        card.getStyleClass().add("meal-card");
         card.setPrefWidth(Region.USE_COMPUTED_SIZE);
         card.setMinHeight(250);
         
         boolean isPlanned = !mealName.equals("Not Planned") && mealName != null && !mealName.isEmpty();
-        // Active if it's Lunch and Planned (per request to make Lunch the active card)
-        boolean isActive = mealType.equalsIgnoreCase("Lunch") && isPlanned;
+        boolean isActive = mealType.equalsIgnoreCase("Lunch") && isPlanned; // Demo logic
         
         if (isPlanned) {
-            card.getStyleClass().add("meal-card");
-            
             if (isActive) {
-                // ACTIVE STATE (Lunch)
                 card.getStyleClass().add("active");
-                // Full mint green background
-                card.setBackground(new Background(new BackgroundFill(
-                    Color.web("#4ADE80"),
-                    new CornerRadii(20),
-                    Insets.EMPTY
-                )));
-                card.setBorder(null);
                 
-                // Shadow
                 DropShadow cardShadow = new DropShadow();
                 cardShadow.setBlurType(BlurType.GAUSSIAN);
                 cardShadow.setColor(Color.rgb(0, 0, 0, 0.1));
@@ -411,83 +341,37 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
                 cardShadow.setOffsetY(2);
                 card.setEffect(cardShadow);
                 
-                // Image container at top (Only for Active)
-                Region imagePlaceholder = new Region();
-                imagePlaceholder.setPrefSize(Region.USE_COMPUTED_SIZE, 100); // Approx 100px as requested
-                imagePlaceholder.setMinHeight(100);
-                imagePlaceholder.setMaxHeight(100);
-                imagePlaceholder.setBackground(new Background(new BackgroundFill(
-                    Color.web("#E5E7EB"),
-                    new CornerRadii(12), // Rounded corners
-                    Insets.EMPTY
-                )));
+                // Image placeholder via Skeleton (simulating loading or just placeholder)
+                Skeleton imagePlaceholder = new Skeleton(100, 100);
+                imagePlaceholder.setPrefWidth(Region.USE_COMPUTED_SIZE);
                 
-                // Meal Name - White
                 Label nameLabel = new Label(mealName);
-                nameLabel.setFont(Font.font("Poppins, Segoe UI", FontWeight.SEMI_BOLD, 16)); // Changed to SEMI_BOLD
-                nameLabel.setTextFill(Color.WHITE); // White text
+                nameLabel.getStyleClass().add("meal-card-title");
                 nameLabel.setWrapText(true);
                 nameLabel.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
 
-                // Calories - White
                 Label calLabel = new Label(calories + " kcal");
-                calLabel.setFont(Font.font("Inter, Segoe UI", 14));
-                calLabel.setTextFill(Color.WHITE); // White text
+                calLabel.getStyleClass().add("meal-card-subtitle");
+                calLabel.setStyle("-fx-text-fill: rgba(255,255,255,0.8);");
 
-                // Action Button - White background with Green text (Inverted)
-                Button viewBtn = new Button("Plan Meal"); // Text from prompt: 'Plan Meal' button on this card
-                // Wait, if it's planned, usually it's "View Recipe". 
-                // Prompt says: "Button: Change the 'Plan Meal' button on this card to White background with Green text"
-                // But 'Plan Meal' is usually for empty slots. If it's active, maybe it means "View Meal"?
-                // Or maybe the prompt assumes the active card has a "Plan Meal" button?
-                // Let's use "View Meal" or "Edit" if it's planned. 
-                // However, looking at the prompt: "Button: Change the 'Plan Meal' button on this card..." 
-                // The prompt might be referring to the main action button.
-                // I will label it "View Meal" if planned, but style it as requested.
-                viewBtn.setText("View Meal"); 
-                
-                viewBtn.setBackground(new Background(new BackgroundFill(
-                    Color.WHITE,
-                    new CornerRadii(50),
-                    Insets.EMPTY
-                )));
-                viewBtn.setTextFill(Color.web("#4ADE80")); // Green text
-                viewBtn.setFont(Font.font("Poppins, Segoe UI", FontWeight.MEDIUM, 14)); // Changed to MEDIUM
-                viewBtn.setPadding(new Insets(8, 16, 8, 16));
+                Button viewBtn = new Button("View Meal");
+                viewBtn.setStyle("-fx-background-color: #ffffff; -fx-text-fill: #030213; -fx-background-radius: 50px; -fx-font-weight: 500;");
                 viewBtn.setMaxWidth(Double.MAX_VALUE);
                 viewBtn.setOnAction(e -> viewManagerModel.setActiveView(ViewManager.BROWSE_RECIPE_VIEW));
                 
                 card.getChildren().addAll(imagePlaceholder, nameLabel, calLabel, viewBtn);
 
             } else {
-                // INACTIVE PLANNED STATE (Breakfast/Dinner if planned)
-                // White background, Dark text
-                card.setBackground(new Background(new BackgroundFill(
-                    Color.WHITE,
-                    new CornerRadii(20),
-                    Insets.EMPTY
-                )));
-                card.setBorder(new Border(new BorderStroke(
-                    Color.web("#E5E7EB"),
-                    BorderStrokeStyle.SOLID,
-                    new CornerRadii(20),
-                    new BorderWidths(1)
-                )));
-                
-                // No Image for inactive per prompt implication ("Insert ... at the top of the active card")
-
                 Label nameLabel = new Label(mealName);
-                nameLabel.setFont(Font.font("Poppins, Segoe UI", FontWeight.SEMI_BOLD, 16)); // Changed to SEMI_BOLD
-                nameLabel.setTextFill(Color.web("#1F2937")); // Dark text
+                nameLabel.getStyleClass().add("meal-card-title");
                 nameLabel.setWrapText(true);
                 nameLabel.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
 
                 Label calLabel = new Label(calories + " kcal");
-                calLabel.setFont(Font.font("Inter, Segoe UI", 14));
-                calLabel.setTextFill(Color.web("#4B5563")); // Gray text
+                calLabel.getStyleClass().add("meal-card-subtitle");
 
-                // Ghost Button
-                Button viewBtn = ModernUI.createGhostButton("View Meal");
+                Button viewBtn = new Button("View Meal");
+                viewBtn.getStyleClass().add("ghost-button");
                 viewBtn.setMaxWidth(Double.MAX_VALUE);
                 viewBtn.setOnAction(e -> viewManagerModel.setActiveView(ViewManager.BROWSE_RECIPE_VIEW));
 
@@ -495,51 +379,27 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
             }
             
         } else {
-            // EMPTY STATE (Not Planned)
-            // Should look like Inactive Card (White with Dark text)
-            card.getStyleClass().add("meal-card");
-            card.setBackground(new Background(new BackgroundFill(
-                Color.WHITE,
-                new CornerRadii(20),
-                Insets.EMPTY
-            )));
-            card.setBorder(new Border(new BorderStroke(
-                Color.web("#E5E7EB"),
-                BorderStrokeStyle.SOLID,
-                new CornerRadii(20),
-                new BorderWidths(1)
-            )));
-            
+            // Empty State
             Label iconLabel = new Label(icon);
-            iconLabel.setFont(Font.font("Segoe UI Emoji", 48));
+            iconLabel.setStyle("-fx-font-size: 48px;");
             
             Label typeLabel = new Label(mealType);
-            typeLabel.setFont(Font.font("Poppins, Segoe UI", FontWeight.SEMI_BOLD, 16)); // Changed to SEMI_BOLD
-            typeLabel.setTextFill(ModernUI.TEXT_COLOR);
+            typeLabel.getStyleClass().add("meal-card-title");
             
             Label emptyLabel = new Label("Not Planned");
-            emptyLabel.setFont(Font.font("Inter, Segoe UI", FontPosture.ITALIC, 14));
-            emptyLabel.setTextFill(Color.web("#9CA3AF"));
+            emptyLabel.getStyleClass().add("meal-card-subtitle");
+            emptyLabel.setStyle("-fx-font-style: italic;");
 
             VBox buttonBox = new VBox(5);
-            // Ghost Button for Generate/Plan to not compete
-            Button planBtn = ModernUI.createGhostButton("Plan Meal");
+            Button planBtn = new Button("Plan Meal");
+            planBtn.getStyleClass().add("ghost-button");
             planBtn.setMaxWidth(Double.MAX_VALUE);
             planBtn.setOnAction(e -> viewManagerModel.setActiveView(ViewManager.SCHEDULE_VIEW));
             
-            // Generate button
             Button generateBtn = new Button("Generate");
             generateBtn.getStyleClass().add("secondary-button");
+            generateBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: -fx-theme-muted-foreground;");
             generateBtn.setMaxWidth(Double.MAX_VALUE);
-            generateBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: gray; -fx-border-color: transparent;"); 
-            // Or just make it very subtle as requested: "subtle 'Ghost Button' (transparent bg, thin grey border)"
-            // I'll actually use the Ghost styling for Plan Meal as it is the main action for empty, 
-            // but the prompt says "Ensure the 'Generate' button is styled as a subtle 'Ghost Button'".
-            // And "'Plan Meal' button... to White background with Green text" was for the ACTIVE card.
-            // For inactive cards, it says "Button Consistency: Ensure the 'Generate' button is styled as a subtle 'Ghost Button'".
-            
-            // Let's style 'Plan Meal' as the primary ghost, and Generate as secondary?
-            // I'll style Plan Meal as Ghost.
             
             buttonBox.getChildren().addAll(planBtn, generateBtn);
             VBox.setVgrow(iconLabel, Priority.ALWAYS);
@@ -548,39 +408,6 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
 
         return card;
     }
-
-    private Button createOutlineButton(String text) {
-        Button btn = new Button(text);
-        btn.setBackground(new Background(new BackgroundFill(
-            Color.WHITE,
-            new CornerRadii(50),
-            Insets.EMPTY
-        )));
-        btn.setBorder(new Border(new BorderStroke(
-            Color.web("#4ADE80"),
-            BorderStrokeStyle.SOLID,
-            new CornerRadii(50),
-            new BorderWidths(1)
-        )));
-        btn.setTextFill(Color.web("#1F2937"));
-        btn.setFont(Font.font("Poppins, Segoe UI", FontWeight.MEDIUM, 14)); // Changed to MEDIUM
-        btn.setPadding(new Insets(12, 16, 12, 16));
-        btn.setCursor(javafx.scene.Cursor.HAND);
-        
-        btn.setOnMouseEntered(e -> btn.setBackground(new Background(new BackgroundFill(
-            Color.web("#F0FDF4"),
-            new CornerRadii(50),
-            Insets.EMPTY
-        ))));
-        btn.setOnMouseExited(e -> btn.setBackground(new Background(new BackgroundFill(
-            Color.WHITE,
-            new CornerRadii(50),
-            Insets.EMPTY
-        ))));
-        
-        return btn;
-    }
-
 
     @Override
     public void propertyChange(PropertyChangeEvent evt) {

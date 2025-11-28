@@ -39,6 +39,7 @@ public class AppBuilder {
         buildSearchByIngredientsFlow();
         buildAdjustServingSizeFlow();
         buildSignupFlow();
+        buildLoginFlow(); // Ensure login is built
         
         // Build Schedule View
         ScheduleView scheduleView = new ScheduleView(scheduleViewModel, scheduleController, viewManagerModel);
@@ -47,6 +48,10 @@ public class AppBuilder {
         // Build Dashboard View
         DashboardView dashboardView = new DashboardView(viewManagerModel, scheduleViewModel);
         viewManager.addView(ViewManager.DASHBOARD_VIEW, dashboardView);
+        
+        // Build Profile View (Dummy for now, matching Sidebar)
+        ProfileSettingsView profileView = new ProfileSettingsView(viewManagerModel, "Eden Chang");
+        viewManager.addView(ViewManager.PROFILE_SETTINGS_VIEW, profileView);
 
         // Set initial view - use ViewManager's switchToView to ensure proper display
         viewManager.switchToView(ViewManager.DASHBOARD_VIEW);
@@ -98,5 +103,14 @@ public class AppBuilder {
         SignupController controller = new SignupController(interactor);
         SignupView view = new SignupView(viewModel, controller, viewManagerModel);
         viewManager.addView(ViewManager.SIGNUP_VIEW, view);
+    }
+    
+    private void buildLoginFlow() {
+        LoginViewModel viewModel = new LoginViewModel();
+        LoginPresenter presenter = new LoginPresenter(viewModel, viewManagerModel);
+        var interactor = UseCaseFactory.createLoginInteractor(presenter);
+        LoginController controller = new LoginController(interactor);
+        LoginView view = new LoginView(viewModel, controller, viewManagerModel);
+        viewManager.addView(ViewManager.LOGIN_VIEW, view);
     }
 }

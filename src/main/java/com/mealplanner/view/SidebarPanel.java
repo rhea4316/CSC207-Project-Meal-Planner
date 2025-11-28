@@ -9,6 +9,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 
@@ -18,10 +19,11 @@ import java.beans.PropertyChangeListener;
 public class SidebarPanel extends VBox implements PropertyChangeListener {
     private final ViewManagerModel viewManagerModel;
     private Button currentActiveButton;
+    private Label userLabel;
 
-    // Colors
-    private static final Color ACTIVE_TEXT_COLOR = Color.WHITE;
-    private static final Color INACTIVE_TEXT_COLOR = Color.web("#374151");
+    // Colors matching style.css
+    private static final Color ACTIVE_TEXT_COLOR = Color.web("#fbfbfb"); 
+    private static final Color INACTIVE_TEXT_COLOR = Color.web("#717182");
 
     // Helper class to store button data
     private static class MenuItemData {
@@ -41,29 +43,34 @@ public class SidebarPanel extends VBox implements PropertyChangeListener {
         this.viewManagerModel.addPropertyChangeListener(this);
         
         getStyleClass().add("sidebar");
-        setSpacing(10);
-        setPadding(new Insets(20));
         setMinWidth(240);
 
-        // Logo/Menu Icon - Smaller and better aligned
-        Label menuIcon = new Label("☰");
-        menuIcon.setFont(javafx.scene.text.Font.font(20));
-        menuIcon.setPadding(new Insets(0, 0, 30, 0));
-        getChildren().add(menuIcon);
+        // Logo
+        Label logo = new Label("PlanEat");
+        logo.getStyleClass().add("sidebar-logo");
+        getChildren().add(logo);
 
         // Menu Items with Icons
         addMenuItem("Dashboard", ViewManager.DASHBOARD_VIEW, "/svg/dashboard-fill.svg", "/svg/dashboard.svg");
-        addMenuItem("Weekly Plan", ViewManager.SCHEDULE_VIEW, "/svg/weekly-plan.svg", "/svg/weekly-plan.svg");
+        addMenuItem("Weekly Plan", ViewManager.SCHEDULE_VIEW, "/svg/weekly-plan-fill.svg", "/svg/weekly-plan.svg");
         addMenuItem("Find by Ingredients", ViewManager.SEARCH_BY_INGREDIENTS_VIEW, "/svg/search.svg", "/svg/search.svg");
-        addMenuItem("My Cookbook", ViewManager.STORE_RECIPE_VIEW, "/svg/cookbook.svg", "/svg/cookbook.svg");
-        addMenuItem("Recipe Catalog", ViewManager.BROWSE_RECIPE_VIEW, "/svg/shopping-basket.svg", "/svg/shopping-basket.svg");
+        addMenuItem("My Cookbook", ViewManager.STORE_RECIPE_VIEW, "/svg/cookbook-fill.svg", "/svg/cookbook.svg");
+        addMenuItem("Recipe Catalog", ViewManager.BROWSE_RECIPE_VIEW, "/svg/shopping-basket-fill.svg", "/svg/shopping-basket.svg");
         
-        // User Profile (Spacer then Label)
-        VBox spacer = new VBox();
+        // Spacer
+        Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
         getChildren().add(spacer);
         
-        Label userLabel = new Label("Logged in as User");
+        // Separator (New)
+        com.mealplanner.view.component.Separator separator = new com.mealplanner.view.component.Separator();
+        separator.setPadding(new Insets(10, 0, 10, 0));
+        getChildren().add(separator);
+        
+        // Profile Section
+        addMenuItem("Profile Settings", ViewManager.PROFILE_SETTINGS_VIEW, "/svg/users.svg", "/svg/users.svg");
+
+        userLabel = new Label("Logged in as User");
         userLabel.getStyleClass().add("sidebar-user-label");
         getChildren().add(userLabel);
         
@@ -81,7 +88,7 @@ public class SidebarPanel extends VBox implements PropertyChangeListener {
         HBox contentBox = new HBox(12);
         contentBox.setAlignment(Pos.CENTER_LEFT);
         
-        // Load initial icon (inactive) - Dark gray
+        // Load initial icon (inactive)
         Node icon = SvgIconLoader.loadIcon(inactiveIconPath, 20, INACTIVE_TEXT_COLOR);
         if (icon != null) {
             contentBox.getChildren().add(icon);
@@ -112,7 +119,6 @@ public class SidebarPanel extends VBox implements PropertyChangeListener {
             
             // Update Icon
             if (!contentBox.getChildren().isEmpty()) {
-                // Reload icon
                 Node newIcon = SvgIconLoader.loadIcon(targetIconPath, 20, targetColor);
                 if (newIcon != null) {
                     contentBox.getChildren().set(0, newIcon);
@@ -154,6 +160,12 @@ public class SidebarPanel extends VBox implements PropertyChangeListener {
                     }
                 }
             }
+        }
+    }
+
+    public void setUsername(String username) {
+        if (userLabel != null) {
+            userLabel.setText("Logged in as " + username);
         }
     }
 

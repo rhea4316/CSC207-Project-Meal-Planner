@@ -6,9 +6,11 @@ import com.mealplanner.interface_adapter.controller.StoreRecipeController;
 import com.mealplanner.interface_adapter.view_model.RecipeStoreViewModel;
 import com.mealplanner.util.NumberUtil;
 import com.mealplanner.util.StringUtil;
+import com.mealplanner.view.component.*;
+// Remove ambiguous Button import, use full class names or standard Button
+
 import javafx.application.Platform;
 import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 
@@ -25,20 +27,21 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
     @SuppressWarnings("unused")
     private final ViewManagerModel viewManagerModel;
 
-    private TextField nameField;
-    private TextField ingredientQtyField;
-    private ComboBox<Unit> unitCombo;
-    private TextField ingredientNameField;
+    private Input nameField;
+    private Input ingredientQtyField;
+    private Select<Unit> unitCombo;
+    private Input ingredientNameField;
     private ListView<String> ingredientList;
-    private TextArea stepsArea;
-    private TextField servingSizeField;
-    private Label statusLabel;
+    private com.mealplanner.view.component.Textarea stepsArea;
+    private Input servingSizeField;
+    
+    // Notifications
+    private Sonner sonner;
 
     public StoreRecipeView(StoreRecipeController controller, RecipeStoreViewModel viewModel, ViewManagerModel viewManagerModel) {
         if (controller == null) throw new IllegalArgumentException("Controller cannot be null");
         
         this.controller = controller;
-        // viewModel and viewManagerModel are stored for potential future use (e.g., navigation, error display)
         this.viewModel = viewModel;
         this.viewManagerModel = viewManagerModel;
 
@@ -46,89 +49,101 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
             viewModel.addPropertyChangeListener(this);
         }
 
-        setPadding(new Insets(20));
-        getStyleClass().add("bg-white");
+        // Root Style
+        getStyleClass().add("root");
+        setPadding(new Insets(30, 40, 30, 40));
 
         // Title
         Label titleLabel = new Label("Create New Recipe");
-        titleLabel.getStyleClass().add("title-label");
+        titleLabel.getStyleClass().add("section-title");
+        titleLabel.setStyle("-fx-font-size: 32px;"); 
         setTop(titleLabel);
 
         // Form
         createForm();
+        
+        // Setup Sonner for notifications
+        sonner = new Sonner();
     }
 
     private void createForm() {
-        GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(15);
-        grid.setPadding(new Insets(20));
-
-        int row = 0;
-
-        // Name
-        grid.add(new Label("Recipe Name:"), 0, row);
-        nameField = new TextField();
-        grid.add(nameField, 1, row++);
-
-        // Ingredient Input
-        grid.add(new Label("Add Ingredient:"), 0, row);
-        HBox ingBox = new HBox(5);
-        ingredientQtyField = new TextField();
-        ingredientQtyField.setPromptText("Qty");
-        ingredientQtyField.setPrefWidth(50);
+        VBox container = new VBox();
+        container.getStyleClass().add("card-panel");
+        container.setPadding(new Insets(30));
+        container.setMaxWidth(800);
         
-        unitCombo = new ComboBox<>();
+        Form form = new Form();
+        form.setPadding(new Insets(0));
+
+        // 1. Name
+        nameField = new Input();
+        nameField.setPromptText("Recipe Name (e.g., Grilled Chicken Salad)");
+        form.addField("Recipe Name", nameField);
+
+        // 2. Ingredients
+        VBox ingSection = new VBox(10);
+        Label ingLabel = new Label("Ingredients");
+        ingLabel.getStyleClass().add("form-label");
+        
+        HBox ingBox = new HBox(10);
+        
+        ingredientQtyField = new Input();
+        ingredientQtyField.setPromptText("Qty");
+        ingredientQtyField.setPrefWidth(80);
+        
+        unitCombo = new Select<>();
         unitCombo.getItems().addAll(Unit.values());
         unitCombo.setPromptText("Unit");
+        unitCombo.setPrefHeight(40);
+        unitCombo.setPrefWidth(100);
         
-        ingredientNameField = new TextField();
-        ingredientNameField.setPromptText("Name");
+        ingredientNameField = new Input();
+        ingredientNameField.setPromptText("Ingredient Name");
+        HBox.setHgrow(ingredientNameField, Priority.ALWAYS);
         
-        Button addIngBtn = new Button("Add");
+        javafx.scene.control.Button addIngBtn = new javafx.scene.control.Button("Add");
         addIngBtn.getStyleClass().add("secondary-button");
+        addIngBtn.setPrefHeight(40);
         addIngBtn.setOnAction(e -> addIngredient());
         
         ingBox.getChildren().addAll(ingredientQtyField, unitCombo, ingredientNameField, addIngBtn);
-        grid.add(ingBox, 1, row++);
-
-        // Ingredient List
-        grid.add(new Label("Ingredients:"), 0, row);
+        
         ingredientList = new ListView<>();
-        ingredientList.setPrefHeight(100);
-        grid.add(ingredientList, 1, row++);
+        ingredientList.setPrefHeight(150);
+        ingredientList.getStyleClass().add("text-field"); 
+        
+        ingSection.getChildren().addAll(ingLabel, ingBox, ingredientList);
+        form.getChildren().add(ingSection);
 
-        // Steps
-        grid.add(new Label("Instructions:"), 0, row);
-        stepsArea = new TextArea();
+        // 3. Instructions
+        stepsArea = new com.mealplanner.view.component.Textarea();
+        stepsArea.setPromptText("Step 1: ...");
         stepsArea.setPrefRowCount(5);
-        stepsArea.setWrapText(true);
-        grid.add(stepsArea, 1, row++);
+        form.addField("Instructions", stepsArea);
 
-        // Serving Size
-        grid.add(new Label("Serving Size:"), 0, row);
-        servingSizeField = new TextField("1");
-        grid.add(servingSizeField, 1, row++);
+        // 4. Serving Size
+        servingSizeField = new Input("1");
+        servingSizeField.setMaxWidth(100);
+        form.addField("Serving Size", servingSizeField);
 
-        // Save Button
-        Button saveBtn = new Button("Save Recipe");
-        saveBtn.getStyleClass().add("modern-button");
+        // 5. Actions
+        javafx.scene.control.Button saveBtn = new javafx.scene.control.Button("Save Recipe");
+        saveBtn.getStyleClass().add("primary-button");
+        saveBtn.setPrefHeight(45);
+        saveBtn.setPrefWidth(200);
         saveBtn.setOnAction(e -> saveRecipe());
         
-        HBox bottomBox = new HBox(10);
-        bottomBox.setAlignment(Pos.CENTER_LEFT);
-        statusLabel = new Label("");
-        bottomBox.getChildren().addAll(saveBtn, statusLabel);
+        HBox actionBox = new HBox(saveBtn);
+        actionBox.setPadding(new Insets(20, 0, 0, 0));
         
-        grid.add(bottomBox, 1, row);
-
-        setCenter(grid);
+        container.getChildren().addAll(form, actionBox);
+        setCenter(container);
     }
 
     private void addIngredient() {
         String name = StringUtil.safeTrim(ingredientNameField.getText());
         if (StringUtil.isNullOrEmpty(name)) {
-            // Show validation error
+            sonner.show("Error", "Please enter an ingredient name", Sonner.Type.ERROR);
             return;
         }
         
@@ -149,6 +164,11 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
 
     private void saveRecipe() {
         String name = StringUtil.safeTrim(nameField.getText());
+        if (StringUtil.isNullOrEmpty(name)) {
+            sonner.show("Error", "Please enter a recipe name", Sonner.Type.ERROR);
+            return;
+        }
+        
         List<String> ingredients = new ArrayList<>(ingredientList.getItems());
         String stepsRaw = stepsArea.getText();
         List<String> steps = new ArrayList<>();
@@ -177,13 +197,9 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
     public void propertyChange(PropertyChangeEvent evt) {
         Platform.runLater(() -> {
             if (RecipeStoreViewModel.PROP_SUCCESS_MESSAGE.equals(evt.getPropertyName())) {
-                statusLabel.setText((String) evt.getNewValue());
-                statusLabel.getStyleClass().remove("error-label");
-                statusLabel.getStyleClass().add("success-label");
+                sonner.show("Success", (String) evt.getNewValue(), Sonner.Type.SUCCESS);
             } else if (RecipeStoreViewModel.PROP_ERROR_MESSAGE.equals(evt.getPropertyName())) {
-                statusLabel.setText((String) evt.getNewValue());
-                statusLabel.getStyleClass().remove("success-label");
-                statusLabel.getStyleClass().add("error-label");
+                sonner.show("Error", (String) evt.getNewValue(), Sonner.Type.ERROR);
             }
         });
     }

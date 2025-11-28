@@ -5,7 +5,6 @@ import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.SearchByIngredientsController;
 import com.mealplanner.interface_adapter.view_model.RecipeSearchViewModel;
 import com.mealplanner.util.StringUtil;
-import com.mealplanner.view.style.ModernUI;
 
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -16,8 +15,6 @@ import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -38,7 +35,7 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
     // Result Components
     private StackPane resultsContainer; 
     private ScrollPane listScrollPane;
-    private FlowPane listPanel; // Use FlowPane for grid-like card layout
+    private FlowPane listPanel; 
     private VBox loadingPanel;
     private VBox emptyPanel;
     private Label errorLabel;
@@ -58,12 +55,15 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
 
         viewModel.addPropertyChangeListener(this);
 
-        setPadding(new Insets(30));
-        setBackground(new Background(new BackgroundFill(ModernUI.BACKGROUND_COLOR, CornerRadii.EMPTY, Insets.EMPTY)));
+        // Root Style
+        getStyleClass().add("root");
+        setPadding(new Insets(30, 40, 30, 40));
 
         // Header + Search Area
         VBox topBox = new VBox(20);
-        Label titleLabel = ModernUI.createHeaderLabel("Find by Ingredients"); // Updated Title
+        Label titleLabel = new Label("Find by Ingredients");
+        titleLabel.getStyleClass().add("section-title");
+        titleLabel.setStyle("-fx-font-size: 32px;");
         
         VBox searchPanel = createSearchPanel();
         topBox.getChildren().addAll(titleLabel, searchPanel);
@@ -75,15 +75,14 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         
         // Error Label
         errorLabel = new Label("");
-        errorLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
-        errorLabel.setTextFill(Color.RED);
+        errorLabel.setStyle("-fx-text-fill: -fx-theme-destructive; -fx-font-weight: bold;");
         errorLabel.setPadding(new Insets(10, 0, 0, 0));
         setBottom(errorLabel);
     }
 
     private VBox createSearchPanel() {
-        VBox panel = ModernUI.createCardPanel(); // White bg, rounded
-        panel.setPadding(new Insets(20));
+        VBox panel = new VBox();
+        panel.getStyleClass().add("card-panel");
         panel.setSpacing(15);
         
         // 1. Chips Container (Where tags appear)
@@ -99,8 +98,7 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         ingredientsField = new TextField();
         ingredientsField.setPromptText("Type an ingredient and press Enter (e.g., 'Egg')");
         ingredientsField.setPrefHeight(45);
-        ingredientsField.setFont(Font.font("Segoe UI", 16));
-        ingredientsField.setStyle("-fx-background-radius: 10; -fx-border-color: #E0E0E0; -fx-border-radius: 10; -fx-padding: 0 15 0 15; -fx-background-color: white;");
+        ingredientsField.getStyleClass().add("text-field");
         HBox.setHgrow(ingredientsField, Priority.ALWAYS);
 
         // Handle Enter Key for Chip Creation
@@ -111,7 +109,8 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
             }
         });
 
-        searchButton = ModernUI.createPrimaryButton("Find Recipes 🔍");
+        searchButton = new Button("Find Recipes 🔍");
+        searchButton.getStyleClass().add("primary-button");
         searchButton.setPrefHeight(45);
         searchButton.setOnAction(e -> performSearch());
 
@@ -129,25 +128,22 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         }
 
         panel.getChildren().addAll(chipsContainer, inputBox, quickFiltersContainer);
-        
         return panel;
     }
 
     private ToggleButton createFilterButton(String text) {
         ToggleButton btn = new ToggleButton(text);
-        btn.setFont(Font.font("Segoe UI", 13));
-        btn.setStyle("-fx-background-color: #F3F4F6; -fx-text-fill: #4B5563; -fx-background-radius: 20; -fx-border-color: #E5E7EB; -fx-border-radius: 20; -fx-padding: 5 12 5 12;");
-        btn.setCursor(Cursor.HAND);
+        btn.getStyleClass().add("filter-toggle");
         
         btn.selectedProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal) {
-                btn.setStyle("-fx-background-color: #D1FAE5; -fx-text-fill: #065F46; -fx-background-radius: 20; -fx-border-color: #5CDB95; -fx-border-radius: 20; -fx-padding: 5 12 5 12;");
+                btn.setStyle("-fx-background-color: -fx-theme-secondary; -fx-text-fill: -fx-theme-primary; -fx-border-color: -fx-theme-primary; -fx-font-weight: bold;");
                 activeFilters.add(text);
             } else {
-                btn.setStyle("-fx-background-color: #F3F4F6; -fx-text-fill: #4B5563; -fx-background-radius: 20; -fx-border-color: #E5E7EB; -fx-border-radius: 20; -fx-padding: 5 12 5 12;");
+                btn.setStyle(""); // Revert to CSS class style
                 activeFilters.remove(text);
             }
-            // Optional: Trigger search immediately on filter change if ingredients exist
+            // Optional: Trigger search immediately
             if (!ingredientList.isEmpty()) {
                 performSearch();
             }
@@ -159,24 +155,19 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
     private void addIngredientChip(String text) {
         String ingredient = StringUtil.safeTrim(text);
         if (StringUtil.isNullOrEmpty(ingredient)) return;
-        if (ingredientList.contains(ingredient)) return; // Prevent duplicates
+        if (ingredientList.contains(ingredient)) return;
 
         ingredientList.add(ingredient);
 
-        // Create Chip UI
+        // Create Chip UI using CSS
         HBox chip = new HBox(5);
-        chip.setAlignment(Pos.CENTER_LEFT);
-        chip.setStyle("-fx-background-color: #D1FAE5; -fx-background-radius: 20; -fx-padding: 5 12 5 12; -fx-border-color: #5CDB95; -fx-border-radius: 20; -fx-border-width: 1;");
+        chip.getStyleClass().add("chip");
         
         Label label = new Label(ingredient);
-        label.setTextFill(ModernUI.PRIMARY_DARK);
-        label.setFont(Font.font("Segoe UI", FontWeight.SEMI_BOLD, 14));
+        label.getStyleClass().add("label");
 
-        // Delete Button (x)
         Label closeBtn = new Label("✕");
-        closeBtn.setTextFill(ModernUI.PRIMARY_DARK);
-        closeBtn.setCursor(Cursor.HAND);
-        closeBtn.setFont(Font.font("Segoe UI", FontWeight.BOLD, 14));
+        closeBtn.getStyleClass().add("close-button");
         closeBtn.setOnMouseClicked(e -> removeIngredientChip(chip, ingredient));
 
         chip.getChildren().addAll(label, closeBtn);
@@ -192,12 +183,12 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         resultsContainer = new StackPane();
         resultsContainer.setPadding(new Insets(30, 0, 0, 0));
 
-        // 1. List View (FlowPane inside ScrollPane)
+        // 1. List View
         listPanel = new FlowPane();
         listPanel.setHgap(20);
         listPanel.setVgap(20);
         listPanel.setPadding(new Insets(10));
-        listPanel.setBackground(new Background(new BackgroundFill(Color.TRANSPARENT, CornerRadii.EMPTY, Insets.EMPTY)));
+        listPanel.setBackground(Background.EMPTY);
 
         listScrollPane = new ScrollPane(listPanel);
         listScrollPane.setFitToWidth(true);
@@ -208,8 +199,7 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         loadingPanel = new VBox();
         loadingPanel.setAlignment(Pos.CENTER);
         Label loadingLabel = new Label("Searching recipes...");
-        loadingLabel.setFont(Font.font("Segoe UI", 18));
-        loadingLabel.setTextFill(Color.GRAY);
+        loadingLabel.setStyle("-fx-font-size: 18px; -fx-text-fill: -fx-theme-muted-foreground;");
         loadingPanel.getChildren().add(loadingLabel);
 
         // 3. Empty View
@@ -217,11 +207,10 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         emptyPanel.setAlignment(Pos.CENTER);
         
         Label iconLabel = new Label("🍽️");
-        iconLabel.setFont(Font.font("Segoe UI Emoji", 64));
+        iconLabel.setStyle("-fx-font-size: 64px;");
         
         Label emptyLabel = new Label("Add ingredients to start searching");
-        emptyLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 20));
-        emptyLabel.setTextFill(Color.LIGHTGRAY);
+        emptyLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: -fx-theme-muted-foreground;");
         
         emptyPanel.getChildren().addAll(iconLabel, emptyLabel);
 
@@ -240,16 +229,11 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         switch(viewName) {
             case "LOADING": loadingPanel.setVisible(true); break;
             case "EMPTY": emptyPanel.setVisible(true); break;
-            case "LIST":
-                if (listScrollPane != null) {
-                    listScrollPane.setVisible(true);
-                }
-                break;
+            case "LIST": if (listScrollPane != null) listScrollPane.setVisible(true); break;
         }
     }
 
     private void performSearch() {
-        // If user typed something but didn't press enter, add it as a chip first
         String currentText = ingredientsField.getText();
         if (StringUtil.hasContent(currentText)) {
             addIngredientChip(currentText);
@@ -261,7 +245,6 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
             return;
         }
         
-        // Convert list to comma-separated string for controller
         String query = String.join(",", ingredientList);
         
         errorLabel.setText("");
@@ -276,7 +259,6 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
 
         if (recipes == null || recipes.isEmpty()) {
             showView("EMPTY");
-            // Update empty text for no results
             ((Label) emptyPanel.getChildren().get(1)).setText("No recipes found for these ingredients");
         } else {
             for (Recipe recipe : recipes) {
@@ -287,42 +269,34 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
     }
 
     private VBox createRecipeCard(Recipe recipe) {
-        VBox card = ModernUI.createCardPanel();
-        card.setPrefWidth(250); // Fixed width for card grid
+        VBox card = new VBox();
+        card.getStyleClass().add("meal-card");
+        card.setPrefWidth(250);
         card.setMinWidth(250);
         card.setSpacing(10);
         card.setCursor(Cursor.HAND);
 
-        // Thumbnail Placeholder
-        StackPane thumbnail = new StackPane();
+        // Thumbnail
+        Region thumbnail = new Region();
         thumbnail.setPrefHeight(140);
-        thumbnail.setStyle("-fx-background-color: #E0E0E0; -fx-background-radius: 10;");
-        Label imgIcon = new Label("🍲");
-        imgIcon.setFont(Font.font("Segoe UI Emoji", 48));
-        thumbnail.getChildren().add(imgIcon);
+        thumbnail.setStyle("-fx-background-color: -fx-theme-muted; -fx-background-radius: 8px;");
         card.getChildren().add(thumbnail);
 
         // Title
         Label title = new Label(recipe.getName());
-        title.setFont(Font.font("Segoe UI", FontWeight.BOLD, 16));
-        title.setTextFill(ModernUI.TEXT_COLOR);
+        title.getStyleClass().add("meal-card-title");
         title.setWrapText(true);
         card.getChildren().add(title);
 
-        // Summary Info
-        String ingredientCount = recipe.getIngredients() != null ? String.valueOf(recipe.getIngredients().size()) : "0";
-        String calInfo = (recipe.getNutritionInfo() != null) ? recipe.getNutritionInfo().getCalories() + " kcal" : "N/A";
-        
-        // Matching Score Calculation
+        // Matching Logic Display
         int matchCount = 0;
         List<String> recipeIngredients = recipe.getIngredients();
         if (recipeIngredients != null) {
             for (String rIng : recipeIngredients) {
                 for (String uIng : ingredientList) {
-                    // Simple contains check (case-insensitive)
                     if (rIng.toLowerCase().contains(uIng.toLowerCase())) {
                         matchCount++;
-                        break; // Found a match for this recipe ingredient
+                        break;
                     }
                 }
             }
@@ -331,53 +305,38 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         int totalIngredients = recipeIngredients != null ? recipeIngredients.size() : 0;
         int missingCount = totalIngredients - matchCount;
         
-        // Create Badge
         Label badge = new Label();
-        badge.setFont(Font.font("Segoe UI", FontWeight.BOLD, 12));
-        badge.setPadding(new Insets(4, 8, 4, 8));
-        badge.setStyle("-fx-background-radius: 12;");
-
+        badge.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-padding: 4px 8px; -fx-background-radius: 12;");
+        
         if (missingCount == 0) {
             badge.setText("Perfect Match! ⭐");
-            badge.setTextFill(Color.web("#065F46")); // Dark Green
-            badge.setStyle(badge.getStyle() + "-fx-background-color: #D1FAE5;"); // Light Mint
-        } else if (missingCount <= 2) {
-            badge.setText("Missing " + missingCount + " items");
-            badge.setTextFill(Color.web("#92400E")); // Dark Yellow
-            badge.setStyle(badge.getStyle() + "-fx-background-color: #FEF3C7;"); // Light Yellow
+            badge.setTextFill(Color.web("#065F46"));
+            badge.setStyle(badge.getStyle() + "-fx-background-color: #D1FAE5;");
         } else {
             badge.setText("Missing " + missingCount + " items");
-            badge.setTextFill(Color.web("#991B1B")); // Dark Red
-            badge.setStyle(badge.getStyle() + "-fx-background-color: #FEE2E2;"); // Light Red
+            badge.setTextFill(Color.web("#92400E"));
+            badge.setStyle(badge.getStyle() + "-fx-background-color: #FEF3C7;");
         }
-
+        
         HBox badgeContainer = new HBox(badge);
         badgeContainer.setAlignment(Pos.CENTER_LEFT);
         card.getChildren().add(badgeContainer);
 
-        Label infoLabel = new Label("Ingredients: " + ingredientCount + "\n" + calInfo);
-        infoLabel.setFont(Font.font("Segoe UI", 12));
-        infoLabel.setTextFill(Color.GRAY);
+        // Info
+        Label infoLabel = new Label("Ingredients: " + totalIngredients + "\n" + 
+            ((recipe.getNutritionInfo() != null) ? recipe.getNutritionInfo().getCalories() + " kcal" : "N/A"));
+        infoLabel.getStyleClass().add("meal-card-subtitle");
         card.getChildren().add(infoLabel);
 
-        // View Button
-        Button viewBtn = ModernUI.createGhostButton("View Details");
+        // Button
+        Button viewBtn = new Button("View Details");
+        viewBtn.getStyleClass().add("ghost-button");
         viewBtn.setMaxWidth(Double.MAX_VALUE);
-        viewBtn.setOnAction(e -> System.out.println("View Recipe: " + recipe.getName()));
         card.getChildren().add(viewBtn);
 
-        // Hover Effect
-        card.setOnMouseEntered(e -> {
-            card.setBorder(new Border(new BorderStroke(
-                ModernUI.PRIMARY_COLOR, BorderStrokeStyle.SOLID, new CornerRadii(15), new BorderWidths(2)
-            )));
-        });
-        
-        card.setOnMouseExited(e -> {
-             card.setBorder(new Border(new BorderStroke(
-                Color.rgb(220, 220, 220), BorderStrokeStyle.SOLID, new CornerRadii(15), new BorderWidths(1)
-            )));
-        });
+        // Hover
+        card.setOnMouseEntered(e -> card.setStyle("-fx-border-color: -fx-theme-primary; -fx-border-width: 2px;"));
+        card.setOnMouseExited(e -> card.setStyle(""));
 
         return card;
     }

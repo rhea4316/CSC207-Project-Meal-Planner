@@ -5,6 +5,11 @@ import com.mealplanner.entity.Recipe;
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.AdjustServingSizeController;
 import com.mealplanner.interface_adapter.view_model.RecipeDetailViewModel;
+import com.mealplanner.view.component.*;
+// Removed component.Button/TextArea imports to resolve ambiguity, use standard controls with custom components mixed or fully qualify if needed.
+// But here we intended to use the standard ones or wrappers. Let's stick to standard for Button/TextArea if wrappers not strictly needed, or use simple class names if unique.
+// Wait, Textarea wrapper exists. Button wrapper does not exist (only standard Button styled).
+
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -13,6 +18,7 @@ import javafx.scene.layout.*;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.util.ArrayList;
 import java.util.List;
 
 public class RecipeDetailView extends BorderPane implements PropertyChangeListener {
@@ -24,9 +30,10 @@ public class RecipeDetailView extends BorderPane implements PropertyChangeListen
     private Label recipeNameLabel;
     private Label servingSizeValueLabel;
     private VBox ingredientsPanel;
-    private TextArea instructionsArea;
-    private TextArea nutritionArea;
+    private com.mealplanner.view.component.Textarea instructionsArea;
+    private com.mealplanner.view.component.Textarea nutritionArea;
     private Label errorLabel;
+    private com.mealplanner.view.component.Slider servingSlider;
 
     public RecipeDetailView(RecipeDetailViewModel viewModel, AdjustServingSizeController controller, ViewManagerModel viewManagerModel) {
         if (viewModel == null) throw new IllegalArgumentException("ViewModel cannot be null");
@@ -38,38 +45,42 @@ public class RecipeDetailView extends BorderPane implements PropertyChangeListen
 
         viewModel.addPropertyChangeListener(this);
 
-        setPadding(new Insets(20));
-        getStyleClass().add("bg-white");
+        // Root Style
+        getStyleClass().add("root");
+        setPadding(new Insets(30, 40, 30, 40));
         
         createHeader();
         createMainContent();
     }
 
     private void createHeader() {
-        BorderPane headerPanel = new BorderPane();
-        headerPanel.setPadding(new Insets(0, 0, 20, 0));
-
-        Button backButton = new Button("← Back");
-        backButton.getStyleClass().add("secondary-button");
-        backButton.setOnAction(e -> {
-            if (viewManagerModel != null) {
-                viewManagerModel.setActiveView(ViewManager.BROWSE_RECIPE_VIEW);
-            }
-        });
-        headerPanel.setLeft(backButton);
+        VBox headerContainer = new VBox(10);
+        
+        // Breadcrumb
+        List<Breadcrumb.Item> items = new ArrayList<>();
+        items.add(new Breadcrumb.Item("Recipes", () -> viewManagerModel.setActiveView(ViewManager.BROWSE_RECIPE_VIEW)));
+        items.add(new Breadcrumb.Item("Detail", null));
+        
+        Breadcrumb breadcrumb = new Breadcrumb(items);
+        
+        HBox headerPanel = new HBox(20);
+        headerPanel.setAlignment(Pos.CENTER_LEFT);
 
         recipeNameLabel = new Label("Recipe Name");
-        recipeNameLabel.getStyleClass().add("title-label");
-        recipeNameLabel.setAlignment(Pos.CENTER);
-        BorderPane.setAlignment(recipeNameLabel, Pos.CENTER);
-        headerPanel.setCenter(recipeNameLabel);
+        recipeNameLabel.getStyleClass().add("section-title");
+        recipeNameLabel.setStyle("-fx-font-size: 24px;"); 
 
-        setTop(headerPanel);
+        headerPanel.getChildren().addAll(recipeNameLabel);
+
+        headerContainer.getChildren().addAll(breadcrumb, headerPanel, new com.mealplanner.view.component.Separator());
+        setTop(headerContainer);
     }
 
     private void createMainContent() {
         GridPane mainPanel = new GridPane();
-        mainPanel.setHgap(40);
+        mainPanel.setHgap(30);
+        mainPanel.setVgap(20);
+        mainPanel.setPadding(new Insets(20, 0, 0, 0));
         
         ColumnConstraints col1 = new ColumnConstraints();
         col1.setPercentWidth(40);
@@ -79,11 +90,10 @@ public class RecipeDetailView extends BorderPane implements PropertyChangeListen
 
         // --- LEFT PANEL ---
         VBox leftPanel = new VBox(20);
+        leftPanel.getStyleClass().add("card-panel"); 
         
         // Image Placeholder
-        Region imagePanel = new Region();
-        imagePanel.getStyleClass().add("image-panel");
-        imagePanel.setPrefHeight(250);
+        Skeleton imagePanel = new Skeleton(300, 250);
         leftPanel.getChildren().add(imagePanel);
 
         // Nutrition
@@ -91,7 +101,7 @@ public class RecipeDetailView extends BorderPane implements PropertyChangeListen
         Label nutritionTitle = new Label("Nutrition Facts");
         nutritionTitle.getStyleClass().add("section-title");
         
-        nutritionArea = new TextArea();
+        nutritionArea = new com.mealplanner.view.component.Textarea();
         nutritionArea.setEditable(false);
         nutritionArea.setPrefRowCount(6);
         nutritionArea.getStyleClass().add("nutrition-area");
@@ -101,61 +111,70 @@ public class RecipeDetailView extends BorderPane implements PropertyChangeListen
         
         mainPanel.add(leftPanel, 0, 0);
 
-
         // --- RIGHT PANEL ---
         VBox rightPanel = new VBox(20);
+        rightPanel.getStyleClass().add("card-panel");
 
-        // 1. Serving Size
-        HBox servingPanel = new HBox(15);
-        servingPanel.setAlignment(Pos.CENTER_LEFT);
+        // 1. Serving Size (Slider)
+        VBox servingPanel = new VBox(10);
         
-        Label servingLabel = new Label("Serving Size: ");
+        Label servingLabel = new Label("Adjust Servings:");
         servingLabel.getStyleClass().add("section-title");
         
-        Button minusBtn = new Button("-");
-        minusBtn.getStyleClass().add("secondary-button");
-        minusBtn.setOnAction(e -> adjustServingSize(-1));
+        HBox sliderContainer = new HBox(15);
+        sliderContainer.setAlignment(Pos.CENTER_LEFT);
+        
+        servingSlider = new com.mealplanner.view.component.Slider(1, 10, 1);
+        servingSlider.setPrefWidth(300);
+        servingSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
+            int newSize = newVal.intValue();
+            servingSizeValueLabel.setText(String.valueOf(newSize));
+            // Debounce logic typically needed, but calling direct for demo
+            adjustServingSize(newSize);
+        });
         
         servingSizeValueLabel = new Label("1");
         servingSizeValueLabel.getStyleClass().add("serving-size-label");
         
-        Button plusBtn = new Button("+");
-        plusBtn.getStyleClass().add("secondary-button");
-        plusBtn.setOnAction(e -> adjustServingSize(1));
-
-        servingPanel.getChildren().addAll(servingLabel, minusBtn, servingSizeValueLabel, plusBtn);
+        sliderContainer.getChildren().addAll(servingSlider, servingSizeValueLabel);
+        servingPanel.getChildren().addAll(servingLabel, sliderContainer);
         rightPanel.getChildren().add(servingPanel);
 
-        // 2. Ingredients
+        // 2. Tabs for Ingredients & Instructions
+        Tabs tabs = new Tabs();
+        
+        // Ingredients Tab
         VBox ingredientsContainer = new VBox(10);
-        Label ingTitle = new Label("Ingredients");
-        ingTitle.getStyleClass().add("section-title");
-        
-        ingredientsPanel = new VBox(5);
-        ScrollPane ingScroll = new ScrollPane(ingredientsPanel);
+        ingredientsContainer.setPadding(new Insets(15, 0, 0, 0));
+        ingredientsPanel = new VBox(8); 
+        ScrollArea ingScroll = new ScrollArea(ingredientsPanel);
         ingScroll.setFitToWidth(true);
-        ingScroll.setPrefHeight(200);
+        ingScroll.setPrefHeight(300);
+        ingredientsContainer.getChildren().add(ingScroll);
         
-        ingredientsContainer.getChildren().addAll(ingTitle, ingScroll);
-        rightPanel.getChildren().add(ingredientsContainer);
+        tabs.addTab("Ingredients", ingredientsContainer);
 
-        // 3. Instructions
+        // Instructions Tab
         VBox instructionsContainer = new VBox(10);
-        Label instTitle = new Label("Instructions");
-        instTitle.getStyleClass().add("section-title");
-        
-        instructionsArea = new TextArea();
+        instructionsContainer.setPadding(new Insets(15, 0, 0, 0));
+        instructionsArea = new com.mealplanner.view.component.Textarea();
         instructionsArea.setWrapText(true);
         instructionsArea.setEditable(false);
+        instructionsArea.setPrefHeight(300);
+        instructionsContainer.getChildren().add(instructionsArea);
         
-        instructionsContainer.getChildren().addAll(instTitle, instructionsArea);
-        rightPanel.getChildren().add(instructionsContainer);
+        tabs.addTab("Instructions", instructionsContainer);
+
+        rightPanel.getChildren().add(tabs);
         
-        // Expand instructions to fill
-        VBox.setVgrow(instructionsContainer, Priority.ALWAYS);
-        VBox.setVgrow(instructionsArea, Priority.ALWAYS);
+        VBox.setVgrow(tabs, Priority.ALWAYS);
 
         mainPanel.add(rightPanel, 1, 0);
+        
+        // Allow right panel to grow vertically
+        RowConstraints row1 = new RowConstraints();
+        row1.setVgrow(Priority.ALWAYS);
+        mainPanel.getRowConstraints().add(row1);
         
         setCenter(mainPanel);
         
@@ -165,18 +184,10 @@ public class RecipeDetailView extends BorderPane implements PropertyChangeListen
         setBottom(errorLabel);
     }
 
-    private void adjustServingSize(int delta) {
-        try {
-            int current = Integer.parseInt(servingSizeValueLabel.getText());
-            int next = current + delta;
-            if (next < 1) next = 1;
-            
-            Recipe recipe = viewModel.getRecipe();
-            if (recipe != null) {
-                controller.execute(recipe.getRecipeId(), next);
-            }
-        } catch (NumberFormatException ex) {
-            // Ignore
+    private void adjustServingSize(int newSize) {
+        Recipe recipe = viewModel.getRecipe();
+        if (recipe != null) {
+            controller.execute(recipe.getRecipeId(), newSize);
         }
     }
 
@@ -184,7 +195,7 @@ public class RecipeDetailView extends BorderPane implements PropertyChangeListen
         ingredientsPanel.getChildren().clear();
         if (ingredients != null) {
             for (String ing : ingredients) {
-                CheckBox checkBox = new CheckBox(ing);
+                StyledCheckbox checkBox = new StyledCheckbox(ing);
                 checkBox.setWrapText(true);
                 ingredientsPanel.getChildren().add(checkBox);
             }
@@ -219,7 +230,9 @@ public class RecipeDetailView extends BorderPane implements PropertyChangeListen
                     }
                     break;
                 case RecipeDetailViewModel.PROP_SERVING_SIZE:
-                    servingSizeValueLabel.setText(String.valueOf(viewModel.getServingSize()));
+                    int size = viewModel.getServingSize();
+                    servingSizeValueLabel.setText(String.valueOf(size));
+                    servingSlider.setValue(size);
                     break;
                 case RecipeDetailViewModel.PROP_INGREDIENTS:
                     updateIngredientsList(viewModel.getIngredients());
