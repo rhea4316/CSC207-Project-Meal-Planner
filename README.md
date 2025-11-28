@@ -70,16 +70,17 @@ As a user, I input my username and want to see what to eat from the schedule and
 
 ## Use Cases
 
-### Use Case 1: Enter Ingredients Receive Recipe
+### Use Case 1: Find Recipes by Ingredients (Updated)
 
 **Main Flow:**
-1. User opens ingredient search page
-2. User enters ingredients into the system
-3. User clicks search button
-4. System finds recipes that match the ingredients
-5. System shows list of matching recipes
-6. User selects a recipe from the list
-7. System displays recipe details with nutrients
+1. User opens "Find by Ingredients" page
+2. User enters ingredients using "Ingredient Chips" (tags)
+3. (Optional) User selects quick filters (e.g., Breakfast, Vegetarian)
+4. User clicks search button
+5. System finds recipes that match the ingredients
+6. System displays list of matching recipes with "Matching Score" badge
+7. User selects a recipe from the list
+8. System displays recipe details with nutrients
 
 **Alternative Flow:**
 * Not enough ingredients → Prompt to add more

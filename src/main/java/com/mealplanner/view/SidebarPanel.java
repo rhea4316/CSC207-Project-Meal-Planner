@@ -54,9 +54,9 @@ public class SidebarPanel extends VBox implements PropertyChangeListener {
         // Menu Items with Icons
         addMenuItem("Dashboard", ViewManager.DASHBOARD_VIEW, "/svg/dashboard-fill.svg", "/svg/dashboard.svg");
         addMenuItem("Weekly Plan", ViewManager.SCHEDULE_VIEW, "/svg/weekly-plan.svg", "/svg/weekly-plan.svg");
-        addMenuItem("Search Recipes", ViewManager.SEARCH_BY_INGREDIENTS_VIEW, "/svg/search.svg", "/svg/search.svg");
+        addMenuItem("Find by Ingredients", ViewManager.SEARCH_BY_INGREDIENTS_VIEW, "/svg/search.svg", "/svg/search.svg");
         addMenuItem("My Cookbook", ViewManager.STORE_RECIPE_VIEW, "/svg/cookbook.svg", "/svg/cookbook.svg");
-        addMenuItem("Browse Recipes", ViewManager.BROWSE_RECIPE_VIEW, "/svg/shopping-basket.svg", "/svg/shopping-basket.svg");
+        addMenuItem("Recipe Catalog", ViewManager.BROWSE_RECIPE_VIEW, "/svg/shopping-basket.svg", "/svg/shopping-basket.svg");
         
         // User Profile (Spacer then Label)
         VBox spacer = new VBox();
