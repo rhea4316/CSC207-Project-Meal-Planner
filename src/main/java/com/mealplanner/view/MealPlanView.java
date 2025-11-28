@@ -21,6 +21,7 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.Map;
 
 public class MealPlanView extends BorderPane implements PropertyChangeListener {
@@ -272,7 +273,7 @@ public class MealPlanView extends BorderPane implements PropertyChangeListener {
         
         Map<LocalDate, Map<MealType, String>> weeklyMeals = mealPlanViewModel.getWeeklyMeals();
         if (weeklyMeals != null && !weeklyMeals.isEmpty()) {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM d, yyyy");
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.ENGLISH);
             
             for (Map.Entry<LocalDate, Map<MealType, String>> dateEntry : weeklyMeals.entrySet()) {
                 LocalDate date = dateEntry.getKey();

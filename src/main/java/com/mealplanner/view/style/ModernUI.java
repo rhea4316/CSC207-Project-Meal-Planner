@@ -15,7 +15,7 @@ public class ModernUI {
     // 1. Design Theme Constants (Modern Mint Green Theme)
     public static final Color PRIMARY_COLOR = Color.web("#5CDB95");   // Mint Green
     public static final Color PRIMARY_DARK = Color.web("#379683");     // Darker Mint
-    public static final Color BACKGROUND_COLOR = Color.web("#F8F9FB"); // Light Gray Background
+    public static final Color BACKGROUND_COLOR = Color.web("#F3F4F6"); // Soft Light Gray Background
     public static final Color SURFACE_COLOR = Color.web("#FFFFFF");    // White
     public static final Color TEXT_COLOR = Color.web("#1F2937");       // Dark Gray
     public static final Color TEXT_LIGHT = Color.web("#6B7280");       // Light Gray Text
@@ -27,8 +27,10 @@ public class ModernUI {
     private static final Color BORDER_COLOR = Color.web("#E5E7EB");
     private static final Color HEADER_TEXT_COLOR = Color.web("#1F2937");
 
-    // Fonts
-    private static final String FONT_FAMILY = "Segoe UI";
+    // Fonts - Poppins for headings, Inter for body
+    private static final String FONT_FAMILY_HEADING = "Poppins";
+    private static final String FONT_FAMILY_BODY = "Inter";
+    private static final String FONT_FAMILY_FALLBACK = "Segoe UI";
 
     /**
      * Create a Card Panel (VBox) with rounded corners, border, and drop shadow.
@@ -39,27 +41,29 @@ public class ModernUI {
         // Padding: 24px
         card.setPadding(new Insets(24));
         
-        // Background: White, Radius: 16px
+        // Background: White, Radius: 20px for softer look
         card.setBackground(new Background(new BackgroundFill(
             SURFACE_COLOR, 
-            new CornerRadii(16), 
+            new CornerRadii(20), 
             Insets.EMPTY
         )));
 
-        // Border: Light Gray, Width: 1px, Radius: 16px
+        // Border: Light Gray, Width: 1px, Radius: 20px
         card.setBorder(new Border(new BorderStroke(
             BORDER_COLOR,
             BorderStrokeStyle.SOLID,
-            new CornerRadii(16),
+            new CornerRadii(20),
             new BorderWidths(1)
         )));
 
-        // Drop Shadow (Simulating paintComponent override)
+        // Drop Shadow - box-shadow: 0 4px 20px rgba(0,0,0,0.05)
         DropShadow shadow = new DropShadow();
         shadow.setBlurType(BlurType.GAUSSIAN);
-        shadow.setColor(Color.rgb(0, 0, 0, 0.1)); // 10% opacity black
-        shadow.setRadius(10);
-        shadow.setOffsetY(2);
+        shadow.setColor(Color.rgb(0, 0, 0, 0.05)); // 5% opacity
+        shadow.setRadius(20);
+        shadow.setOffsetX(0);
+        shadow.setOffsetY(4);
+        shadow.setSpread(0);
         card.setEffect(shadow);
 
         return card;
@@ -71,16 +75,15 @@ public class ModernUI {
     public static Button createPrimaryButton(String text) {
         Button btn = new Button(text);
         
-        // Font: White, Bold
+        // Font: White, Semi-Bold (600) - Poppins for buttons
         btn.setTextFill(Color.WHITE);
-        btn.setFont(Font.font(FONT_FAMILY, FontWeight.BOLD, 14));
+        btn.setFont(Font.font(FONT_FAMILY_HEADING + ", " + FONT_FAMILY_FALLBACK, FontWeight.MEDIUM, 14)); // Changed to MEDIUM
         
-        // Background: Mint Green, Radius: 12px
+        // Background: Mint Green, Radius: 50px (Pill shape)
         // Padding: 10px (Top/Bottom), 20px (Left/Right)
-        // Using CSS for simpler padding/radius combo or Background object
         btn.setBackground(new Background(new BackgroundFill(
             PRIMARY_COLOR, 
-            new CornerRadii(12), 
+            new CornerRadii(50), 
             Insets.EMPTY
         )));
         btn.setPadding(new Insets(10, 20, 10, 20));
@@ -91,13 +94,13 @@ public class ModernUI {
         // Interaction: Hover Effect
         btn.setOnMouseEntered(e -> btn.setBackground(new Background(new BackgroundFill(
             PRIMARY_HOVER_COLOR, 
-            new CornerRadii(12), 
+            new CornerRadii(50), 
             Insets.EMPTY
         ))));
 
         btn.setOnMouseExited(e -> btn.setBackground(new Background(new BackgroundFill(
             PRIMARY_COLOR, 
-            new CornerRadii(12), 
+            new CornerRadii(50), 
             Insets.EMPTY
         ))));
 
@@ -113,9 +116,9 @@ public class ModernUI {
     public static Button createGhostButton(String text) {
         Button btn = new Button(text);
         
-        // Text: Sage Green
+        // Text: Sage Green - Poppins for buttons
         btn.setTextFill(PRIMARY_COLOR);
-        btn.setFont(Font.font(FONT_FAMILY, FontWeight.NORMAL, 14));
+        btn.setFont(Font.font(FONT_FAMILY_HEADING + ", " + FONT_FAMILY_FALLBACK, FontWeight.NORMAL, 14));
 
         // Background: Transparent/White (Start with Transparent)
         btn.setBackground(new Background(new BackgroundFill(
@@ -153,11 +156,11 @@ public class ModernUI {
     }
 
     /**
-     * Create a Header Label.
+     * Create a Header Label - Poppins for headings.
      */
     public static Label createHeaderLabel(String text) {
         Label label = new Label(text);
-        label.setFont(Font.font(FONT_FAMILY, FontWeight.BOLD, 24));
+        label.setFont(Font.font(FONT_FAMILY_HEADING + ", " + FONT_FAMILY_FALLBACK, FontWeight.SEMI_BOLD, 24)); // Changed to SEMI_BOLD
         label.setTextFill(HEADER_TEXT_COLOR);
         return label;
     }

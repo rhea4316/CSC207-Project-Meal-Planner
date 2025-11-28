@@ -17,10 +17,10 @@ public class AppConfig {
     /**
      * Gets the application name.
      *
-     * @return the app name (default: "Meal Planner")
+     * @return the app name (default: "PlanEat")
      */
     public static String getAppName() {
-        return ConfigLoader.getProperty("app.name", "Meal Planner");
+        return ConfigLoader.getProperty("app.name", "PlanEat");
     }
 
     /**

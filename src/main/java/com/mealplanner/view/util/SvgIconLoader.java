@@ -1,6 +1,7 @@
 package com.mealplanner.view.util;
 
 import javafx.scene.Node;
+import javafx.scene.layout.StackPane;
 import javafx.scene.shape.SVGPath;
 import javafx.scene.paint.Color;
 
@@ -40,23 +41,89 @@ public class SvgIconLoader {
                 return null;
             }
             
+            // Extract viewBox from SVG to calculate proper scale
+            double viewBoxSize = extractViewBoxSize(svgContent);
+            
             // Create SVGPath node
             SVGPath svgPath = new SVGPath();
             svgPath.setContent(pathData);
             svgPath.setFill(color);
             svgPath.setStrokeWidth(0);
             
-            // Scale to desired size (assuming viewBox is 24x24 or 512x512)
-            double scale = size / 24.0; // Most icons use 24x24 viewBox
+            // Scale based on actual viewBox size to ensure uniform appearance
+            double scale = size / viewBoxSize;
             svgPath.setScaleX(scale);
             svgPath.setScaleY(scale);
             
-            return svgPath;
+            // Wrap in StackPane to enforce fixed size for uniform icon dimensions
+            StackPane container = new StackPane();
+            container.setPrefWidth(size);
+            container.setPrefHeight(size);
+            container.setMinWidth(size);
+            container.setMinHeight(size);
+            container.setMaxWidth(size);
+            container.setMaxHeight(size);
+            container.getChildren().add(svgPath);
+            container.setAlignment(javafx.geometry.Pos.CENTER);
+            
+            return container;
             
         } catch (Exception e) {
             System.err.println("Error loading SVG icon: " + resourcePath + " - " + e.getMessage());
             return null;
         }
+    }
+    
+    /**
+     * Extracts viewBox size from SVG content.
+     * Returns the width/height of the viewBox (assumes square viewBox).
+     */
+    private static double extractViewBoxSize(String svgContent) {
+        // Look for viewBox attribute
+        int viewBoxStart = svgContent.indexOf("viewBox=\"");
+        if (viewBoxStart == -1) {
+            // Fallback: look for width/height attributes
+            int widthStart = svgContent.indexOf("width=\"");
+            if (widthStart != -1) {
+                widthStart += 7;
+                int widthEnd = svgContent.indexOf("\"", widthStart);
+                if (widthEnd != -1) {
+                    try {
+                        String widthStr = svgContent.substring(widthStart, widthEnd);
+                        // Remove "px" if present
+                        widthStr = widthStr.replace("px", "").trim();
+                        return Double.parseDouble(widthStr);
+                    } catch (NumberFormatException e) {
+                        // Fall through to default
+                    }
+                }
+            }
+            // Default to 24 if no viewBox or width found
+            return 24.0;
+        }
+        
+        viewBoxStart += 9; // Skip 'viewBox="'
+        int viewBoxEnd = svgContent.indexOf("\"", viewBoxStart);
+        if (viewBoxEnd == -1) {
+            return 24.0;
+        }
+        
+        String viewBox = svgContent.substring(viewBoxStart, viewBoxEnd);
+        // viewBox format: "0 0 width height" or "x y width height"
+        String[] parts = viewBox.split("\\s+");
+        if (parts.length >= 4) {
+            try {
+                // Use width (index 2) as the viewBox size
+                double width = Double.parseDouble(parts[2]);
+                double height = Double.parseDouble(parts[3]);
+                // Return the larger dimension to ensure icon fits
+                return Math.max(width, height);
+            } catch (NumberFormatException e) {
+                // Fall through to default
+            }
+        }
+        
+        return 24.0; // Default viewBox size
     }
     
     /**
