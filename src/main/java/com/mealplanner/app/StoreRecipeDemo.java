@@ -43,7 +43,7 @@ public class StoreRecipeDemo extends Application {
             StoreRecipeController controller = new StoreRecipeController(interactor);
 
             // View (with ViewManagerModel for navigation)
-            StoreRecipeView view = new StoreRecipeView(controller, viewModel, viewManagerModel);
+            StoreRecipeView view = new StoreRecipeView(controller, viewModel, viewManagerModel, repo);
 
             // Scene Setup
             Scene scene = new Scene(view, 800, 600);

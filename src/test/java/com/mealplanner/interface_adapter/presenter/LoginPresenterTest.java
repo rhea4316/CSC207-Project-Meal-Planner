@@ -1,6 +1,7 @@
 package com.mealplanner.interface_adapter.presenter;
 
 import com.mealplanner.interface_adapter.ViewManagerModel;
+import com.mealplanner.interface_adapter.controller.ViewScheduleController;
 import com.mealplanner.interface_adapter.view_model.LoginViewModel;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,10 +25,13 @@ public class LoginPresenterTest {
     @Mock
     private ViewManagerModel viewManagerModel;
 
+    @Mock
+    private ViewScheduleController scheduleController;
+
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        presenter = new LoginPresenter(viewModel, viewManagerModel);
+        presenter = new LoginPresenter(viewModel, viewManagerModel, scheduleController);
     }
 
     @Test
@@ -40,6 +44,7 @@ public class LoginPresenterTest {
         verify(viewModel).setLoggedInUser("testuser");
         verify(viewModel).setError(null);
         verify(viewModel).firePropertyChanged();
+        verify(scheduleController).execute("testuser");
     }
 
     @Test

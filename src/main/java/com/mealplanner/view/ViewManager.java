@@ -22,7 +22,8 @@ public class ViewManager extends StackPane implements PropertyChangeListener {
     public static final String STORE_RECIPE_VIEW = "StoreRecipeView";
     public static final String SEARCH_BY_INGREDIENTS_VIEW = "SearchByIngredientsView";
     public static final String SCHEDULE_VIEW = "ScheduleView";
-    public static final String MEAL_PLAN_VIEW = "MealPlanView";
+    // public static final String MEAL_PLAN_VIEW = "MealPlanView"; // Removed
+    public static final String PROFILE_SETTINGS_VIEW = "ProfileSettingsView";
 
     private final ViewManagerModel viewManagerModel;
     private final Map<String, Node> views;

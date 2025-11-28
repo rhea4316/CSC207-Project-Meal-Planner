@@ -6,7 +6,7 @@ import java.io.InputStream;
 
 /**
  * Utility class for loading custom fonts from resources.
- * Loads Poppins and Inter fonts if available.
+ * Loads Poppins fonts if available.
  */
 public class FontLoader {
     
@@ -21,15 +21,18 @@ public class FontLoader {
             return;
         }
         
-        // Load Poppins fonts (for headings)
-        loadFont("fonts/Poppins-Medium.ttf");
-        loadFont("fonts/Poppins-SemiBold.ttf");
-        loadFont("fonts/Poppins-Bold.ttf");
+        // Load Poppins fonts
+        // 400 - Regular (기본 텍스트)
+        loadFont("fonts/Poppins-Regular.ttf");
         
-        // Load Inter fonts (for body text)
-        loadFont("fonts/Inter-Regular.ttf");
-        loadFont("fonts/Inter-Medium.ttf");
-        loadFont("fonts/Inter-SemiBold.ttf");
+        // 500 - Medium (제목, 버튼)
+        loadFont("fonts/Poppins-Medium.ttf");
+        
+        // 600 - SemiBold (강조)
+        loadFont("fonts/Poppins-SemiBold.ttf");
+        
+        // 700 - Bold (큰 제목)
+        loadFont("fonts/Poppins-Bold.ttf");
         
         fontsLoaded = true;
     }
@@ -42,13 +45,19 @@ public class FontLoader {
         try {
             InputStream fontStream = FontLoader.class.getResourceAsStream("/" + fontPath);
             if (fontStream != null) {
-                Font.loadFont(fontStream, 12);
+                Font font = Font.loadFont(fontStream, 12);
                 fontStream.close();
-                System.out.println("Loaded font: " + fontPath);
+                if (font != null) {
+                    System.out.println("Loaded font: " + fontPath + " -> Family: " + font.getFamily() + ", Name: " + font.getName());
+                } else {
+                    System.err.println("Failed to load font (returned null): " + fontPath);
+                }
+            } else {
+                System.err.println("Font file not found: " + fontPath);
             }
         } catch (Exception e) {
-            // Font not found or failed to load - will use system fallback
-            // This is expected if fonts are not yet downloaded
+            System.err.println("Exception loading font: " + fontPath);
+            e.printStackTrace();
         }
     }
     
@@ -59,4 +68,3 @@ public class FontLoader {
         return fontsLoaded;
     }
 }
-

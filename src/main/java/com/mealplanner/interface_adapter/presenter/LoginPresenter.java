@@ -4,6 +4,7 @@ package com.mealplanner.interface_adapter.presenter;
 // Responsible: Mona
 
 import com.mealplanner.interface_adapter.ViewManagerModel;
+import com.mealplanner.interface_adapter.controller.ViewScheduleController;
 import com.mealplanner.interface_adapter.view_model.LoginViewModel;
 import com.mealplanner.use_case.login.LoginOutputBoundary;
 import com.mealplanner.use_case.login.LoginOutputData;
@@ -12,10 +13,12 @@ import java.util.Objects;
 public class LoginPresenter implements LoginOutputBoundary {
     private final LoginViewModel loginViewModel;
     private final ViewManagerModel viewManagerModel;
+    private final ViewScheduleController scheduleController;
     
-    public LoginPresenter(LoginViewModel loginViewModel, ViewManagerModel viewManagerModel) {
+    public LoginPresenter(LoginViewModel loginViewModel, ViewManagerModel viewManagerModel, ViewScheduleController scheduleController) {
         this.loginViewModel = Objects.requireNonNull(loginViewModel, "LoginViewModel cannot be null");
         this.viewManagerModel = viewManagerModel;
+        this.scheduleController = scheduleController;
     }
 
     @Override
@@ -37,6 +40,9 @@ public class LoginPresenter implements LoginOutputBoundary {
             viewManagerModel.setCurrentUsername(loginOutputData.getUsername());
             // Navigate to ScheduleView after successful login
             viewManagerModel.setActiveView("ScheduleView");
+        }
+        if (scheduleController != null) {
+            scheduleController.execute(loginOutputData.getUsername());
         }
     }
     
