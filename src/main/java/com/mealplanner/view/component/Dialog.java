@@ -99,5 +99,9 @@ public class Dialog {
     public void show() {
         stage.showAndWait();
     }
+
+    public void close() {
+        stage.close();
+    }
 }
 

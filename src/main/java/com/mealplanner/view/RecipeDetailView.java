@@ -108,7 +108,7 @@ public class RecipeDetailView extends ScrollPane implements PropertyChangeListen
         backBtn.setStyle("-fx-background-color: white; -fx-background-radius: 50%; -fx-min-width: 40px; -fx-min-height: 40px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 4, 0, 0, 2); -fx-cursor: hand;");
         Node backIcon = SvgIconLoader.loadIcon("/svg/arrow-small-left.svg", 24, Color.BLACK);
         if (backIcon != null) backBtn.setGraphic(backIcon);
-        backBtn.setOnAction(e -> viewManagerModel.setActiveView(ViewManager.BROWSE_RECIPE_VIEW));
+        backBtn.setOnAction(e -> navigateBack());
         
         StackPane.setAlignment(backBtn, Pos.TOP_LEFT);
         StackPane.setMargin(backBtn, new Insets(30, 0, 0, 40));
@@ -432,5 +432,16 @@ public class RecipeDetailView extends ScrollPane implements PropertyChangeListen
                 updateView();
             }
         });
+    }
+
+    private void navigateBack() {
+        if (viewManagerModel == null) {
+            return;
+        }
+        String target = viewManagerModel.getPreviousView();
+        if (target == null || ViewManager.RECIPE_DETAIL_VIEW.equals(target)) {
+            target = ViewManager.BROWSE_RECIPE_VIEW;
+        }
+        viewManagerModel.setActiveView(target);
     }
 }

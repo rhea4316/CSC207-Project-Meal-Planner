@@ -5,6 +5,7 @@ import com.mealplanner.entity.Schedule;
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.view_model.ScheduleViewModel;
 import com.mealplanner.view.component.*;
+import com.mealplanner.view.component.Sonner;
 import com.mealplanner.view.util.SvgIconLoader;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -39,11 +40,13 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
     private StackPane circularProgressPane;
     private Label remainingCaloriesLabel;
     private Progress proteinBar, carbsBar, fatBar;
+    private final Sonner sonner;
 
     public DashboardView(ViewManagerModel viewManagerModel, ScheduleViewModel scheduleViewModel) {
         this.viewManagerModel = viewManagerModel;
         this.scheduleViewModel = scheduleViewModel;
         this.scheduleViewModel.addPropertyChangeListener(this);
+        this.sonner = new Sonner();
 
         // 1. Layout & Background
         setBackground(new Background(new BackgroundFill(Color.web("#f7f8f9"), CornerRadii.EMPTY, Insets.EMPTY)));
@@ -489,12 +492,28 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
             iconBox.setScaleY(1.0);
         });
         
-        btn.setOnMouseClicked(e -> {
-            if (text.equals("New Recipe")) viewManagerModel.setActiveView(ViewManager.STORE_RECIPE_VIEW);
-            if (text.equals("Weekly Plan")) viewManagerModel.setActiveView(ViewManager.SCHEDULE_VIEW);
-        });
+        btn.setOnMouseClicked(e -> handleQuickAction(text));
         
         return btn;
+    }
+
+    private void handleQuickAction(String text) {
+        switch (text) {
+            case "Add Snack":
+                sonner.show("Snack logged", "We’ll add this to today’s nutrition summary.", Sonner.Type.INFO);
+                break;
+            case "Log Water":
+                sonner.show("Hydration noted", "Another glass recorded. Keep it up!", Sonner.Type.SUCCESS);
+                break;
+            case "New Recipe":
+                viewManagerModel.setActiveView(ViewManager.STORE_RECIPE_VIEW);
+                break;
+            case "Weekly Plan":
+                viewManagerModel.setActiveView(ViewManager.SCHEDULE_VIEW);
+                break;
+            default:
+                break;
+        }
     }
 
     private VBox createMealCard(String mealType, String mealName, String iconPath, int calories, String time) {

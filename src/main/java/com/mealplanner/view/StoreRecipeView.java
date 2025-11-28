@@ -1,8 +1,11 @@
 package com.mealplanner.view;
 
+import com.mealplanner.entity.Recipe;
+import com.mealplanner.exception.DataAccessException;
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.StoreRecipeController;
 import com.mealplanner.interface_adapter.view_model.RecipeStoreViewModel;
+import com.mealplanner.repository.RecipeRepository;
 import com.mealplanner.util.NumberUtil;
 import com.mealplanner.util.StringUtil;
 import com.mealplanner.view.component.*;
@@ -19,7 +22,9 @@ import javafx.scene.paint.Color;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 public class StoreRecipeView extends BorderPane implements PropertyChangeListener {
     
@@ -28,6 +33,7 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
     private final RecipeStoreViewModel viewModel;
     @SuppressWarnings("unused")
     private final ViewManagerModel viewManagerModel;
+    private final RecipeRepository recipeRepository;
 
     // Editor Form Components
     private Input nameField;
@@ -52,11 +58,16 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
     // Cookbook UI Components
     private VBox cookbookContent;
     private ScrollPane editorContent;
+    private FlowPane cookbookGrid;
+    private Label cookbookEmptyLabel;
+    private List<Recipe> cookbookRecipes = new ArrayList<>();
+    private Recipe editingRecipe;
     
     private Sonner sonner;
 
-    public StoreRecipeView(StoreRecipeController controller, RecipeStoreViewModel viewModel, ViewManagerModel viewManagerModel) {
+    public StoreRecipeView(StoreRecipeController controller, RecipeStoreViewModel viewModel, ViewManagerModel viewManagerModel, RecipeRepository recipeRepository) {
         if (controller == null) throw new IllegalArgumentException("Controller cannot be null");
+        this.recipeRepository = Objects.requireNonNull(recipeRepository, "RecipeRepository cannot be null");
         
         this.controller = controller;
         this.viewModel = viewModel;
@@ -75,12 +86,13 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         createCookbookView();
         createEditorView();
         
+        // Setup Sonner
+        sonner = new Sonner();
+        refreshCookbook();
+        
         // Set initial view
         setCenter(cookbookContent);
         setPadding(new Insets(30, 40, 30, 40)); // Default padding for cookbook view
-        
-        // Setup Sonner
-        sonner = new Sonner();
     }
     
     private void toggleView(boolean showCookbook) {
@@ -93,23 +105,49 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         }
     }
 
-    // --- 1. Cookbook List View (Existing) ---
+    // --- 1. Cookbook List View ---
     private void createCookbookView() {
         cookbookContent = new VBox(24);
-        // ... (Existing cookbook UI code - simplified here to focus on editor) ...
-        // Header
-        HBox header = new HBox(); header.setAlignment(Pos.CENTER_LEFT);
+
+        HBox header = new HBox();
+        header.setAlignment(Pos.CENTER_LEFT);
+
         VBox titles = new VBox(4);
-        Label titleLabel = new Label("My Cookbook"); titleLabel.setStyle("-fx-font-family: 'Poppins'; -fx-font-weight: bold; -fx-font-size: 24px; -fx-text-fill: #1A1A1A;");
-        Label subLabel = new Label("Your personal collection of bookmarked and custom recipes"); subLabel.setStyle("-fx-font-family: 'Poppins'; -fx-font-size: 14px; -fx-text-fill: #888888;");
+        Label titleLabel = new Label("My Cookbook");
+        titleLabel.setStyle("-fx-font-family: 'Poppins'; -fx-font-weight: bold; -fx-font-size: 24px; -fx-text-fill: #1A1A1A;");
+        Label subLabel = new Label("Your personal collection of bookmarked and custom recipes");
+        subLabel.setStyle("-fx-font-family: 'Poppins'; -fx-font-size: 14px; -fx-text-fill: #888888;");
         titles.getChildren().addAll(titleLabel, subLabel);
-        Region spacer = new Region(); HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
         Button createBtn = new Button("Create Recipe");
         createBtn.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: 600; -fx-background-radius: 8px; -fx-padding: 10 20; -fx-cursor: hand;");
-        createBtn.setOnAction(e -> toggleView(false));
+        createBtn.setOnAction(e -> {
+            clearForm();
+            toggleView(false);
+        });
         header.getChildren().addAll(titles, spacer, createBtn);
-        
-        cookbookContent.getChildren().addAll(header, new Label("List content here...")); 
+
+        cookbookGrid = new FlowPane();
+        cookbookGrid.setHgap(16);
+        cookbookGrid.setVgap(16);
+        cookbookGrid.setPadding(new Insets(10));
+
+        cookbookEmptyLabel = new Label("You haven’t saved any recipes yet. Create your first one!");
+        cookbookEmptyLabel.getStyleClass().add("text-gray-500");
+        cookbookEmptyLabel.setStyle("-fx-font-size: 14px;");
+
+        StackPane listPane = new StackPane();
+        listPane.getChildren().addAll(cookbookGrid, cookbookEmptyLabel);
+
+        ScrollPane scrollPane = new ScrollPane(listPane);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
+
+        cookbookContent.getChildren().addAll(header, scrollPane);
     }
 
     // --- 2. Recipe Editor View (New) ---
@@ -257,6 +295,147 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         editorContent.setFitToWidth(true);
         editorContent.setStyle("-fx-background: #F5F7FA; -fx-background-color: #F5F7FA; -fx-padding: 0;");
         editorContent.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+    }
+
+    private void refreshCookbook() {
+        if (recipeRepository == null) {
+            return;
+        }
+        new Thread(() -> {
+            try {
+                List<Recipe> recipes = recipeRepository.findAll();
+                recipes.sort(Comparator.comparing(Recipe::getName, String.CASE_INSENSITIVE_ORDER));
+                Platform.runLater(() -> updateCookbook(recipes));
+            } catch (DataAccessException e) {
+                Platform.runLater(() -> sonner.show("Error", "Failed to load recipes: " + e.getMessage(), Sonner.Type.ERROR));
+            }
+        }).start();
+    }
+
+    private void updateCookbook(List<Recipe> recipes) {
+        cookbookRecipes = recipes != null ? recipes : new ArrayList<>();
+        cookbookGrid.getChildren().clear();
+        boolean hasRecipes = cookbookRecipes != null && !cookbookRecipes.isEmpty();
+        cookbookEmptyLabel.setVisible(!hasRecipes);
+        cookbookEmptyLabel.setManaged(!hasRecipes);
+        if (!hasRecipes) {
+            return;
+        }
+        for (Recipe recipe : cookbookRecipes) {
+            cookbookGrid.getChildren().add(createCookbookCard(recipe));
+        }
+    }
+
+    private VBox createCookbookCard(Recipe recipe) {
+        VBox card = new VBox(10);
+        card.getStyleClass().add("card-panel");
+        card.setPrefWidth(260);
+        card.setMinHeight(180);
+        card.setPadding(new Insets(16));
+
+        Label nameLabel = new Label(recipe.getName());
+        nameLabel.getStyleClass().add("text-gray-900");
+        nameLabel.setStyle("-fx-font-weight: 600; -fx-font-size: 16px;");
+        nameLabel.setWrapText(true);
+
+        Label servingsLabel = new Label("Serves " + recipe.getServingSize());
+        servingsLabel.getStyleClass().add("text-gray-500");
+
+        int ingredientCount = recipe.getIngredients() != null ? recipe.getIngredients().size() : 0;
+        int stepCount = recipe.getSteps() != null ? (int) java.util.Arrays.stream(recipe.getSteps().split("\\n")).filter(s -> !s.isBlank()).count() : 0;
+
+        Label metaLabel = new Label(ingredientCount + " ingredients · " + stepCount + " step(s)");
+        metaLabel.getStyleClass().add("text-gray-400");
+
+        HBox actions = new HBox(8);
+        actions.setAlignment(Pos.CENTER_LEFT);
+
+        Button editBtn = new Button("Edit");
+        editBtn.getStyleClass().add("secondary-button");
+        editBtn.setOnAction(e -> {
+            e.consume();
+            openRecipeInEditor(recipe);
+        });
+
+        Button deleteBtn = new Button("Delete");
+        deleteBtn.setStyle("-fx-background-color: white; -fx-text-fill: #ef4444; -fx-border-color: #ef4444; -fx-border-radius: 6px; -fx-background-radius: 6px;");
+        deleteBtn.setOnAction(e -> {
+            e.consume();
+            deleteRecipe(recipe);
+        });
+
+        actions.getChildren().addAll(editBtn, deleteBtn);
+
+        card.getChildren().addAll(nameLabel, servingsLabel, metaLabel, actions);
+        card.setOnMouseClicked(e -> openRecipeInEditor(recipe));
+        return card;
+    }
+    
+    private void openRecipeInEditor(Recipe recipe) {
+        if (recipe == null) {
+            return;
+        }
+        editingRecipe = recipe;
+        populateEditorFromRecipe(recipe);
+        toggleView(false);
+        sonner.show("Editor", "Loaded '" + recipe.getName() + "' for editing", Sonner.Type.INFO);
+    }
+
+    private void deleteRecipe(Recipe recipe) {
+        if (recipeRepository == null || recipe == null || StringUtil.isNullOrEmpty(recipe.getRecipeId())) {
+            sonner.show("Error", "Unable to delete recipe", Sonner.Type.ERROR);
+            return;
+        }
+        new Thread(() -> {
+            try {
+                boolean deleted = recipeRepository.delete(recipe.getRecipeId());
+                Platform.runLater(() -> {
+                    if (deleted) {
+                        sonner.show("Deleted", "Removed '" + recipe.getName() + "'", Sonner.Type.SUCCESS);
+                        refreshCookbook();
+                    } else {
+                        sonner.show("Not found", "Recipe could not be deleted", Sonner.Type.WARNING);
+                    }
+                });
+            } catch (DataAccessException e) {
+                Platform.runLater(() -> sonner.show("Error", "Failed to delete recipe: " + e.getMessage(), Sonner.Type.ERROR));
+            }
+        }).start();
+    }
+
+    private void populateEditorFromRecipe(Recipe recipe) {
+        if (recipe == null) {
+            return;
+        }
+        nameField.setText(recipe.getName());
+        servingSizeField.setText(String.valueOf(recipe.getServingSize()));
+        descField.setText("");
+        imgUrlField.setText("");
+        timeField.setText("");
+        caloriesField.setText("");
+        proteinField.setText("");
+        carbsField.setText("");
+        fatField.setText("");
+        categoryCombo.setValue("Breakfast");
+        difficultyCombo.setValue("Easy");
+
+        ingredientsContainer.getChildren().clear();
+        if (recipe.getIngredients() != null) {
+            for (String ing : recipe.getIngredients()) {
+                addChipItem(ingredientsContainer, ing, false);
+            }
+        }
+
+        instructionsContainer.getChildren().clear();
+        if (recipe.getSteps() != null) {
+            String[] steps = recipe.getSteps().split("\\n");
+            for (String step : steps) {
+                if (!step.isBlank()) {
+                    addInstructionStep(step.trim());
+                }
+            }
+        }
+        tagsContainer.getChildren().clear();
     }
     
     // --- Helper Methods for Editor Components ---
@@ -416,8 +595,8 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         
         int servingSize = NumberUtil.parseInt(servingSizeField.getText(), 1);
         
-        controller.execute(name, ingredients, steps, servingSize);
-        clearForm();
+        String recipeId = editingRecipe != null ? editingRecipe.getRecipeId() : null;
+        controller.execute(recipeId, name, ingredients, steps, servingSize);
     }
     
     private List<String> harvestChips(FlowPane container) {
@@ -441,6 +620,9 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         tagsContainer.getChildren().clear();
         servingSizeField.setText("1");
         timeField.clear(); caloriesField.clear(); proteinField.clear(); carbsField.clear(); fatField.clear();
+        categoryCombo.setValue("Breakfast");
+        difficultyCombo.setValue("Easy");
+        editingRecipe = null;
     }
 
     @Override
@@ -448,6 +630,8 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         Platform.runLater(() -> {
             if (RecipeStoreViewModel.PROP_SUCCESS_MESSAGE.equals(evt.getPropertyName())) {
                 sonner.show("Success", (String) evt.getNewValue(), Sonner.Type.SUCCESS);
+                clearForm();
+                refreshCookbook();
                 toggleView(true); // Return to list on success
             } else if (RecipeStoreViewModel.PROP_ERROR_MESSAGE.equals(evt.getPropertyName())) {
                 sonner.show("Error", (String) evt.getNewValue(), Sonner.Type.ERROR);

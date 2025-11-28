@@ -1,6 +1,13 @@
 package com.mealplanner.view;
 
 import com.mealplanner.interface_adapter.ViewManagerModel;
+import com.mealplanner.data_access.database.FileScheduleDataAccessObject;
+import com.mealplanner.data_access.database.FileUserDataAccessObject;
+import com.mealplanner.entity.Schedule;
+import com.mealplanner.exception.DataAccessException;
+import com.mealplanner.repository.RecipeRepository;
+import com.mealplanner.repository.impl.FileRecipeRepository;
+import com.mealplanner.util.StringUtil;
 import com.mealplanner.view.util.DialogUtils;
 import com.mealplanner.view.util.SvgIconLoader;
 import javafx.geometry.Insets;
@@ -20,13 +27,19 @@ import javafx.scene.shape.Rectangle;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.util.UUID;
 
 public class ProfileSettingsView extends BorderPane implements PropertyChangeListener {
     public final String viewName = "ProfileSettingsView";
     private final ViewManagerModel viewManagerModel;
 
+    private final FileScheduleDataAccessObject scheduleDataAccessObject;
+    private final RecipeRepository recipeRepository;
+
     public ProfileSettingsView(ViewManagerModel viewManagerModel, String username) {
         this.viewManagerModel = viewManagerModel;
+        this.scheduleDataAccessObject = new FileScheduleDataAccessObject(new FileUserDataAccessObject());
+        this.recipeRepository = new FileRecipeRepository();
         
         getStyleClass().add("root");
         setStyle("-fx-background-color: #F5F7FA;");
@@ -299,7 +312,13 @@ public class ProfileSettingsView extends BorderPane implements PropertyChangeLis
             logoutBtn.setGraphic(logoutIcon);
             logoutBtn.setGraphicTextGap(8);
         }
-        logoutBtn.setOnAction(e -> viewManagerModel.setActiveView(ViewManager.LOGIN_VIEW));
+        logoutBtn.setOnAction(e -> {
+            if (viewManagerModel != null) {
+                viewManagerModel.setCurrentUserId(null);
+                viewManagerModel.setCurrentUsername(null);
+                viewManagerModel.setActiveView(ViewManager.LOGIN_VIEW);
+            }
+        });
         
         card.getChildren().addAll(header, actionList, logoutBtn);
         return card;
@@ -329,8 +348,49 @@ public class ProfileSettingsView extends BorderPane implements PropertyChangeLis
             btn.setGraphicTextGap(6);
         }
         
+        btn.setOnAction(e -> handleDataAction(title));
+
         row.getChildren().addAll(textBox, spacer, btn);
         return row;
+    }
+
+    private void handleDataAction(String title) {
+        boolean confirmed = DialogUtils.showConfirmation(title, "This action cannot be undone. Continue?");
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            switch (title) {
+                case "Reset Meal Plan":
+                    resetMealPlan();
+                    DialogUtils.showInfoAlert("Completed", "Meal plan has been cleared.");
+                    break;
+                case "Clear Saved Recipes":
+                    clearSavedRecipes();
+                    DialogUtils.showInfoAlert("Completed", "All saved recipes have been removed.");
+                    break;
+                default:
+                    DialogUtils.showInfoAlert("Completed", title + " processed successfully.");
+            }
+        } catch (DataAccessException | IllegalStateException ex) {
+            DialogUtils.showErrorAlert("Operation Failed", ex.getMessage());
+        }
+    }
+
+    private void resetMealPlan() {
+        if (viewManagerModel == null || StringUtil.isNullOrEmpty(viewManagerModel.getCurrentUserId())) {
+            throw new IllegalStateException("You must be logged in to reset your meal plan.");
+        }
+        String userId = viewManagerModel.getCurrentUserId();
+        Schedule existing = scheduleDataAccessObject.findScheduleByUserId(userId);
+        String scheduleId = existing != null ? existing.getScheduleId() : UUID.randomUUID().toString();
+        Schedule cleared = new Schedule(scheduleId, userId);
+        scheduleDataAccessObject.saveSchedule(cleared);
+    }
+
+    private void clearSavedRecipes() throws DataAccessException {
+        recipeRepository.clear();
     }
 
     private VBox createCard() {

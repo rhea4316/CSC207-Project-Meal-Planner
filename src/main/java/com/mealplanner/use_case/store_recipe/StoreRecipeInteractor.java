@@ -54,8 +54,11 @@ public class StoreRecipeInteractor implements StoreRecipeInputBoundary {
 			return;
 		}
 
-		// Generate a unique recipe ID
-		String recipeId = "recipe-" + UUID.randomUUID().toString();
+		// Use existing id when provided, otherwise generate a new one
+		String recipeId = inputData.getRecipeId();
+		if (StringUtil.isNullOrEmpty(recipeId)) {
+			recipeId = "recipe-" + UUID.randomUUID().toString();
+		}
 
 		// Convert steps list to string (join with newlines)
 		String stepsString = String.join("\n", inputData.getSteps());

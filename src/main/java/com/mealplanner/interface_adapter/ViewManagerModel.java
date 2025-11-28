@@ -8,6 +8,7 @@ import java.beans.PropertyChangeSupport;
 
 public class ViewManagerModel {
     private String activeView;
+    private String previousView;
     private String currentUserId;
     private String currentUsername;
     private final PropertyChangeSupport support = new PropertyChangeSupport(this);
@@ -18,7 +19,10 @@ public class ViewManagerModel {
 
     public void setActiveView(String activeView) {
         String oldView = this.activeView;
+        String oldPrevious = this.previousView;
+        this.previousView = oldView;
         this.activeView = activeView;
+        support.firePropertyChange("previousView", oldPrevious, this.previousView);
         support.firePropertyChange("view", oldView, activeView);
     }
 
@@ -44,5 +48,9 @@ public class ViewManagerModel {
 
     public void addPropertyChangeListener(PropertyChangeListener listener) {
         support.addPropertyChangeListener(listener);
+    }
+
+    public String getPreviousView() {
+        return previousView;
     }
 }

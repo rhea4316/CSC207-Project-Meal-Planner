@@ -27,7 +27,11 @@ public class StoreRecipeController {
 	 * Execute the use case with already-parsed lists.
 	 */
 	public void execute(String name, List<String> ingredients, List<String> steps, int servingSize) {
-		StoreRecipeInputData input = new StoreRecipeInputData(name, ingredients, steps, servingSize);
+		execute(null, name, ingredients, steps, servingSize);
+	}
+
+	public void execute(String recipeId, String name, List<String> ingredients, List<String> steps, int servingSize) {
+		StoreRecipeInputData input = new StoreRecipeInputData(recipeId, name, ingredients, steps, servingSize);
 		interactor.execute(input);
 	}
 
@@ -44,7 +48,7 @@ public class StoreRecipeController {
 			servingSize = 1;
 		}
 
-		execute(name, ingredients, steps, servingSize);
+		execute(null, name, ingredients, steps, servingSize);
 	}
 
 	private List<String> parseListFromString(String raw) {

@@ -4,6 +4,7 @@ import com.mealplanner.entity.Recipe;
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.SearchByIngredientsController;
 import com.mealplanner.interface_adapter.view_model.RecipeSearchViewModel;
+import com.mealplanner.interface_adapter.view_model.RecipeDetailViewModel;
 import com.mealplanner.util.StringUtil;
 import com.mealplanner.view.util.SvgIconLoader;
 import javafx.application.Platform;
@@ -21,12 +22,13 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class SearchByIngredientsView extends BorderPane implements PropertyChangeListener {
     private final RecipeSearchViewModel viewModel;
     private final SearchByIngredientsController controller;
-    @SuppressWarnings("unused")
     private final ViewManagerModel viewManagerModel;
+    private final RecipeDetailViewModel recipeDetailViewModel;
 
     private TextField ingredientsField;
     private FlowPane chipsContainer;
@@ -45,13 +47,16 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
     private FlowPane quickFiltersContainer;
     private List<String> activeFilters = new ArrayList<>();
 
-    public SearchByIngredientsView(SearchByIngredientsController controller, RecipeSearchViewModel viewModel, ViewManagerModel viewManagerModel) {
+    public SearchByIngredientsView(SearchByIngredientsController controller, RecipeSearchViewModel viewModel, ViewManagerModel viewManagerModel, RecipeDetailViewModel recipeDetailViewModel) {
         if (viewModel == null) throw new IllegalArgumentException("ViewModel cannot be null");
         if (controller == null) throw new IllegalArgumentException("Controller cannot be null");
+        if (viewManagerModel == null) throw new IllegalArgumentException("ViewManagerModel cannot be null");
+        if (recipeDetailViewModel == null) throw new IllegalArgumentException("RecipeDetailViewModel cannot be null");
 
         this.viewModel = viewModel;
         this.controller = controller;
         this.viewManagerModel = viewManagerModel;
+        this.recipeDetailViewModel = recipeDetailViewModel;
         this.ingredientList = new ArrayList<>();
 
         viewModel.addPropertyChangeListener(this);
@@ -227,7 +232,12 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
                      Node activeIcon = SvgIconLoader.loadIcon(iconPath, 16, Color.web("#166534"));
                      btn.setGraphic(activeIcon);
                 }
-                activeFilters.add(text);
+                if (!activeFilters.contains(text)) {
+                    activeFilters.add(text);
+                }
+                if (!ingredientList.isEmpty()) {
+                    performSearch();
+                }
             } else {
                 // Inactive State
                 btn.setStyle("-fx-background-color: white; -fx-text-fill: -fx-color-gray-600; -fx-border-color: -fx-color-gray-200; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 8 12; -fx-font-size: 13px; -fx-cursor: hand;");
@@ -236,6 +246,9 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
                      btn.setGraphic(inactiveIcon);
                 }
                 activeFilters.remove(text);
+                if (!ingredientList.isEmpty()) {
+                    performSearch();
+                }
             }
             // Trigger search logic if needed
         });
@@ -357,8 +370,8 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         }
 
         if (ingredientList.isEmpty()) {
-            // Show visual feedback? 
-            // errorLabel.setText("Please add at least one ingredient");
+            errorLabel.setText("Please add at least one ingredient before searching.");
+            showView("EMPTY");
             return;
         }
         
@@ -374,7 +387,9 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
     private void displayRecipes(List<Recipe> recipes) {
         listPanel.getChildren().clear();
 
-        if (recipes == null || recipes.isEmpty()) {
+        List<Recipe> filtered = applyQuickFilters(recipes);
+
+        if (filtered == null || filtered.isEmpty()) {
             showView("EMPTY");
             // Optional: Change empty message to "No results"
             Label title = (Label) emptyPanel.getChildren().get(1);
@@ -382,7 +397,7 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
             Label sub = (Label) emptyPanel.getChildren().get(2);
             sub.setText("Try removing some filters or adding different ingredients");
         } else {
-            for (Recipe recipe : recipes) {
+            for (Recipe recipe : filtered) {
                 listPanel.getChildren().add(createRecipeCard(recipe));
             }
             showView("LIST");
@@ -437,7 +452,81 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         metaBox.getChildren().add(calLabel);
         card.getChildren().add(metaBox);
 
+        card.setOnMouseClicked(e -> openRecipeDetail(recipe));
+
         return card;
+    }
+
+    private List<Recipe> applyQuickFilters(List<Recipe> recipes) {
+        if (recipes == null) {
+            return null;
+        }
+        if (activeFilters == null || activeFilters.isEmpty()) {
+            return recipes;
+        }
+        return recipes.stream()
+                .filter(this::matchesActiveFilters)
+                .collect(Collectors.toList());
+    }
+
+    private boolean matchesActiveFilters(Recipe recipe) {
+        if (activeFilters == null || activeFilters.isEmpty() || recipe == null) {
+            return true;
+        }
+        for (String filter : activeFilters) {
+            if (!matchesFilter(recipe, filter)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean matchesFilter(Recipe recipe, String filter) {
+        if (!StringUtil.hasContent(filter)) {
+            return true;
+        }
+        String name = recipe.getName() != null ? recipe.getName().toLowerCase() : "";
+        List<String> ingredients = recipe.getIngredients() != null ? recipe.getIngredients() : List.of();
+        switch (filter) {
+            case "Breakfast":
+                return name.contains("breakfast") || name.contains("toast") || name.contains("pancake");
+            case "Lunch":
+                return name.contains("salad") || name.contains("sandwich") || name.contains("lunch");
+            case "Dinner":
+                return name.contains("dinner") || name.contains("steak") || name.contains("pasta");
+            case "Vegetarian":
+                return ingredients.stream().noneMatch(this::containsMeatKeyword);
+            case "Vegan":
+                return ingredients.stream().noneMatch(this::containsAnimalProductKeyword);
+            case "Quick (< 30min)":
+                return name.contains("quick") || name.contains("15") || name.contains("20");
+            default:
+                return true;
+        }
+    }
+
+    private boolean containsMeatKeyword(String ingredient) {
+        if (ingredient == null) return false;
+        String lower = ingredient.toLowerCase();
+        return lower.contains("chicken") || lower.contains("beef") || lower.contains("pork") ||
+               lower.contains("bacon") || lower.contains("fish") || lower.contains("shrimp");
+    }
+
+    private boolean containsAnimalProductKeyword(String ingredient) {
+        if (containsMeatKeyword(ingredient)) {
+            return true;
+        }
+        if (ingredient == null) return false;
+        String lower = ingredient.toLowerCase();
+        return lower.contains("egg") || lower.contains("cheese") || lower.contains("milk") || lower.contains("butter");
+    }
+
+    private void openRecipeDetail(Recipe recipe) {
+        if (recipe == null || recipeDetailViewModel == null || viewManagerModel == null) {
+            return;
+        }
+        recipeDetailViewModel.setRecipe(recipe);
+        viewManagerModel.setActiveView(ViewManager.RECIPE_DETAIL_VIEW);
     }
 
     @Override

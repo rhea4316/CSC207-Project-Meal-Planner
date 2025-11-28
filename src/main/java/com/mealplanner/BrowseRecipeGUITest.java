@@ -9,6 +9,7 @@ import com.mealplanner.data_access.database.BrowseRecipeAPIParser;
 import com.mealplanner.use_case.browse_recipe.BrowseRecipeDataAccessInterface;
 import com.mealplanner.use_case.browse_recipe.BrowseRecipeInteractor;
 import com.mealplanner.view.BrowseRecipeView;
+import com.mealplanner.interface_adapter.view_model.RecipeDetailViewModel;
 import okhttp3.OkHttpClient;
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -33,6 +34,7 @@ public class BrowseRecipeGUITest extends Application {
         // Set up the architecture components
         ViewManagerModel viewManagerModel = new ViewManagerModel();
         RecipeBrowseViewModel recipeBrowseViewModel = new RecipeBrowseViewModel();
+        RecipeDetailViewModel recipeDetailViewModel = new RecipeDetailViewModel();
 
         // Create presenter
         BrowseRecipePresenter presenter = new BrowseRecipePresenter(recipeBrowseViewModel, viewManagerModel);
@@ -48,7 +50,7 @@ public class BrowseRecipeGUITest extends Application {
         BrowseRecipeController controller = new BrowseRecipeController(interactor);
 
         // Create the view
-        BrowseRecipeView browseRecipeView = new BrowseRecipeView(recipeBrowseViewModel, controller, viewManagerModel);
+        BrowseRecipeView browseRecipeView = new BrowseRecipeView(recipeBrowseViewModel, controller, viewManagerModel, recipeDetailViewModel);
 
         Scene scene = new Scene(browseRecipeView, 800, 600);
         stage.setTitle("Browse Recipe Test");

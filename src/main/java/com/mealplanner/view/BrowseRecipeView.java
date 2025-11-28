@@ -4,6 +4,7 @@ import com.mealplanner.entity.Recipe;
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.BrowseRecipeController;
 import com.mealplanner.interface_adapter.view_model.RecipeBrowseViewModel;
+import com.mealplanner.interface_adapter.view_model.RecipeDetailViewModel;
 import com.mealplanner.util.StringUtil;
 import com.mealplanner.view.util.SvgIconLoader;
 import javafx.application.Platform;
@@ -25,8 +26,8 @@ import java.util.Random;
 public class BrowseRecipeView extends BorderPane implements PropertyChangeListener {
     private final RecipeBrowseViewModel viewModel;
     private final BrowseRecipeController controller;
-    @SuppressWarnings("unused")
     private final ViewManagerModel viewManagerModel;
+    private final RecipeDetailViewModel recipeDetailViewModel;
 
     private TextField searchField;
     @SuppressWarnings("unused")
@@ -45,13 +46,16 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
     private Label errorLabel;
     private Label countLabel; // "Showing 9 of 16 recipes"
 
-    public BrowseRecipeView(RecipeBrowseViewModel viewModel, BrowseRecipeController controller, ViewManagerModel viewManagerModel) {
+    public BrowseRecipeView(RecipeBrowseViewModel viewModel, BrowseRecipeController controller, ViewManagerModel viewManagerModel, RecipeDetailViewModel recipeDetailViewModel) {
         if (viewModel == null) throw new IllegalArgumentException("ViewModel cannot be null");
         if (controller == null) throw new IllegalArgumentException("Controller cannot be null");
+        if (viewManagerModel == null) throw new IllegalArgumentException("ViewManagerModel cannot be null");
+        if (recipeDetailViewModel == null) throw new IllegalArgumentException("RecipeDetailViewModel cannot be null");
         
         this.viewModel = viewModel;
         this.controller = controller;
         this.viewManagerModel = viewManagerModel;
+        this.recipeDetailViewModel = recipeDetailViewModel;
         
         viewModel.addPropertyChangeListener(this);
 
@@ -434,6 +438,12 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
             card.setStyle(""); // Reset to default CSS
         });
 
+        card.setOnMouseClicked(e -> openRecipeDetail(recipe));
+        addBtn.setOnAction(e -> {
+            openRecipeDetail(recipe);
+            e.consume();
+        });
+
         return card;
     }
     
@@ -483,5 +493,13 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
                     break;
             }
         });
+    }
+
+    private void openRecipeDetail(Recipe recipe) {
+        if (recipe == null || recipeDetailViewModel == null || viewManagerModel == null) {
+            return;
+        }
+        recipeDetailViewModel.setRecipe(recipe);
+        viewManagerModel.setActiveView(ViewManager.RECIPE_DETAIL_VIEW);
     }
 }

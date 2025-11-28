@@ -26,7 +26,7 @@ public class Main extends Application {
             // Ensure initial view is set before creating SidebarPanel
             ViewManagerModel viewManagerModel = appBuilder.getViewManagerModel();
             if (viewManagerModel.getActiveView() == null) {
-                viewManagerModel.setActiveView(ViewManager.DASHBOARD_VIEW);
+                viewManagerModel.setActiveView(ViewManager.LOGIN_VIEW);
             }
 
             // Root Layout

@@ -3,6 +3,7 @@ package com.mealplanner.view;
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.view.component.Avatar;
 import com.mealplanner.view.util.SvgIconLoader;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -25,6 +26,7 @@ import java.beans.PropertyChangeListener;
 public class SidebarPanel extends VBox implements PropertyChangeListener {
     private final ViewManagerModel viewManagerModel;
     private Button currentActiveButton;
+    private VBox authSection;
     
     // Colors matching style.css updated Green Theme
     // Text Colors
@@ -101,16 +103,20 @@ public class SidebarPanel extends VBox implements PropertyChangeListener {
         addMenuItem("Recipe Catalog", ViewManager.BROWSE_RECIPE_VIEW, "/svg/books-fill.svg", "/svg/books.svg");
         addMenuItem("My CookBook", ViewManager.STORE_RECIPE_VIEW, "/svg/open-book-fill.svg", "/svg/open-book.svg");
         
-        // Spacer
+        // Spacer between nav & auth section
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
         getChildren().add(spacer);
-        
-        // Profile Section (Bottom)
-        createProfileSection();
-        
+
+        authSection = new VBox();
+        authSection.setSpacing(12);
+        authSection.setPadding(new Insets(12, 12, 12, 20));
+        authSection.setFillWidth(true);
+        getChildren().add(authSection);
+
         // Set initial active view
         updateActiveButton(viewManagerModel.getActiveView());
+        updateAuthSection();
     }
 
     private void addCategoryLabel(String text) {
@@ -172,21 +178,65 @@ public class SidebarPanel extends VBox implements PropertyChangeListener {
         
         getChildren().add(btn);
     }
-    
-    private void createProfileSection() {
+
+    private void updateAuthSection() {
+        if (authSection == null) {
+            return;
+        }
+
+        authSection.getChildren().clear();
+        if (isAuthenticated()) {
+            authSection.getChildren().add(buildProfileSection());
+        } else {
+            authSection.getChildren().add(buildGuestSection());
+        }
+    }
+
+    private boolean isAuthenticated() {
+        String userId = viewManagerModel.getCurrentUserId();
+        return userId != null && !userId.isBlank();
+    }
+
+    private VBox buildGuestSection() {
+        VBox guestBox = new VBox(10);
+        guestBox.getStyleClass().add("sidebar-guest");
+
+        Label welcome = new Label("Welcome to PlanEat");
+        welcome.getStyleClass().add("text-gray-700");
+        welcome.setStyle("-fx-font-weight: 600;");
+
+        Label helper = new Label("로그인하고 식단을 관리해보세요.");
+        helper.getStyleClass().add("text-gray-500");
+        helper.setWrapText(true);
+
+        Button loginBtn = new Button("Log In");
+        loginBtn.getStyleClass().add("primary-button");
+        loginBtn.setMaxWidth(Double.MAX_VALUE);
+        loginBtn.setOnAction(e -> viewManagerModel.setActiveView(ViewManager.LOGIN_VIEW));
+
+        Button signupBtn = new Button("Sign Up");
+        signupBtn.getStyleClass().add("ghost-button");
+        signupBtn.setMaxWidth(Double.MAX_VALUE);
+        signupBtn.setOnAction(e -> viewManagerModel.setActiveView(ViewManager.SIGNUP_VIEW));
+
+        guestBox.getChildren().addAll(welcome, helper, loginBtn, signupBtn);
+        return guestBox;
+    }
+
+    private HBox buildProfileSection() {
         HBox profileBox = new HBox(12);
         profileBox.getStyleClass().add("sidebar-profile");
         profileBox.setAlignment(Pos.CENTER_LEFT);
-        // Increased left padding to 20
         profileBox.setPadding(new Insets(12, 12, 12, 20));
         
         // Avatar
-        Avatar avatar = new Avatar(20, null, "EC"); // 40px size
-        // Override avatar style to match image (Green circle)
+        String initials = extractInitials(viewManagerModel.getCurrentUsername());
+        Avatar avatar = new Avatar(20, null, initials);
         avatar.setStyle("-fx-background-color: #4CAF50;"); 
         
         VBox userInfo = new VBox(0);
-        Label nameLabel = new Label("Eden Chang");
+        String displayName = viewManagerModel.getCurrentUsername() != null ? viewManagerModel.getCurrentUsername() : "PlanEat Member";
+        Label nameLabel = new Label(displayName);
         nameLabel.getStyleClass().add("text-gray-900");
         nameLabel.setStyle("-fx-font-family: 'Poppins'; -fx-font-weight: 600; -fx-font-size: 14px;");
         
@@ -208,8 +258,18 @@ public class SidebarPanel extends VBox implements PropertyChangeListener {
         
         // Action to profile settings
         profileBox.setOnMouseClicked(e -> viewManagerModel.setActiveView(ViewManager.PROFILE_SETTINGS_VIEW));
-        
-        getChildren().add(profileBox);
+        return profileBox;
+    }
+
+    private String extractInitials(String username) {
+        if (username == null || username.isBlank()) {
+            return "PE";
+        }
+        String[] parts = username.trim().split("\\s+");
+        if (parts.length == 1) {
+            return parts[0].substring(0, Math.min(2, parts[0].length())).toUpperCase();
+        }
+        return (parts[0].substring(0, 1) + parts[parts.length - 1].substring(0, 1)).toUpperCase();
     }
     
     private void updateButtonState(Button btn, boolean isActive) {
@@ -288,9 +348,17 @@ public class SidebarPanel extends VBox implements PropertyChangeListener {
 
     @Override
     public void propertyChange(PropertyChangeEvent evt) {
-        if ("view".equals(evt.getPropertyName())) {
-            String newView = (String) evt.getNewValue();
-            javafx.application.Platform.runLater(() -> updateActiveButton(newView));
+        switch (evt.getPropertyName()) {
+            case "view":
+                String newView = (String) evt.getNewValue();
+                Platform.runLater(() -> updateActiveButton(newView));
+                break;
+            case "currentUserId":
+            case "currentUsername":
+                Platform.runLater(this::updateAuthSection);
+                break;
+            default:
+                break;
         }
     }
 }

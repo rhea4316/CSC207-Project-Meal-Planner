@@ -3,7 +3,6 @@ package com.mealplanner.view.component;
 import com.mealplanner.entity.MealType;
 import com.mealplanner.interface_adapter.controller.AddMealController;
 import javafx.geometry.Insets;
-import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
@@ -12,13 +11,13 @@ import javafx.stage.Stage;
 import javafx.util.StringConverter;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 
 public class AddToMealPlanDialog {
 
     private final Dialog dialog;
     private final AddMealController controller;
     private final String recipeId;
+    private final Sonner sonner;
 
     private DatePicker datePicker;
     private ComboBox<MealType> mealTypeComboBox;
@@ -26,8 +25,9 @@ public class AddToMealPlanDialog {
     public AddToMealPlanDialog(Stage owner, AddMealController controller, String recipeId, String recipeName) {
         this.controller = controller;
         this.recipeId = recipeId;
-        
+
         this.dialog = new Dialog(owner, "Add to Meal Plan", "Schedule '" + recipeName + "' for a specific date and meal time.");
+        this.sonner = new Sonner(owner);
         
         createForm();
         
@@ -91,9 +91,11 @@ public class AddToMealPlanDialog {
         
         if (date != null && type != null) {
             controller.execute(date.toString(), type.name(), recipeId);
-            // Dialog closes automatically after footer button action in Dialog.java logic?
-            // Wait, Dialog.java says: action.run(); stage.close();
-            // So yes.
+            if (sonner != null) {
+                String friendlyMeal = type.name().substring(0, 1).toUpperCase() + type.name().substring(1).toLowerCase();
+                sonner.show("Added to Plan", friendlyMeal + " on " + date + " scheduled.", Sonner.Type.SUCCESS);
+            }
+            dialog.close();
         }
     }
 

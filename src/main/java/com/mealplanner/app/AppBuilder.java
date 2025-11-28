@@ -35,12 +35,14 @@ import com.mealplanner.view.StoreRecipeView;
 import com.mealplanner.view.ViewManager;
 
 public class AppBuilder {
-    private ViewManager viewManager;
-    private ViewManagerModel viewManagerModel;
+    private final ViewManager viewManager;
+    private final ViewManagerModel viewManagerModel;
+    private final RecipeDetailViewModel recipeDetailViewModel;
 
     public AppBuilder() {
         this.viewManagerModel = new ViewManagerModel();
         this.viewManager = new ViewManager(viewManagerModel);
+        this.recipeDetailViewModel = new RecipeDetailViewModel();
     }
 
     public ViewManagerModel getViewManagerModel() {
@@ -71,8 +73,8 @@ public class AppBuilder {
         buildBrowseRecipeFlow();
         buildSearchByIngredientsFlow();
         buildAdjustServingSizeFlow(addMealController);
-        buildSignupFlow();
-        buildLoginFlow(); // Ensure login is built
+        buildSignupFlow(scheduleController);
+        buildLoginFlow(scheduleController); // Ensure login is built
         
         // Build Schedule View
         ScheduleView scheduleView = new ScheduleView(scheduleViewModel, scheduleController, viewManagerModel);
@@ -86,8 +88,8 @@ public class AppBuilder {
         ProfileSettingsView profileView = new ProfileSettingsView(viewManagerModel, "Eden Chang");
         viewManager.addView(ViewManager.PROFILE_SETTINGS_VIEW, profileView);
 
-        // Set initial view - use ViewManager's switchToView to ensure proper display
-        viewManager.switchToView(ViewManager.DASHBOARD_VIEW);
+        // Set initial view to Login so authentication flow is the first experience
+        viewManagerModel.setActiveView(ViewManager.LOGIN_VIEW);
         
         return viewManager;
     }
@@ -98,7 +100,7 @@ public class AppBuilder {
         FileRecipeRepository repository = new FileRecipeRepository();
         var interactor = UseCaseFactory.createStoreRecipeInteractor(presenter, repository);
         StoreRecipeController controller = new StoreRecipeController(interactor);
-        StoreRecipeView view = new StoreRecipeView(controller, viewModel, viewManagerModel);
+        StoreRecipeView view = new StoreRecipeView(controller, viewModel, viewManagerModel, repository);
         viewManager.addView(ViewManager.STORE_RECIPE_VIEW, view);
     }
 
@@ -107,7 +109,7 @@ public class AppBuilder {
         BrowseRecipePresenter presenter = new BrowseRecipePresenter(viewModel, viewManagerModel);
         var interactor = UseCaseFactory.createBrowseRecipeInteractor(presenter);
         BrowseRecipeController controller = new BrowseRecipeController(interactor);
-        BrowseRecipeView view = new BrowseRecipeView(viewModel, controller, viewManagerModel);
+        BrowseRecipeView view = new BrowseRecipeView(viewModel, controller, viewManagerModel, recipeDetailViewModel);
         viewManager.addView(ViewManager.BROWSE_RECIPE_VIEW, view);
     }
 
@@ -116,31 +118,30 @@ public class AppBuilder {
         SearchByIngredientsPresenter presenter = new SearchByIngredientsPresenter(viewModel, viewManagerModel);
         var interactor = UseCaseFactory.createSearchByIngredientsInteractor(presenter);
         SearchByIngredientsController controller = new SearchByIngredientsController(interactor);
-        SearchByIngredientsView view = new SearchByIngredientsView(controller, viewModel, viewManagerModel);
+        SearchByIngredientsView view = new SearchByIngredientsView(controller, viewModel, viewManagerModel, recipeDetailViewModel);
         viewManager.addView(ViewManager.SEARCH_BY_INGREDIENTS_VIEW, view);
     }
 
     private void buildAdjustServingSizeFlow(com.mealplanner.interface_adapter.controller.AddMealController addMealController) {
-        RecipeDetailViewModel viewModel = new RecipeDetailViewModel();
-        AdjustServingSizePresenter presenter = new AdjustServingSizePresenter(viewModel);
+        AdjustServingSizePresenter presenter = new AdjustServingSizePresenter(recipeDetailViewModel);
         var interactor = UseCaseFactory.createAdjustServingSizeInteractor(presenter);
         AdjustServingSizeController controller = new AdjustServingSizeController(interactor);
-        RecipeDetailView view = new RecipeDetailView(viewModel, controller, addMealController, viewManagerModel);
+        RecipeDetailView view = new RecipeDetailView(recipeDetailViewModel, controller, addMealController, viewManagerModel);
         viewManager.addView(ViewManager.RECIPE_DETAIL_VIEW, view);
     }
 
-    private void buildSignupFlow() {
+    private void buildSignupFlow(ViewScheduleController scheduleController) {
         SignupViewModel viewModel = new SignupViewModel();
-        SignupPresenter presenter = new SignupPresenter(viewModel, viewManagerModel);
+        SignupPresenter presenter = new SignupPresenter(viewModel, viewManagerModel, scheduleController);
         var interactor = UseCaseFactory.createSignupInteractor(presenter);
         SignupController controller = new SignupController(interactor);
         SignupView view = new SignupView(viewModel, controller, viewManagerModel);
         viewManager.addView(ViewManager.SIGNUP_VIEW, view);
     }
     
-    private void buildLoginFlow() {
+    private void buildLoginFlow(ViewScheduleController scheduleController) {
         LoginViewModel viewModel = new LoginViewModel();
-        LoginPresenter presenter = new LoginPresenter(viewModel, viewManagerModel);
+        LoginPresenter presenter = new LoginPresenter(viewModel, viewManagerModel, scheduleController);
         var interactor = UseCaseFactory.createLoginInteractor(presenter);
         LoginController controller = new LoginController(interactor);
         LoginView view = new LoginView(viewModel, controller, viewManagerModel);

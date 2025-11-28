@@ -334,12 +334,37 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
 
     @Override
     public void propertyChange(PropertyChangeEvent evt) {
-        if ("view".equals(evt.getPropertyName())) {
-            if (ViewManager.SCHEDULE_VIEW.equals(evt.getNewValue())) {
-                this.controller.execute("Eden Chang");
-            }
+        String property = evt.getPropertyName();
+        switch (property) {
+            case "schedule":
+                Platform.runLater(this::updateView);
+                break;
+            case "view":
+                if (ViewManager.SCHEDULE_VIEW.equals(evt.getNewValue())) {
+                    requestScheduleForActiveUser();
+                    Platform.runLater(this::updateView);
+                }
+                break;
+            case "currentUsername":
+                if (ViewManager.SCHEDULE_VIEW.equals(viewManagerModel.getActiveView())) {
+                    requestScheduleForActiveUser();
+                    Platform.runLater(this::updateView);
+                }
+                break;
+            default:
+                break;
         }
-        Platform.runLater(this::updateView);
+    }
+
+    private void requestScheduleForActiveUser() {
+        if (controller == null || viewManagerModel == null) {
+            return;
+        }
+        String username = viewManagerModel.getCurrentUsername();
+        if (username == null || username.isBlank()) {
+            return;
+        }
+        controller.execute(username);
     }
 
     private void updateDayHeaders() {
