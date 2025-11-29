@@ -28,18 +28,19 @@ public class BrowseRecipeAPIParser implements BrowseRecipeDataAccessInterface {
         if (inputData == null) {
             throw new IllegalArgumentException("Input data cannot be null");
         }
-        
+
         String query = inputData.getQuery();
         if (query == null || query.trim().isEmpty()) {
             throw new IllegalArgumentException("Search query cannot be empty");
         }
-        
+
         int numberOfRecipes = inputData.getNumberOfRecipesInt();
         String includedIngredients = inputData.getIncludedIngredients();
-        
+
         // Call API using SpoonacularApiClient
+        // OPTIMIZATION: complexSearch now includes addRecipeInformation=true, so we get full details in one call
         String apiResponse = apiClient.complexSearch(query, numberOfRecipes, includedIngredients);
-        
+
         // Parse the response
         List<Recipe> recipes = new ArrayList<>();
         JSONObject jsonBody = new JSONObject(apiResponse);
@@ -49,13 +50,17 @@ public class BrowseRecipeAPIParser implements BrowseRecipeDataAccessInterface {
             throw new RecipeNotFoundException("Recipes not found with given query and ingredients", null);
         }
 
+        // OPTIMIZATION: Parse recipes directly from complexSearch response instead of making N additional API calls
         for (int i = 0; i < jsonArray.length(); i++) {
             JSONObject currentRecipe = jsonArray.getJSONObject(i);
-            int currentRecipeId = currentRecipe.getInt("id");
-
-            // Fetch full recipe information using SpoonacularApiClient
-            Recipe recipe = apiClient.getRecipeById(currentRecipeId);
-            recipes.add(recipe);
+            try {
+                // Parse recipe directly from the search result which now includes full information
+                Recipe recipe = com.mealplanner.data_access.api.ApiResponseParser.parseRecipe(currentRecipe);
+                recipes.add(recipe);
+            } catch (Exception e) {
+                // Skip recipes that fail to parse - continue with others
+                System.err.println("Failed to parse recipe: " + e.getMessage());
+            }
         }
 
         if (recipes.isEmpty()) {

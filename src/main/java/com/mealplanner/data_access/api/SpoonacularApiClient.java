@@ -20,9 +20,36 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class SpoonacularApiClient {
-    
+
+    // OPTIMIZATION: Simple LRU cache for API responses (max 50 entries, 5-minute TTL)
+    private static final int MAX_CACHE_SIZE = 50;
+    private static final long CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+    private static class CacheEntry {
+        final String response;
+        final long timestamp;
+
+        CacheEntry(String response) {
+            this.response = response;
+            this.timestamp = System.currentTimeMillis();
+        }
+
+        boolean isExpired() {
+            return System.currentTimeMillis() - timestamp > CACHE_TTL_MS;
+        }
+    }
+
+    private final Map<String, CacheEntry> responseCache = new LinkedHashMap<String, CacheEntry>(MAX_CACHE_SIZE, 0.75f, true) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, CacheEntry> eldest) {
+            return size() > MAX_CACHE_SIZE || eldest.getValue().isExpired();
+        }
+    };
+
     private final OkHttpClient client;
     
     public SpoonacularApiClient() {
@@ -66,18 +93,84 @@ public class SpoonacularApiClient {
         List<Recipe> recipes = new ArrayList<>();
         for (int i = 0; i < jsonArray.length(); i++) {
             JSONObject recipeJson = jsonArray.getJSONObject(i);
-            int recipeId = recipeJson.getInt("id");
-            
-            // Get full recipe details
             try {
-                Recipe fullRecipe = getRecipeById(recipeId);
-                recipes.add(fullRecipe);
-            } catch (IOException e) {
-                // Skip recipes that fail to load, continue with others
+                // Parse basic recipe info from findByIngredients response
+                // This avoids making additional API calls for each recipe
+                Recipe basicRecipe = parseRecipeFromFindByIngredients(recipeJson);
+                recipes.add(basicRecipe);
+            } catch (Exception e) {
+                // Skip recipes that fail to parse, continue with others
             }
         }
         
         return recipes;
+    }
+    
+    /**
+     * Parse a Recipe from findByIngredients API response (basic info only).
+     * This avoids making additional API calls and reduces API quota usage.
+     * 
+     * @param json JSONObject from findByIngredients response
+     * @return Recipe entity with basic information
+     * @throws IOException if parsing fails
+     */
+    private Recipe parseRecipeFromFindByIngredients(JSONObject json) throws IOException {
+        try {
+            String name = json.getString("title");
+            String recipeId = String.valueOf(json.getInt("id"));
+            
+            // Extract ingredients from usedIngredients and missedIngredients arrays
+            List<String> ingredients = new ArrayList<>();
+            
+            // Add used ingredients
+            if (json.has("usedIngredients")) {
+                JSONArray usedIngredients = json.getJSONArray("usedIngredients");
+                for (int i = 0; i < usedIngredients.length(); i++) {
+                    JSONObject ing = usedIngredients.getJSONObject(i);
+                    String ingName = ing.optString("name", "");
+                    if (!ingName.isEmpty()) {
+                        ingredients.add(ingName);
+                    }
+                }
+            }
+            
+            // Add missed ingredients
+            if (json.has("missedIngredients")) {
+                JSONArray missedIngredients = json.getJSONArray("missedIngredients");
+                for (int i = 0; i < missedIngredients.length(); i++) {
+                    JSONObject ing = missedIngredients.getJSONObject(i);
+                    String ingName = ing.optString("name", "");
+                    if (!ingName.isEmpty()) {
+                        ingredients.add(ingName);
+                    }
+                }
+            }
+            
+            // If no ingredients found, use a placeholder
+            if (ingredients.isEmpty()) {
+                ingredients.add("See recipe details for ingredients");
+            }
+            
+            // Use placeholder steps since findByIngredients doesn't provide them
+            String steps = "Click to view full recipe details";
+            
+            // Default serving size
+            int servingSize = 1;
+            
+            // Parse image URL if available
+            String imageUrl = null;
+            if (json.has("image")) {
+                imageUrl = json.optString("image", null);
+            }
+            
+            // No nutrition info available from findByIngredients
+            // No cook time available from findByIngredients
+            
+            return new Recipe(name, ingredients, steps, servingSize, 
+                            null, null, null, imageUrl, recipeId);
+        } catch (Exception e) {
+            throw new IOException("Failed to parse recipe from findByIngredients JSON: " + e.getMessage(), e);
+        }
     }
     
     /**
@@ -122,7 +215,7 @@ public class SpoonacularApiClient {
     
     /**
      * Search for recipes using complex search with query and optional ingredients.
-     * 
+     *
      * @param query Search query string
      * @param numberOfRecipes Number of recipes to return
      * @param includedIngredients Optional comma-separated list of ingredients to include
@@ -132,27 +225,31 @@ public class SpoonacularApiClient {
     public String complexSearch(String query, int numberOfRecipes, String includedIngredients) throws IOException {
         String baseUrl = ApiConfig.getSpoonacularBaseUrl();
         String apiKey = ApiConfig.getSpoonacularApiKey();
-        
+
         if (StringUtil.isNullOrEmpty(apiKey)) {
             throw new IOException("Spoonacular API key is not configured");
         }
-        
+
         // URL encode parameters
         String encodedQuery = URLEncoder.encode(StringUtil.safeTrim(query), StandardCharsets.UTF_8);
-        
+
         StringBuilder urlBuilder = new StringBuilder(baseUrl);
         urlBuilder.append("/recipes/complexSearch?");
         urlBuilder.append("query=").append(encodedQuery);
         urlBuilder.append("&number=").append(numberOfRecipes);
-        
+
         String trimmedIngredients = StringUtil.safeTrim(includedIngredients);
         if (!StringUtil.isNullOrEmpty(trimmedIngredients)) {
             String encodedIngredients = URLEncoder.encode(trimmedIngredients, StandardCharsets.UTF_8);
             urlBuilder.append("&includeIngredients=").append(encodedIngredients);
         }
-        
+
+        // OPTIMIZATION: Include recipe information in the search response to avoid N+1 API calls
+        urlBuilder.append("&addRecipeInformation=true");
+        urlBuilder.append("&fillIngredients=true");
+
         urlBuilder.append("&apiKey=").append(apiKey);
-        
+
         return makeRequest(urlBuilder.toString());
     }
     
@@ -179,8 +276,8 @@ public class SpoonacularApiClient {
     }
     
     /**
-     * Helper method to make API requests.
-     * 
+     * Helper method to make API requests with caching.
+     *
      * @param url The full API URL
      * @return Response body as string
      * @throws IOException if request fails
@@ -190,14 +287,23 @@ public class SpoonacularApiClient {
             throw new IOException("Spoonacular API key is not configured. " +
                     "Please set it in config/api_keys.properties or as environment variable SPOONACULAR_API_KEY");
         }
-        
+
+        // OPTIMIZATION: Check cache first
+        synchronized (responseCache) {
+            CacheEntry cached = responseCache.get(url);
+            if (cached != null && !cached.isExpired()) {
+                System.out.println("Cache HIT for: " + url.substring(0, Math.min(100, url.length())));
+                return cached.response;
+            }
+        }
+
         Request request = new Request.Builder().url(url).build();
-        
+
         try (Response response = client.newCall(request).execute()) {
             if (!response.isSuccessful()) {
                 int code = response.code();
                 String errorMessage = "API request failed with code: " + code;
-                
+
                 if (code == 401) {
                     errorMessage += " (Unauthorized). " +
                             "This usually means your API key is invalid, expired, or not set correctly. " +
@@ -209,13 +315,32 @@ public class SpoonacularApiClient {
                     errorMessage += " (Too Many Requests). " +
                             "You have exceeded the rate limit. Please wait before making more requests.";
                 }
-                
+
                 throw new IOException(errorMessage);
             }
             if (response.body() == null) {
                 throw new IOException("API response body is null");
             }
-            return response.body().string();
+
+            String responseBody = response.body().string();
+
+            // OPTIMIZATION: Store in cache
+            synchronized (responseCache) {
+                responseCache.put(url, new CacheEntry(responseBody));
+                System.out.println("Cache MISS - storing for: " + url.substring(0, Math.min(100, url.length())));
+            }
+
+            return responseBody;
+        }
+    }
+
+    /**
+     * Clear the API response cache.
+     * Useful for testing or when fresh data is needed.
+     */
+    public void clearCache() {
+        synchronized (responseCache) {
+            responseCache.clear();
         }
     }
     

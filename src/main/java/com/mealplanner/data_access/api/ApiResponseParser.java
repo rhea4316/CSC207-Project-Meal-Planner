@@ -42,8 +42,14 @@ public class ApiResponseParser {
             
             List<DietaryRestriction> dietaryRestrictions = parseDietaryRestrictions(json.optJSONArray("diets"));
             
+            // Parse image URL
+            String imageUrl = null;
+            if (json.has("image")) {
+                imageUrl = json.optString("image", null);
+            }
+            
             return new Recipe(name, ingredients, steps, servingSize, 
-                            nutritionInfo, cookTimeMinutes, dietaryRestrictions, recipeId);
+                            nutritionInfo, cookTimeMinutes, dietaryRestrictions, imageUrl, recipeId);
         } catch (Exception e) {
             throw new ApiException("Failed to parse recipe from JSON: " + e.getMessage(), e);
         }
