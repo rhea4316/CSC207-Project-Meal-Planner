@@ -153,14 +153,17 @@ public class MealPlanTest {
 
         mealPlan.setBreakfast(newBreakfast);
         assertEquals(newBreakfast, mealPlan.getBreakfast());
-        assertEquals(6, mealPlan.getServingSize());
+        // After setting breakfast: newBreakfast(1) + lunch(1) + dinner(2) = 4
+        assertEquals(4, mealPlan.getServingSize());
 
         mealPlan.setLunch(newLunch);
         assertEquals(newLunch, mealPlan.getLunch());
-        assertEquals(6, mealPlan.getServingSize());
+        // After setting lunch: newBreakfast(1) + newLunch(2) + dinner(2) = 5
+        assertEquals(5, mealPlan.getServingSize());
 
         mealPlan.setDinner(newDinner);
         assertEquals(newDinner, mealPlan.getDinner());
+        // After setting dinner: newBreakfast(1) + newLunch(2) + newDinner(3) = 6
         assertEquals(6, mealPlan.getServingSize());
 
         assertThrows(IllegalArgumentException.class, () -> {

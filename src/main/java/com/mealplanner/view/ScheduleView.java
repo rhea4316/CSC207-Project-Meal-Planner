@@ -5,9 +5,13 @@ import com.mealplanner.entity.Recipe;
 import com.mealplanner.entity.Schedule;
 import com.mealplanner.exception.DataAccessException;
 import com.mealplanner.interface_adapter.ViewManagerModel;
+import com.mealplanner.interface_adapter.controller.AddMealController;
+import com.mealplanner.interface_adapter.controller.GetRecommendationsController;
 import com.mealplanner.interface_adapter.controller.ViewScheduleController;
+import com.mealplanner.interface_adapter.view_model.RecipeBrowseViewModel;
 import com.mealplanner.interface_adapter.view_model.ScheduleViewModel;
 import com.mealplanner.repository.RecipeRepository;
+import com.mealplanner.app.SessionManager;
 import com.mealplanner.view.component.StyledTooltip;
 import com.mealplanner.view.util.SvgIconLoader;
 import com.mealplanner.util.ImageCacheManager;
@@ -33,16 +37,39 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ScheduleView extends BorderPane implements PropertyChangeListener {
+    private static final Logger logger = LoggerFactory.getLogger(ScheduleView.class);
 
     private final ScheduleViewModel scheduleViewModel;
     private final ViewScheduleController controller;
     private final ViewManagerModel viewManagerModel;
     private final RecipeRepository recipeRepository;  // PHASE 2: Added for real data integration
+    /**
+     * Controller for getting recipe recommendations.
+     * Phase 5: Used for auto-fill functionality to get recommended recipes.
+     */
+    private final GetRecommendationsController recommendationsController;
+    /**
+     * ViewModel for receiving recipe recommendations.
+     * Phase 5: Used in auto-fill to get recommended recipes.
+     */
+    private final RecipeBrowseViewModel recommendationsViewModel;
+    private final AddMealController addMealController;  // PHASE 6: Added for Copy Last Week functionality
     private final ImageCacheManager imageCache = ImageCacheManager.getInstance();
+    
+    /**
+     * Flag to track if we're waiting for recommendations for auto-fill.
+     * Phase 5: Used to distinguish between user-initiated recommendation requests
+     * and auto-fill requests.
+     */
+    private boolean isAutoFilling = false;
 
     // UI Components
     private Label dateRangeLabel;
@@ -54,18 +81,40 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
     // State
     private LocalDate currentWeekStart;
 
-    public ScheduleView(ScheduleViewModel scheduleViewModel, ViewScheduleController controller, ViewManagerModel viewManagerModel, RecipeRepository recipeRepository) {
+    /**
+     * Constructor for ScheduleView.
+     * Phase 5: GetRecommendationsController and RecipeBrowseViewModel are injected for auto-fill functionality.
+     * Phase 6: AddMealController is injected for Copy Last Week functionality.
+     * 
+     * @param scheduleViewModel The schedule view model for meal data
+     * @param controller The view schedule controller
+     * @param viewManagerModel The view manager model for navigation
+     * @param recipeRepository The recipe repository for recipe data
+     * @param recommendationsController The controller for recommendations (Phase 5: auto-fill)
+     * @param recommendationsViewModel The view model for receiving recommendations (Phase 5: auto-fill)
+     * @param addMealController The controller for adding meals to schedule (Phase 6: Copy Last Week)
+     */
+    public ScheduleView(ScheduleViewModel scheduleViewModel, ViewScheduleController controller, ViewManagerModel viewManagerModel, RecipeRepository recipeRepository, GetRecommendationsController recommendationsController, RecipeBrowseViewModel recommendationsViewModel, AddMealController addMealController) {
         this.scheduleViewModel = scheduleViewModel;
         this.scheduleViewModel.addPropertyChangeListener(this);
         this.controller = controller;
         this.viewManagerModel = viewManagerModel;
         this.viewManagerModel.addPropertyChangeListener(this);
         this.recipeRepository = recipeRepository;  // PHASE 2: Injected repository
+        this.recommendationsController = recommendationsController;  // Phase 5: Injected for auto-fill
+        this.recommendationsViewModel = recommendationsViewModel;  // Phase 5: Injected for auto-fill
+        this.addMealController = addMealController;  // PHASE 6: Injected for Copy Last Week functionality
+        
+        // Phase 5: Listen to recommendations changes for auto-fill
+        if (recommendationsViewModel != null) {
+            recommendationsViewModel.addPropertyChangeListener(this);
+        }
 
         this.currentWeekStart = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
 
-        // Initial Load
-        this.controller.execute("Eden Chang");
+        // Initial Load - Schedule will be loaded automatically when currentUsername changes in propertyChange
+        // No schedule is loaded if user is not logged in
+        // requestScheduleForActiveUser() is called from propertyChange listener
 
         // Root Styles
         getStyleClass().add("root");
@@ -167,7 +216,9 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
         actionBox.setAlignment(Pos.CENTER_RIGHT);
         
         Button copyBtn = createActionButton("Copy Last Week", "/svg/calendar.svg"); // Fallback icon
+        copyBtn.setOnAction(e -> handleCopyLastWeek());  // PHASE 6: Copy Last Week functionality
         Button autoFillBtn = createActionButton("Auto-fill", "/svg/star.svg");
+        autoFillBtn.setOnAction(e -> handleAutoFill());  // Phase 5: Auto-fill functionality
         
         Button newPlanBtn = new Button("New Plan");
         newPlanBtn.setStyle("-fx-background-color: -fx-theme-primary; -fx-text-fill: white; -fx-background-radius: 8px; -fx-font-weight: 600; -fx-cursor: hand; -fx-padding: 8 16;");
@@ -370,6 +421,10 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
 
     @Override
     public void propertyChange(PropertyChangeEvent evt) {
+        if (evt == null) {
+            return; // Defensive check
+        }
+        
         String property = evt.getPropertyName();
         switch (property) {
             case "schedule":
@@ -382,9 +437,16 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
                 }
                 break;
             case "currentUsername":
+                // Phase 1: Load schedule for the logged-in user when username changes
                 if (ViewManager.SCHEDULE_VIEW.equals(viewManagerModel.getActiveView())) {
                     requestScheduleForActiveUser();
                     Platform.runLater(this::updateView);
+                }
+                break;
+            case "recommendations":
+                // Phase 5: Handle recommendations for auto-fill
+                if (isAutoFilling) {
+                    Platform.runLater(this::processAutoFillRecommendations);
                 }
                 break;
             default:
@@ -674,6 +736,300 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
             } else {
                 viewManagerModel.setActiveView(ViewManager.BROWSE_RECIPE_VIEW);
             }
+        }
+    }
+
+    /**
+     * PHASE 6: Copy Last Week functionality
+     * Copies meals from the previous week to the current week.
+     * Only copies to empty slots (does not overwrite existing meals).
+     */
+    private void handleCopyLastWeek() {
+        // Check if AddMealController is available
+        if (addMealController == null) {
+            System.err.println("Cannot copy last week: AddMealController is not available");
+            return;
+        }
+
+        // Check if user is logged in
+        String userId = SessionManager.getInstance().getCurrentUserId();
+        if (userId == null || userId.trim().isEmpty()) {
+            System.err.println("Cannot copy last week: User not logged in");
+            return;
+        }
+
+        // Get current schedule
+        Schedule currentSchedule = scheduleViewModel.getSchedule();
+        if (currentSchedule == null) {
+            System.err.println("Cannot copy last week: No schedule available");
+            return;
+        }
+
+        // Calculate last week's date range
+        LocalDate lastWeekStart = currentWeekStart.minusWeeks(1);
+        LocalDate lastWeekEnd = lastWeekStart.plusDays(6);
+
+        // Get meals from last week
+        Map<LocalDate, Map<MealType, String>> lastWeekMeals = currentSchedule.getMealsBetween(lastWeekStart, lastWeekEnd);
+
+        if (lastWeekMeals.isEmpty()) {
+            // No meals to copy - this is not an error, just inform the user
+            System.out.println("No meals found in last week to copy");
+            return;
+        }
+
+        // Copy meals to current week
+        int copiedCount = 0;
+        int skippedCount = 0;
+        int errorCount = 0;
+
+        for (int i = 0; i < 7; i++) {
+            LocalDate currentDate = currentWeekStart.plusDays(i);
+            LocalDate lastWeekDate = lastWeekStart.plusDays(i);
+
+            Map<MealType, String> mealsForLastWeekDate = lastWeekMeals.get(lastWeekDate);
+            if (mealsForLastWeekDate == null || mealsForLastWeekDate.isEmpty()) {
+                continue;
+            }
+
+            // Copy each meal type (Breakfast, Lunch, Dinner)
+            for (MealType mealType : MealType.values()) {
+                String recipeId = mealsForLastWeekDate.get(mealType);
+                if (recipeId == null || recipeId.trim().isEmpty()) {
+                    continue;
+                }
+
+                // Only copy if the current slot is empty
+                if (currentSchedule.isSlotFree(currentDate, mealType)) {
+                    try {
+                        addMealController.execute(
+                            currentDate.toString(),
+                            mealType.name(),
+                            recipeId
+                        );
+                        copiedCount++;
+                    } catch (IllegalArgumentException e) {
+                        // Handle invalid date/mealType format
+                        System.err.println("Error copying meal for " + currentDate + " " + mealType + ": Invalid format - " + e.getMessage());
+                        errorCount++;
+                    } catch (Exception e) {
+                        // Handle other unexpected errors
+                        System.err.println("Error copying meal for " + currentDate + " " + mealType + ": " + e.getMessage());
+                        errorCount++;
+                    }
+                } else {
+                    skippedCount++;
+                }
+            }
+        }
+
+        // Refresh the schedule view on JavaFX thread after all meals are added
+        Platform.runLater(() -> {
+            requestScheduleForActiveUser();
+            updateView();
+        });
+
+        // Log summary
+        if (copiedCount > 0 || skippedCount > 0 || errorCount > 0) {
+            System.out.println("Copy Last Week completed: " + copiedCount + " meals copied, " 
+                + skippedCount + " skipped (slots already filled)" 
+                + (errorCount > 0 ? ", " + errorCount + " errors" : ""));
+        }
+    }
+    
+    /**
+     * Phase 5: Handles auto-fill button click.
+     * Automatically fills empty meal slots in the current week using recommended recipes.
+     * 
+     * Flow:
+     * 1. Check if user is logged in
+     * 2. Find all empty meal slots in the current week
+     * 3. Request recommendations for the user
+     * 4. When recommendations are received (via propertyChange), assign them to empty slots
+     */
+    private void handleAutoFill() {
+        // Prevent duplicate requests
+        if (isAutoFilling) {
+            logger.info("Auto-fill already in progress, ignoring duplicate request");
+            return;
+        }
+        
+        String userId = SessionManager.getInstance().getCurrentUserId();
+        if (userId == null || userId.trim().isEmpty()) {
+            logger.warn("Cannot auto-fill: User not logged in");
+            return;
+        }
+        
+        if (recommendationsController == null) {
+            logger.error("Cannot auto-fill: Recommendations controller not available");
+            return;
+        }
+        
+        if (addMealController == null) {
+            logger.error("Cannot auto-fill: Add meal controller not available");
+            return;
+        }
+        
+        if (recommendationsViewModel == null) {
+            logger.error("Cannot auto-fill: Recommendations view model not available");
+            return;
+        }
+        
+        // Get current schedule
+        Schedule schedule = scheduleViewModel.getSchedule();
+        if (schedule == null) {
+            logger.warn("Cannot auto-fill: No schedule available");
+            return;
+        }
+        
+        // Find all empty slots in the current week
+        List<EmptySlot> emptySlots = findEmptySlots(schedule);
+        if (emptySlots.isEmpty()) {
+            logger.info("No empty slots to fill in the current week");
+            return;
+        }
+        
+        // Set flag to indicate we're auto-filling
+        isAutoFilling = true;
+        
+        logger.info("Auto-filling {} empty slot(s) in the current week", emptySlots.size());
+        
+        // Request recommendations
+        // The recommendations will be received via propertyChange("recommendations")
+        try {
+            recommendationsController.execute(userId);
+        } catch (Exception e) {
+            // Reset flag on error
+            isAutoFilling = false;
+            logger.error("Failed to request recommendations for auto-fill: {}", e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Phase 5: Finds all empty meal slots in the current week.
+     * 
+     * @param schedule The current schedule
+     * @return List of empty slots (date and meal type pairs)
+     */
+    private List<EmptySlot> findEmptySlots(Schedule schedule) {
+        List<EmptySlot> emptySlots = new ArrayList<>();
+        
+        // Check each day of the current week (Monday to Sunday)
+        for (int i = 0; i < 7; i++) {
+            LocalDate date = currentWeekStart.plusDays(i);
+            
+            // Check each meal type (Breakfast, Lunch, Dinner)
+            for (MealType mealType : MealType.values()) {
+                if (schedule.isSlotFree(date, mealType)) {
+                    emptySlots.add(new EmptySlot(date, mealType));
+                }
+            }
+        }
+        
+        return emptySlots;
+    }
+    
+    /**
+     * Phase 5: Processes recommendations received for auto-fill.
+     * Assigns recommendations to empty meal slots in the current week.
+     * Called when RecipeBrowseViewModel fires "recommendations" property change.
+     */
+    private void processAutoFillRecommendations() {
+        if (!isAutoFilling) {
+            return; // Not in auto-fill mode
+        }
+        
+        isAutoFilling = false; // Reset flag
+        
+        if (recommendationsViewModel == null) {
+            logger.error("Failed to receive recommendations for auto-fill: ViewModel is null");
+            return;
+        }
+        
+        List<Recipe> recommendations = recommendationsViewModel.getRecommendations();
+        if (recommendations == null || recommendations.isEmpty()) {
+            logger.info("No recommendations available for auto-fill");
+            return;
+        }
+        
+        // Get current schedule
+        Schedule schedule = scheduleViewModel.getSchedule();
+        if (schedule == null) {
+            logger.warn("Cannot process auto-fill: No schedule available");
+            return;
+        }
+        
+        // Find all empty slots
+        List<EmptySlot> emptySlots = findEmptySlots(schedule);
+        if (emptySlots.isEmpty()) {
+            logger.info("No empty slots to fill");
+            return;
+        }
+        
+        // Assign recommendations to empty slots
+        int mealsAdded = 0;
+        int mealsFailed = 0;
+        int recommendationIndex = 0;
+        
+        for (EmptySlot slot : emptySlots) {
+            if (recommendationIndex >= recommendations.size()) {
+                // No more recommendations available
+                logger.debug("No more recommendations available, filled {} out of {} empty slots", 
+                    mealsAdded, emptySlots.size());
+                break;
+            }
+            
+            Recipe recipe = recommendations.get(recommendationIndex);
+            if (recipe != null && recipe.getRecipeId() != null && !recipe.getRecipeId().trim().isEmpty()) {
+                try {
+                    String dateString = slot.date.toString();
+                    String mealTypeString = slot.mealType.name();
+                    String recipeId = recipe.getRecipeId();
+                    
+                    addMealController.execute(dateString, mealTypeString, recipeId);
+                    mealsAdded++;
+                    recommendationIndex++; // Move to next recommendation
+                    logger.debug("Successfully added meal {} on {} for auto-fill", slot.mealType, slot.date);
+                } catch (IllegalArgumentException e) {
+                    // Invalid date or meal type format
+                    mealsFailed++;
+                    recommendationIndex++; // Skip this recommendation
+                    logger.warn("Invalid input for meal {} on {} in auto-fill: {}", 
+                        slot.mealType, slot.date, e.getMessage());
+                } catch (Exception e) {
+                    // Other exceptions (e.g., schedule conflicts, data access errors)
+                    mealsFailed++;
+                    recommendationIndex++; // Skip this recommendation
+                    logger.error("Failed to add meal {} on {} for auto-fill: {}", 
+                        slot.mealType, slot.date, e.getMessage(), e);
+                }
+            } else {
+                // Recipe ID is null or empty, skip this recommendation
+                logger.warn("Skipping recommendation {}: recipe ID is null or empty", recommendationIndex);
+                recommendationIndex++;
+            }
+        }
+        
+        logger.info("Auto-fill completed: {} meal(s) added, {} failed out of {} empty slots", 
+            mealsAdded, mealsFailed, emptySlots.size());
+        
+        // Refresh the schedule view on JavaFX thread after all meals are added
+        Platform.runLater(() -> {
+            requestScheduleForActiveUser();
+            updateView();
+        });
+    }
+    
+    /**
+     * Phase 5: Helper class to represent an empty meal slot.
+     */
+    private static class EmptySlot {
+        final LocalDate date;
+        final MealType mealType;
+        
+        EmptySlot(LocalDate date, MealType mealType) {
+            this.date = date;
+            this.mealType = mealType;
         }
     }
 }

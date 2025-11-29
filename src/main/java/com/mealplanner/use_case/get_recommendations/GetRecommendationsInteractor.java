@@ -46,17 +46,39 @@ public class GetRecommendationsInteractor implements GetRecommendationsInputBoun
                 Collections.shuffle(shuffled);
                 recommendations = shuffled.subList(0, Math.min(3, shuffled.size()));
             } else {
-                // 2. 저장 레시피가 부족하면 인기 레시피 API 호출
+                // 2. 저장 레시피가 부족하면 모든 레시피에서 가져오기
                 recommendations.addAll(savedRecipes != null ? savedRecipes : new ArrayList<>());
                 
                 int needed = 3 - recommendations.size();
                 if (needed > 0) {
+                    // 2-1. 먼저 모든 레시피에서 가져오기
                     try {
-                        List<Recipe> popularRecipes = apiClient.getPopularRecipes(needed);
-                        recommendations.addAll(popularRecipes);
-                    } catch (IOException e) {
-                        // API 호출 실패 시 저장 레시피만 반환
-                        // 에러는 로그만 남기고 사용자에게는 표시하지 않음
+                        List<Recipe> allRecipes = dataAccess.getAllRecipes();
+                        if (allRecipes != null && !allRecipes.isEmpty()) {
+                            // 이미 추가된 레시피 제외
+                            List<Recipe> availableRecipes = new ArrayList<>(allRecipes);
+                            availableRecipes.removeAll(recommendations);
+                            
+                            if (!availableRecipes.isEmpty()) {
+                                Collections.shuffle(availableRecipes);
+                                int toAdd = Math.min(needed, availableRecipes.size());
+                                recommendations.addAll(availableRecipes.subList(0, toAdd));
+                                needed = 3 - recommendations.size();
+                            }
+                        }
+                    } catch (Exception e) {
+                        // 에러 발생 시 무시하고 API 호출 시도
+                    }
+                    
+                    // 2-2. 여전히 부족하면 API 호출
+                    if (needed > 0) {
+                        try {
+                            List<Recipe> popularRecipes = apiClient.getPopularRecipes(needed);
+                            recommendations.addAll(popularRecipes);
+                        } catch (IOException e) {
+                            // API 호출 실패 시 현재까지 수집한 레시피만 반환
+                            // 에러는 로그만 남기고 사용자에게는 표시하지 않음
+                        }
                     }
                 }
             }

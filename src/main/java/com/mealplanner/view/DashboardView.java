@@ -7,6 +7,10 @@ import com.mealplanner.entity.NutritionInfo;
 import com.mealplanner.entity.Recipe;
 import com.mealplanner.entity.Schedule;
 import com.mealplanner.interface_adapter.ViewManagerModel;
+import com.mealplanner.interface_adapter.controller.AddMealController;
+import com.mealplanner.interface_adapter.controller.GetRecommendationsController;
+import com.mealplanner.interface_adapter.view_model.RecipeBrowseViewModel;
+import com.mealplanner.interface_adapter.view_model.RecipeDetailViewModel;
 import com.mealplanner.interface_adapter.view_model.ScheduleViewModel;
 import com.mealplanner.repository.RecipeRepository;
 import com.mealplanner.view.component.*;
@@ -32,6 +36,7 @@ import javafx.scene.shape.Rectangle;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +48,39 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
     private final ViewManagerModel viewManagerModel;
     private final ScheduleViewModel scheduleViewModel;
     private final RecipeRepository recipeRepository;
+    /**
+     * Controller for getting recipe recommendations.
+     * Phase 2: Injected but not yet used (infrastructure only).
+     * Phase 3: Will be used to load and display recommended recipes.
+     * Phase 4: Used in auto-generate functionality.
+     */
+    private final GetRecommendationsController recommendationsController;
+    
+    /**
+     * ViewModel for receiving recipe recommendations.
+     * Phase 3: Injected to receive recommendations from GetRecommendationsPresenter.
+     * Phase 4: Used in auto-generate to get recommended recipes.
+     */
+    private final RecipeBrowseViewModel recommendationsViewModel;
+    
+    /**
+     * ViewModel for recipe detail view.
+     * Phase 3: Used to navigate to recipe detail when clicking on recommendation cards.
+     */
+    private final RecipeDetailViewModel recipeDetailViewModel;
+    
+    /**
+     * Controller for adding meals to schedule.
+     * Phase 4: Used for auto-generate functionality to add meals to today's schedule.
+     */
+    private final AddMealController addMealController;
+    
+    /**
+     * Flag to track if we're waiting for recommendations for auto-generate.
+     * Phase 4: Used to distinguish between user-initiated recommendation requests
+     * and auto-generate requests.
+     */
+    private boolean isAutoGenerating = false;
 
     // Default nutrition goals are now retrieved from user or NutritionGoals.createDefault()
 
@@ -53,13 +91,37 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
     private Label remainingCaloriesLabel;
     private Progress proteinBar, carbsBar, fatBar;
     private Label proteinValLabel, carbsValLabel, fatValLabel; // Value labels for nutrient bars
+    private Label welcomeLabel; // Welcome message label (dynamically updated based on logged-in user)
+    private HBox recommendedRecipeList; // Phase 3: Container for recommended recipe cards
     private final Sonner sonner;
 
-    public DashboardView(ViewManagerModel viewManagerModel, ScheduleViewModel scheduleViewModel, RecipeRepository recipeRepository) {
+    /**
+     * Constructor for DashboardView.
+     * Phase 2: GetRecommendationsController is injected but not yet used.
+     * Phase 3: RecipeBrowseViewModel is injected to receive recommendations.
+     * Phase 4: AddMealController is injected for auto-generate functionality.
+     * 
+     * @param viewManagerModel The view manager model for navigation
+     * @param scheduleViewModel The schedule view model for meal data
+     * @param recipeRepository The recipe repository for recipe data
+     * @param recommendationsController The controller for recommendations
+     * @param recommendationsViewModel The view model for receiving recommendations (Phase 3)
+     * @param recipeDetailViewModel The view model for recipe detail navigation (Phase 3)
+     * @param addMealController The controller for adding meals to schedule (Phase 4: auto-generate)
+     */
+    public DashboardView(ViewManagerModel viewManagerModel, ScheduleViewModel scheduleViewModel, RecipeRepository recipeRepository, GetRecommendationsController recommendationsController, RecipeBrowseViewModel recommendationsViewModel, RecipeDetailViewModel recipeDetailViewModel, AddMealController addMealController) {
         this.viewManagerModel = viewManagerModel;
         this.scheduleViewModel = scheduleViewModel;
         this.recipeRepository = recipeRepository;
+        this.recommendationsController = recommendationsController;
+        this.recommendationsViewModel = recommendationsViewModel;
+        this.recipeDetailViewModel = recipeDetailViewModel;
+        this.addMealController = addMealController;
         this.scheduleViewModel.addPropertyChangeListener(this);
+        // Phase 3: Listen to recommendations changes (for display and auto-generate)
+        if (recommendationsViewModel != null) {
+            recommendationsViewModel.addPropertyChangeListener(this);
+        }
         this.sonner = new Sonner();
 
         // 1. Layout & Background
@@ -70,7 +132,7 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         
         // Welcome Title
         VBox titleBox = new VBox(5);
-        Label welcomeLabel = new Label("Welcome back, Eden!");
+        welcomeLabel = new Label("Welcome back!");
         welcomeLabel.getStyleClass().addAll("welcome-title", "text-gray-900");
         
         Label subLabel = new Label("Let's plan your meals for today");
@@ -175,7 +237,16 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
             }
         });
 
+        // Phase 1: Add ViewManagerModel listener for username changes to update welcome message
+        this.viewManagerModel.addPropertyChangeListener(this);
+        
+        // Phase 3: Add RecipeBrowseViewModel listener for recommendations
+        if (recommendationsViewModel != null) {
+            recommendationsViewModel.addPropertyChangeListener(this);
+        }
+        
         // Initial Update
+        updateWelcomeMessage();
         updateView();
     }
 
@@ -199,6 +270,8 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         autoGenBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: -fx-theme-primary; -fx-font-weight: 600; -fx-cursor: hand;");
         Node sparkIcon = SvgIconLoader.loadIcon("/svg/star.svg", 16, Color.web("#4CAF50"));
         if (sparkIcon != null) autoGenBtn.setGraphic(sparkIcon);
+        // Phase 4: Add click handler for auto-generate functionality
+        autoGenBtn.setOnAction(e -> handleAutoGenerate());
         
         headerRow.getChildren().addAll(title, spacer, autoGenBtn);
         
@@ -344,6 +417,7 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         Label viewAll = new Label("View all >");
         viewAll.getStyleClass().add("text-lime-600");
         viewAll.setStyle("-fx-cursor: hand; -fx-font-weight: 600; -fx-font-size: 14px;");
+        viewAll.setOnMouseClicked(e -> viewManagerModel.setActiveView(ViewManager.BROWSE_RECIPE_VIEW));
         
         headerRow.getChildren().addAll(title, spacer, viewAll);
 
@@ -354,20 +428,117 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         scrollPane.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
         scrollPane.setPannable(true);
 
-        HBox recipeList = new HBox(16);
-        recipeList.setPadding(new Insets(5)); 
+        // Phase 3: Use dynamic recipe list instead of hardcoded recipes
+        recommendedRecipeList = new HBox(16);
+        recommendedRecipeList.setPadding(new Insets(5));
         
-        recipeList.getChildren().add(createRecipeCard("Quinoa Buddha Bowl", "320 cal", "15 min", "/images/bowl.jpg"));
-        recipeList.getChildren().add(createRecipeCard("Grilled Salmon", "450 cal", "25 min", "/images/salmon.jpg"));
-        recipeList.getChildren().add(createRecipeCard("Chicken Salad", "280 cal", "10 min", "/images/salad.jpg"));
+        // Initial loading state
+        Label loadingLabel = new Label("Loading recommendations...");
+        loadingLabel.getStyleClass().add("text-gray-500");
+        recommendedRecipeList.getChildren().add(loadingLabel);
 
-        scrollPane.setContent(recipeList);
+        scrollPane.setContent(recommendedRecipeList);
 
         container.getChildren().addAll(headerRow, scrollPane);
+        
+        // Phase 3: Load recommendations on initialization
+        loadRecommendations();
+        
         return container;
     }
     
-    private VBox createRecipeCard(String name, String calories, String time, String imagePath) {
+    /**
+     * Phase 3: Loads recommendations for the current user.
+     * Called on initialization and when user logs in.
+     */
+    private void loadRecommendations() {
+        if (recommendationsController == null) {
+            if (recommendedRecipeList != null) {
+                recommendedRecipeList.getChildren().clear();
+                Label noRecommendationsLabel = new Label("No recommendations available");
+                noRecommendationsLabel.getStyleClass().add("text-gray-500");
+                recommendedRecipeList.getChildren().add(noRecommendationsLabel);
+            }
+            return;
+        }
+        
+        String userId = SessionManager.getInstance().getCurrentUserId();
+        if (userId == null || userId.trim().isEmpty()) {
+            if (recommendedRecipeList != null) {
+                recommendedRecipeList.getChildren().clear();
+                Label loginPromptLabel = new Label("Please log in to see recommendations");
+                loginPromptLabel.getStyleClass().add("text-gray-500");
+                recommendedRecipeList.getChildren().add(loginPromptLabel);
+            }
+            return;
+        }
+        
+        // Show loading state
+        if (recommendedRecipeList != null) {
+            recommendedRecipeList.getChildren().clear();
+            Label loadingLabel = new Label("Loading recommendations...");
+            loadingLabel.getStyleClass().add("text-gray-500");
+            recommendedRecipeList.getChildren().add(loadingLabel);
+        }
+        
+        // Request recommendations
+        try {
+            recommendationsController.execute(userId);
+        } catch (Exception e) {
+            logger.error("Failed to load recommendations", e);
+            if (recommendedRecipeList != null) {
+                recommendedRecipeList.getChildren().clear();
+                Label errorLabel = new Label("Error loading recommendations");
+                errorLabel.getStyleClass().add("text-gray-500");
+                recommendedRecipeList.getChildren().add(errorLabel);
+            }
+        }
+    }
+    
+    /**
+     * Phase 3: Updates the recommended recipes display when recommendations are received.
+     * Called when RecipeBrowseViewModel fires "recommendations" property change.
+     */
+    private void updateRecommendedRecipes() {
+        if (recommendedRecipeList == null || recommendationsViewModel == null) {
+            return;
+        }
+        
+        // Skip if we're in auto-generate mode (will be handled by processAutoGenerateRecommendations)
+        if (isAutoGenerating) {
+            return;
+        }
+        
+        List<Recipe> recommendations = recommendationsViewModel.getRecommendations();
+        recommendedRecipeList.getChildren().clear();
+        
+        if (recommendations == null || recommendations.isEmpty()) {
+            Label noRecommendationsLabel = new Label("No recommendations available");
+            noRecommendationsLabel.getStyleClass().add("text-gray-500");
+            recommendedRecipeList.getChildren().add(noRecommendationsLabel);
+            return;
+        }
+        
+        // Display up to 3 recommendations
+        int count = Math.min(3, recommendations.size());
+        for (int i = 0; i < count; i++) {
+            Recipe recipe = recommendations.get(i);
+            if (recipe != null) {
+                VBox card = createRecipeCard(recipe);
+                recommendedRecipeList.getChildren().add(card);
+            }
+        }
+    }
+    
+    /**
+     * Phase 3: Creates a recipe card from a Recipe object.
+     * Replaces the old createRecipeCard(String, String, String, String) method.
+     */
+    private VBox createRecipeCard(Recipe recipe) {
+        if (recipe == null) {
+            return createEmptyRecipeCard();
+        }
+        
         VBox card = new VBox(0);
         String defaultStyle = "-fx-background-color: #f9fafb; -fx-background-radius: 12px; -fx-effect: null; -fx-border-color: transparent; -fx-border-width: 1px;";
         String hoverStyle = "-fx-background-color: #ffffff; -fx-background-radius: 12px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 4); -fx-border-color: #e5e7eb; -fx-border-width: 1px;";
@@ -375,6 +546,7 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         card.setStyle(defaultStyle);
         card.setPrefWidth(200);
         card.setMinWidth(200);
+        card.setCursor(javafx.scene.Cursor.HAND);
         
         card.setOnMouseEntered(e -> card.setStyle(hoverStyle));
         card.setOnMouseExited(e -> card.setStyle(defaultStyle));
@@ -386,7 +558,7 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         VBox content = new VBox(8);
         content.setPadding(new Insets(12));
         
-        Label nameLabel = new Label(name);
+        Label nameLabel = new Label(recipe.getName());
         nameLabel.getStyleClass().add("text-gray-900");
         nameLabel.setStyle("-fx-font-weight: 600; -fx-font-size: 14px;");
         nameLabel.setWrapText(true);
@@ -394,21 +566,28 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         HBox meta = new HBox(10);
         meta.setAlignment(Pos.CENTER_LEFT);
         
-        // Fire Icon for Calories (Medium Gray)
+        // Fire Icon for Calories
         HBox calBox = new HBox(4);
         calBox.setAlignment(Pos.CENTER_LEFT);
         Node fireIcon = SvgIconLoader.loadIcon("/svg/fire-flame.svg", 12, Color.web("#6B7280"));
-        Label calLabel = new Label(calories);
+        String calText = recipe.getNutritionInfo() != null 
+            ? (int)recipe.getNutritionInfo().getCalories() + " cal"
+            : "-- cal";
+        Label calLabel = new Label(calText);
         calLabel.getStyleClass().add("text-gray-500");
         calLabel.setStyle("-fx-font-size: 11px;");
         if (fireIcon != null) calBox.getChildren().add(fireIcon);
         calBox.getChildren().add(calLabel);
         
-        // Clock Icon for Time (Medium Gray)
+        // Clock Icon for Time
         HBox timeBox = new HBox(4);
         timeBox.setAlignment(Pos.CENTER_LEFT);
         Node clockIcon = SvgIconLoader.loadIcon("/svg/clock.svg", 12, Color.web("#6B7280"));
-        Label timeLabel = new Label(time);
+        Integer cookTime = recipe.getCookTimeMinutes();
+        String timeText = (cookTime != null && cookTime > 0) 
+            ? cookTime + " min"
+            : "--";
+        Label timeLabel = new Label(timeText);
         timeLabel.getStyleClass().add("text-gray-500");
         timeLabel.setStyle("-fx-font-size: 11px;");
         if (clockIcon != null) timeBox.getChildren().add(clockIcon);
@@ -419,7 +598,38 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         content.getChildren().addAll(nameLabel, meta);
         card.getChildren().addAll(imagePlaceholder, content);
         
+        // Phase 3: Add click handler to navigate to recipe detail
+        card.setOnMouseClicked(e -> openRecipeDetail(recipe));
+        
         return card;
+    }
+    
+    /**
+     * Creates an empty recipe card placeholder.
+     */
+    private VBox createEmptyRecipeCard() {
+        VBox card = new VBox(0);
+        card.setPrefWidth(200);
+        card.setMinWidth(200);
+        card.setStyle("-fx-background-color: #f9fafb; -fx-background-radius: 12px;");
+        return card;
+    }
+    
+    /**
+     * Phase 3: Opens recipe detail view when clicking on a recommendation card.
+     */
+    private void openRecipeDetail(Recipe recipe) {
+        if (recipe == null || recipeDetailViewModel == null || viewManagerModel == null) {
+            logger.warn("Cannot open recipe detail: recipe={}, viewModel={}, viewManager={}", 
+                recipe != null, recipeDetailViewModel != null, viewManagerModel != null);
+            return;
+        }
+        try {
+            recipeDetailViewModel.setRecipe(recipe);
+            viewManagerModel.setActiveView(ViewManager.RECIPE_DETAIL_VIEW);
+        } catch (Exception e) {
+            logger.error("Failed to open recipe detail for recipe: {}", recipe.getName(), e);
+        }
     }
 
     private VBox createQuickActionsSection() {
@@ -721,6 +931,30 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
 
     @Override
     public void propertyChange(PropertyChangeEvent evt) {
+        if (evt == null) {
+            return; // Defensive check
+        }
+        
+        String property = evt.getPropertyName();
+        if ("currentUsername".equals(property) || "view".equals(property)) {
+            Platform.runLater(this::updateWelcomeMessage);
+            // Phase 3: Reload recommendations when user logs in
+            if ("currentUsername".equals(property)) {
+                Platform.runLater(this::loadRecommendations);
+            }
+        }
+        
+        // Phase 3 & 4: Handle recommendations
+        if ("recommendations".equals(property)) {
+            if (isAutoGenerating) {
+                // Phase 4: Process recommendations for auto-generate
+                Platform.runLater(this::processAutoGenerateRecommendations);
+            } else {
+                // Phase 3: Update recommended recipes display
+                Platform.runLater(this::updateRecommendedRecipes);
+            }
+        }
+        
         Platform.runLater(this::updateView);
     }
 
@@ -949,5 +1183,180 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         }
 
         return new NutritionInfo(totalCalories, totalProtein, totalCarbs, totalFat);
+    }
+    
+    /**
+     * Updates the welcome message with the current logged-in user's name.
+     * If no user is logged in, displays a generic welcome message.
+     */
+    private void updateWelcomeMessage() {
+        if (welcomeLabel == null) {
+            return; // Defensive check: label not initialized yet
+        }
+        
+        String username = SessionManager.getInstance().getCurrentUsername();
+        if (username != null && !username.trim().isEmpty()) {
+            welcomeLabel.setText("Welcome back, " + username + "!");
+        } else {
+            welcomeLabel.setText("Welcome back!");
+        }
+    }
+    
+    /**
+     * Phase 4: Handles auto-generate button click.
+     * Automatically generates meal plan for today using recommended recipes.
+     * 
+     * Flow:
+     * 1. Check if user is logged in
+     * 2. Check if auto-generate is already in progress (prevent duplicate requests)
+     * 3. Check if meals already exist for today
+     * 4. Request recommendations for the user
+     * 5. When recommendations are received (via propertyChange), assign them to Breakfast, Lunch, Dinner
+     */
+    private void handleAutoGenerate() {
+        // Prevent duplicate requests
+        if (isAutoGenerating) {
+            sonner.show("Already generating", "Please wait for the current meal plan generation to complete.", Sonner.Type.INFO);
+            return;
+        }
+        
+        String userId = SessionManager.getInstance().getCurrentUserId();
+        if (userId == null || userId.trim().isEmpty()) {
+            sonner.show("Please log in", "You need to be logged in to auto-generate meals.", Sonner.Type.ERROR);
+            return;
+        }
+        
+        if (recommendationsController == null) {
+            sonner.show("Feature unavailable", "Recommendations service is not available.", Sonner.Type.ERROR);
+            return;
+        }
+        
+        if (addMealController == null) {
+            sonner.show("Feature unavailable", "Meal planning service is not available.", Sonner.Type.ERROR);
+            return;
+        }
+        
+        if (recommendationsViewModel == null) {
+            sonner.show("Feature unavailable", "Recommendations view model is not available.", Sonner.Type.ERROR);
+            return;
+        }
+        
+        // Get today's date
+        LocalDate today = LocalDate.now();
+        
+        // Check if meals already exist for today
+        Schedule schedule = scheduleViewModel.getSchedule();
+        if (schedule != null) {
+            Map<MealType, String> todaysMeals = schedule.getAllMeals().get(today);
+            if (todaysMeals != null && !todaysMeals.isEmpty()) {
+                // Ask user if they want to replace existing meals
+                // For now, we'll skip if meals exist (can be enhanced later with confirmation dialog)
+                sonner.show("Meals already planned", "You already have meals planned for today. Please remove them first or use the schedule view to update.", Sonner.Type.INFO);
+                return;
+            }
+        }
+        
+        // Set flag to indicate we're auto-generating (prevents duplicate requests)
+        isAutoGenerating = true;
+        
+        // Show loading message
+        sonner.show("Auto-generating...", "We're creating your meal plan for today.", Sonner.Type.INFO);
+        
+        // Request recommendations
+        // The recommendations will be received via propertyChange("recommendations")
+        try {
+            recommendationsController.execute(userId);
+        } catch (Exception e) {
+            // Reset flag on error
+            isAutoGenerating = false;
+            logger.error("Failed to request recommendations for auto-generate: {}", e.getMessage());
+            sonner.show("Error", "Failed to request recommendations. Please try again.", Sonner.Type.ERROR);
+        }
+    }
+    
+    /**
+     * Phase 4: Processes recommendations received for auto-generate.
+     * Assigns the first 3 recommendations to Breakfast, Lunch, and Dinner.
+     * Called when RecipeBrowseViewModel fires "recommendations" property change.
+     */
+    private void processAutoGenerateRecommendations() {
+        if (!isAutoGenerating) {
+            return; // Not in auto-generate mode
+        }
+        
+        isAutoGenerating = false; // Reset flag
+        
+        if (recommendationsViewModel == null) {
+            sonner.show("Error", "Failed to receive recommendations.", Sonner.Type.ERROR);
+            return;
+        }
+        
+        List<Recipe> recommendations = recommendationsViewModel.getRecommendations();
+        if (recommendations == null || recommendations.isEmpty()) {
+            sonner.show("No recommendations", "We couldn't find any recommendations for you. Please try again later.", Sonner.Type.INFO);
+            return;
+        }
+        
+        // Get today's date
+        LocalDate today = LocalDate.now();
+        
+        // Assign recommendations to meals
+        // First recommendation -> Breakfast
+        // Second recommendation -> Lunch
+        // Third recommendation -> Dinner
+        MealType[] mealTypes = {MealType.BREAKFAST, MealType.LUNCH, MealType.DINNER};
+        int mealsAdded = 0;
+        int mealsFailed = 0;
+        StringBuilder failedMeals = new StringBuilder();
+        
+        for (int i = 0; i < Math.min(3, recommendations.size()); i++) {
+            Recipe recipe = recommendations.get(i);
+            if (recipe != null && recipe.getRecipeId() != null && !recipe.getRecipeId().trim().isEmpty()) {
+                try {
+                    String dateString = today.toString();
+                    String mealTypeString = mealTypes[i].name();
+                    String recipeId = recipe.getRecipeId();
+                    
+                    addMealController.execute(dateString, mealTypeString, recipeId);
+                    mealsAdded++;
+                } catch (IllegalArgumentException e) {
+                    // Invalid date or meal type format
+                    mealsFailed++;
+                    failedMeals.append(mealTypes[i].getDisplayName()).append(" ");
+                    logger.error("Invalid input for meal {} in auto-generate: {}", mealTypes[i], e.getMessage());
+                } catch (Exception e) {
+                    // Other exceptions (e.g., schedule conflicts, data access errors)
+                    mealsFailed++;
+                    failedMeals.append(mealTypes[i].getDisplayName()).append(" ");
+                    logger.error("Failed to add meal {} for auto-generate: {}", mealTypes[i], e.getMessage(), e);
+                }
+            } else {
+                // Recipe ID is null or empty
+                mealsFailed++;
+                failedMeals.append(mealTypes[i].getDisplayName()).append(" ");
+                logger.warn("Skipping meal {} in auto-generate: recipe ID is null or empty", mealTypes[i]);
+            }
+        }
+        
+        // Provide feedback based on results
+        if (mealsAdded > 0) {
+            if (mealsFailed > 0) {
+                sonner.show("Partially completed", 
+                    String.format("Added %d meal(s) successfully. Failed to add %d meal(s): %s", 
+                        mealsAdded, mealsFailed, failedMeals.toString().trim()), 
+                    Sonner.Type.SUCCESS);
+            } else {
+                sonner.show("Meal plan created!", 
+                    String.format("Successfully added %d meal(s) to your schedule for today.", mealsAdded), 
+                    Sonner.Type.SUCCESS);
+            }
+            // Refresh the view to show new meals
+            updateView();
+        } else {
+            sonner.show("Failed to create meal plan", 
+                String.format("Could not add any meals to your schedule. %d meal(s) failed: %s", 
+                    mealsFailed, failedMeals.toString().trim()), 
+                Sonner.Type.ERROR);
+        }
     }
 }

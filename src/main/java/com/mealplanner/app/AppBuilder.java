@@ -85,11 +85,43 @@ public class AppBuilder {
         FileRecipeRepository recipeRepository = new FileRecipeRepository();
 
         // Build Schedule View - PHASE 2: Inject RecipeRepository for real data
-        ScheduleView scheduleView = new ScheduleView(scheduleViewModel, scheduleController, viewManagerModel, recipeRepository);
+        // PHASE 5: Inject GetRecommendationsController and RecipeBrowseViewModel for Auto-fill functionality
+        // PHASE 6: Inject AddMealController for Copy Last Week functionality
+        // Create a separate RecipeBrowseViewModel for ScheduleView's auto-fill feature
+        RecipeBrowseViewModel scheduleRecommendationsViewModel = new RecipeBrowseViewModel();
+        GetRecommendationsPresenter scheduleRecommendationsPresenter = new GetRecommendationsPresenter(scheduleRecommendationsViewModel);
+        var scheduleRecommendationsInteractor = UseCaseFactory.createGetRecommendationsInteractor(scheduleRecommendationsPresenter);
+        GetRecommendationsController scheduleRecommendationsController = new GetRecommendationsController(scheduleRecommendationsInteractor);
+        
+        ScheduleView scheduleView = new ScheduleView(
+            scheduleViewModel, 
+            scheduleController, 
+            viewManagerModel, 
+            recipeRepository, 
+            scheduleRecommendationsController,  // Phase 5: Added for auto-fill
+            scheduleRecommendationsViewModel,   // Phase 5: Added for auto-fill
+            addMealController                   // Phase 6: Added for Copy Last Week
+        );
         viewManager.addView(ViewManager.SCHEDULE_VIEW, scheduleView);
 
-        // Build Dashboard View
-        DashboardView dashboardView = new DashboardView(viewManagerModel, scheduleViewModel, recipeRepository);
+        // PHASE 3: Create GetRecommendations flow for DashboardView
+        // Using a separate ViewModel for DashboardView (can be shared with BrowseRecipeView in future if needed)
+        RecipeBrowseViewModel recommendationsViewModel = new RecipeBrowseViewModel();
+        GetRecommendationsPresenter recommendationsPresenter = new GetRecommendationsPresenter(recommendationsViewModel);
+        var recommendationsInteractor = UseCaseFactory.createGetRecommendationsInteractor(recommendationsPresenter);
+        GetRecommendationsController recommendationsController = new GetRecommendationsController(recommendationsInteractor);
+
+        // Build Dashboard View - PHASE 3: Inject GetRecommendationsController and ViewModel
+        // PHASE 4: Inject AddMealController for auto-generate functionality
+        DashboardView dashboardView = new DashboardView(
+            viewManagerModel, 
+            scheduleViewModel, 
+            recipeRepository, 
+            recommendationsController,
+            recommendationsViewModel,  // Phase 3: Added for recommendations display
+            recipeDetailViewModel,     // Phase 3: Added for recipe detail navigation
+            addMealController          // Phase 4: Added for auto-generate
+        );
         viewManager.addView(ViewManager.DASHBOARD_VIEW, dashboardView);
 
         // Build Profile View

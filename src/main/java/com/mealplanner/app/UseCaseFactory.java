@@ -50,6 +50,7 @@ import com.mealplanner.use_case.update_nutrition_goals.UpdateNutritionGoalsInput
 import com.mealplanner.use_case.update_nutrition_goals.UpdateNutritionGoalsOutputBoundary;
 import com.mealplanner.repository.UserRepository;
 import com.mealplanner.repository.impl.FileUserRepository;
+import com.mealplanner.repository.impl.FileRecipeRepository;
 import okhttp3.OkHttpClient;
 
 public class UseCaseFactory {
@@ -243,7 +244,8 @@ public class UseCaseFactory {
         }
         SpoonacularApiClient apiClient = createSpoonacularApiClient();
         UserRepository userRepository = new FileUserRepository("data/users");
-        GetRecommendationsDataAccessInterface dataAccess = new com.mealplanner.data_access.database.FileRecipeDataAccessObject(userRepository);
+        RecipeRepository recipeRepository = new FileRecipeRepository();
+        GetRecommendationsDataAccessInterface dataAccess = new com.mealplanner.data_access.database.FileRecipeDataAccessObject(userRepository, recipeRepository);
         return new com.mealplanner.use_case.get_recommendations.GetRecommendationsInteractor(dataAccess, apiClient, presenter);
     }
 

@@ -13,6 +13,9 @@ public class LoginController {
         this.loginInteractor = loginInteractor;
     }
     public void execute(String username, String password){
+        if (username == null || password == null) {
+            throw new NullPointerException("Username and password cannot be null");
+        }
         LoginInputData inputData = new LoginInputData(username, password);
         loginInteractor.execute(inputData);
     }

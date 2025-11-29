@@ -3,6 +3,7 @@ package com.mealplanner.data_access.database;
 import com.mealplanner.entity.Recipe;
 import com.mealplanner.entity.User;
 import com.mealplanner.exception.DataAccessException;
+import com.mealplanner.repository.RecipeRepository;
 import com.mealplanner.repository.UserRepository;
 import com.mealplanner.use_case.get_recommendations.GetRecommendationsDataAccessInterface;
 import com.mealplanner.use_case.store_recipe.StoreRecipeDataAccessInterface;
@@ -25,13 +26,19 @@ public class FileRecipeDataAccessObject implements StoreRecipeDataAccessInterfac
     private static final String FILE_EXTENSION = ".json";
     
     private final UserRepository userRepository;
+    private final RecipeRepository recipeRepository;
 
     public FileRecipeDataAccessObject() {
-        this(null);
+        this(null, null);
     }
     
     public FileRecipeDataAccessObject(UserRepository userRepository) {
+        this(userRepository, null);
+    }
+    
+    public FileRecipeDataAccessObject(UserRepository userRepository, RecipeRepository recipeRepository) {
         this.userRepository = userRepository;
+        this.recipeRepository = recipeRepository;
         ensureDirectoryExists();
     }
 
@@ -145,6 +152,25 @@ public class FileRecipeDataAccessObject implements StoreRecipeDataAccessInterfac
                     recipes.add(recipe);
                 }
             }
+        } catch (Exception e) {
+            // 에러 발생 시 빈 리스트 반환
+            return recipes;
+        }
+        
+        return recipes;
+    }
+    
+    @Override
+    public List<Recipe> getAllRecipes() {
+        List<Recipe> recipes = new ArrayList<>();
+        
+        if (recipeRepository == null) {
+            // RecipeRepository가 없으면 빈 리스트 반환
+            return recipes;
+        }
+        
+        try {
+            recipes = recipeRepository.findAll();
         } catch (Exception e) {
             // 에러 발생 시 빈 리스트 반환
             return recipes;
