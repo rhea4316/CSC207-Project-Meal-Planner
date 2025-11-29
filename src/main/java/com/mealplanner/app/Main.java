@@ -8,8 +8,10 @@ import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.util.FontLoader;
+import com.mealplanner.util.ImageCacheManager;
 import com.mealplanner.view.SidebarPanel;
 import com.mealplanner.view.ViewManager;
+import javafx.application.Platform;
 
 public class Main extends Application {
 
@@ -88,6 +90,14 @@ public class Main extends Application {
             
             primaryStage.setTitle("PlanEat");
             primaryStage.setScene(scene);
+            
+            // 종료 시 캐시 정리
+            primaryStage.setOnCloseRequest(event -> {
+                ImageCacheManager.getInstance().shutdown();
+                Platform.exit();
+                System.exit(0);
+            });
+            
             primaryStage.show();
 
         } catch (Exception e) {

@@ -42,6 +42,14 @@ import com.mealplanner.use_case.store_recipe.StoreRecipeOutputBoundary;
 import com.mealplanner.use_case.view_schedule.ViewScheduleDataAccessInterface;
 import com.mealplanner.use_case.view_schedule.ViewScheduleInputBoundary;
 import com.mealplanner.use_case.view_schedule.ViewScheduleOutputBoundary;
+import com.mealplanner.use_case.get_recommendations.GetRecommendationsDataAccessInterface;
+import com.mealplanner.use_case.get_recommendations.GetRecommendationsInputBoundary;
+import com.mealplanner.use_case.get_recommendations.GetRecommendationsOutputBoundary;
+import com.mealplanner.use_case.update_nutrition_goals.UpdateNutritionGoalsDataAccessInterface;
+import com.mealplanner.use_case.update_nutrition_goals.UpdateNutritionGoalsInputBoundary;
+import com.mealplanner.use_case.update_nutrition_goals.UpdateNutritionGoalsOutputBoundary;
+import com.mealplanner.repository.UserRepository;
+import com.mealplanner.repository.impl.FileUserRepository;
 import okhttp3.OkHttpClient;
 
 public class UseCaseFactory {
@@ -224,5 +232,29 @@ public class UseCaseFactory {
         }
         DeleteMealDataAccessInterface dataAccess = new FileScheduleDataAccessObject(new FileUserDataAccessObject(), viewManagerModel);
         return new com.mealplanner.use_case.manage_meal_plan.delete.DeleteMealInteractor(dataAccess, presenter);
+    }
+
+    /**
+     * Creates a GetRecommendationsInteractor with properly wired dependencies.
+     */
+    public static GetRecommendationsInputBoundary createGetRecommendationsInteractor(GetRecommendationsOutputBoundary presenter) {
+        if (presenter == null) {
+            throw new IllegalArgumentException("Presenter cannot be null");
+        }
+        SpoonacularApiClient apiClient = createSpoonacularApiClient();
+        UserRepository userRepository = new FileUserRepository("data/users");
+        GetRecommendationsDataAccessInterface dataAccess = new com.mealplanner.data_access.database.FileRecipeDataAccessObject(userRepository);
+        return new com.mealplanner.use_case.get_recommendations.GetRecommendationsInteractor(dataAccess, apiClient, presenter);
+    }
+
+    /**
+     * Creates an UpdateNutritionGoalsInteractor with properly wired dependencies.
+     */
+    public static UpdateNutritionGoalsInputBoundary createUpdateNutritionGoalsInteractor(UpdateNutritionGoalsOutputBoundary presenter) {
+        if (presenter == null) {
+            throw new IllegalArgumentException("Presenter cannot be null");
+        }
+        UpdateNutritionGoalsDataAccessInterface dataAccess = new FileUserDataAccessObject();
+        return new com.mealplanner.use_case.update_nutrition_goals.UpdateNutritionGoalsInteractor(dataAccess, presenter);
     }
 }

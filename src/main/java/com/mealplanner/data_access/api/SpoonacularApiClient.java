@@ -163,11 +163,19 @@ public class SpoonacularApiClient {
                 imageUrl = json.optString("image", null);
             }
             
+            // Parse cook time if available (findByIngredients may include readyInMinutes)
+            Integer cookTimeMinutes = null;
+            if (json.has("readyInMinutes")) {
+                int readyTime = json.optInt("readyInMinutes", 0);
+                if (readyTime > 0) {
+                    cookTimeMinutes = readyTime;
+                }
+            }
+            
             // No nutrition info available from findByIngredients
-            // No cook time available from findByIngredients
             
             return new Recipe(name, ingredients, steps, servingSize, 
-                            null, null, null, imageUrl, recipeId);
+                            null, cookTimeMinutes, null, imageUrl, recipeId);
         } catch (Exception e) {
             throw new IOException("Failed to parse recipe from findByIngredients JSON: " + e.getMessage(), e);
         }
@@ -251,6 +259,51 @@ public class SpoonacularApiClient {
         urlBuilder.append("&apiKey=").append(apiKey);
 
         return makeRequest(urlBuilder.toString());
+    }
+    
+    /**
+     * Get popular/random recipes from Spoonacular API.
+     * Uses the random recipes endpoint to get diverse recipe recommendations.
+     * 
+     * @param numberOfRecipes Number of recipes to retrieve (max 10 recommended)
+     * @return List of popular recipes
+     * @throws IOException if API call fails
+     */
+    public List<Recipe> getPopularRecipes(int numberOfRecipes) throws IOException {
+        if (numberOfRecipes <= 0 || numberOfRecipes > 10) {
+            numberOfRecipes = 3; // Default to 3
+        }
+        
+        String baseUrl = ApiConfig.getSpoonacularBaseUrl();
+        String apiKey = ApiConfig.getSpoonacularApiKey();
+        
+        if (StringUtil.isNullOrEmpty(apiKey)) {
+            throw new IOException("Spoonacular API key is not configured");
+        }
+        
+        // Use random recipes endpoint
+        String url = baseUrl + "/recipes/random?number=" + numberOfRecipes + "&apiKey=" + apiKey;
+        
+        String apiResponse = makeRequest(url);
+        JSONObject json = new JSONObject(apiResponse);
+        
+        // Parse response - random endpoint returns {recipes: [...]}
+        List<Recipe> recipes = new ArrayList<>();
+        
+        if (json.has("recipes")) {
+            JSONArray recipesArray = json.getJSONArray("recipes");
+            for (int i = 0; i < recipesArray.length(); i++) {
+                JSONObject recipeJson = recipesArray.getJSONObject(i);
+                try {
+                    Recipe recipe = parseRecipeFromJson(recipeJson);
+                    recipes.add(recipe);
+                } catch (Exception e) {
+                    // Skip recipes that fail to parse
+                }
+            }
+        }
+        
+        return recipes;
     }
     
     /**

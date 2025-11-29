@@ -1,5 +1,6 @@
 package com.mealplanner.view.component;
 
+import com.mealplanner.util.ImageCacheManager;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.layout.StackPane;
@@ -12,6 +13,8 @@ import javafx.scene.shape.Circle;
  * Corresponds to avatar.tsx
  */
 public class Avatar extends StackPane {
+    
+    private static final ImageCacheManager imageCache = ImageCacheManager.getInstance();
     
     private final Circle shape;
     private final Label fallbackLabel;
@@ -39,7 +42,7 @@ public class Avatar extends StackPane {
     public void setImage(String imageUrl) {
         if (imageUrl != null && !imageUrl.isEmpty()) {
             try {
-                Image image = new Image(imageUrl, false); // background loading = false for immediate check, or true for async
+                Image image = imageCache.getImage(imageUrl);
                 if (!image.isError()) {
                     shape.setFill(new ImagePattern(image));
                     fallbackLabel.setVisible(false);

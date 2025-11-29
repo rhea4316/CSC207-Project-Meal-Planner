@@ -3,6 +3,7 @@ package com.mealplanner.interface_adapter.presenter;
 // Presenter for login - handles login success/failure and navigates to appropriate view.
 // Responsible: Mona
 
+import com.mealplanner.app.SessionManager;
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.ViewScheduleController;
 import com.mealplanner.interface_adapter.view_model.LoginViewModel;
@@ -29,11 +30,16 @@ public class LoginPresenter implements LoginOutputBoundary {
             loginViewModel.firePropertyChanged();
             return;
         }
-        
+
         loginViewModel.setLoggedInUser(loginOutputData.getUsername());
         loginViewModel.setError(null);
         loginViewModel.firePropertyChanged();
-        
+
+        // Set current user in SessionManager
+        if (loginOutputData.getUser() != null) {
+            SessionManager.getInstance().setCurrentUser(loginOutputData.getUser());
+        }
+
         // Store current user information in ViewManagerModel
         if (viewManagerModel != null) {
             viewManagerModel.setCurrentUserId(loginOutputData.getUserUId());

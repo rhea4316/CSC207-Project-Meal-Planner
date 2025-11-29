@@ -6,6 +6,7 @@ import com.mealplanner.interface_adapter.controller.SearchByIngredientsControlle
 import com.mealplanner.interface_adapter.view_model.RecipeSearchViewModel;
 import com.mealplanner.interface_adapter.view_model.RecipeDetailViewModel;
 import com.mealplanner.util.StringUtil;
+import com.mealplanner.util.ImageCacheManager;
 import com.mealplanner.view.util.SvgIconLoader;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -31,6 +32,7 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
     private final SearchByIngredientsController controller;
     private final ViewManagerModel viewManagerModel;
     private final RecipeDetailViewModel recipeDetailViewModel;
+    private final ImageCacheManager imageCache = ImageCacheManager.getInstance();
 
     private TextField ingredientsField;
     private FlowPane chipsContainer;
@@ -467,7 +469,7 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
                 imageView.setSmooth(true);
                 imageView.setCache(true);
                 
-                Image image = new Image(imageUrl, true);
+                Image image = imageCache.getImage(imageUrl);
                 imageView.setImage(image);
                 thumbnail.getChildren().add(imageView);
             } catch (Exception e) {

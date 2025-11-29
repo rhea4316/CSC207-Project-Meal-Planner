@@ -1,12 +1,16 @@
 package com.mealplanner.view;
 
+import com.mealplanner.app.SessionManager;
+import com.mealplanner.entity.NutritionGoals;
 import com.mealplanner.entity.NutritionInfo;
 import com.mealplanner.entity.Recipe;
+import com.mealplanner.entity.User;
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.AdjustServingSizeController;
 import com.mealplanner.interface_adapter.view_model.RecipeDetailViewModel;
 import com.mealplanner.view.component.*;
 import com.mealplanner.view.util.SvgIconLoader;
+import com.mealplanner.util.ImageCacheManager;
 
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -34,6 +38,7 @@ public class RecipeDetailView extends ScrollPane implements PropertyChangeListen
     private final AdjustServingSizeController controller;
     private final com.mealplanner.interface_adapter.controller.AddMealController addMealController;
     private final ViewManagerModel viewManagerModel;
+    private final ImageCacheManager imageCache = ImageCacheManager.getInstance();
 
     // UI Components
     private StackPane heroSection;
@@ -374,7 +379,7 @@ public class RecipeDetailView extends ScrollPane implements PropertyChangeListen
         String imageUrl = recipe.getImageUrl();
         if (imageUrl != null && !imageUrl.isEmpty()) {
             try {
-                Image image = new Image(imageUrl, true); // true = load in background
+                Image image = imageCache.getImage(imageUrl);
                 heroImageView.setImage(image);
             } catch (Exception e) {
                 // If image loading fails, keep the placeholder
@@ -383,8 +388,22 @@ public class RecipeDetailView extends ScrollPane implements PropertyChangeListen
         // subtitleLabel.setText(recipe.getDescription()); // If description exists
         
         metaChipsContainer.getChildren().clear();
-        addMetaChip("20 min", "/svg/clock.svg"); // Mock data
-        addMetaChip("350 Cal", "/svg/fire-flame.svg");
+        
+        // Actual cook time from recipe
+        Integer cookTime = recipe.getCookTimeMinutes();
+        String timeText = (cookTime != null && cookTime > 0)
+            ? cookTime + " min"
+            : "Time not available";
+        addMetaChip(timeText, "/svg/clock.svg");
+        
+        // Calories from nutrition info
+        String calText = "350 Cal"; // Default fallback
+        if (recipe.getNutritionInfo() != null) {
+            int calories = recipe.getNutritionInfo().getCalories();
+            calText = calories + " Cal";
+        }
+        addMetaChip(calText, "/svg/fire-flame.svg");
+        
         addMetaChip(recipe.getServingSize() + " Servings", "/svg/users.svg");
         addMetaChip("Breakfast", "/svg/mug-hot.svg");
         
@@ -449,20 +468,38 @@ public class RecipeDetailView extends ScrollPane implements PropertyChangeListen
         NutritionInfo info = recipe.getNutritionInfo();
         if (info != null) {
             caloriesValueLabel.setText(String.valueOf(info.getCalories()));
-            
-            // Mock max values for progress bars
-            double maxProtein = 50.0; 
-            double maxCarbs = 100.0;
-            double maxFat = 40.0;
-            
-            proteinBar.setProgress(info.getProtein() / maxProtein);
-            proteinVal.setText(String.format("%.0fg (%.0f%%)", info.getProtein(), (info.getProtein()/maxProtein)*100));
-            
-            carbsBar.setProgress(info.getCarbs() / maxCarbs);
-            carbsVal.setText(String.format("%.0fg (%.0f%%)", info.getCarbs(), (info.getCarbs()/maxCarbs)*100));
-            
-            fatBar.setProgress(info.getFat() / maxFat);
-            fatVal.setText(String.format("%.0fg (%.0f%%)", info.getFat(), (info.getFat()/maxFat)*100));
+
+            // Get user's nutrition goals from SessionManager
+            User currentUser = SessionManager.getInstance().getCurrentUser();
+            NutritionGoals goals;
+
+            if (currentUser != null && currentUser.getNutritionGoals() != null) {
+                goals = currentUser.getNutritionGoals();
+            } else {
+                // Use default goals if user doesn't have custom goals set
+                goals = NutritionGoals.createDefault();
+            }
+
+            // Assume 1 meal is 1/3 of daily goals
+            double maxProtein = goals.getDailyProtein() / 3.0;
+            double maxCarbs = goals.getDailyCarbs() / 3.0;
+            double maxFat = goals.getDailyFat() / 3.0;
+
+            // Calculate progress and percentage (with division by zero protection)
+            double proteinProgress = maxProtein > 0 ? info.getProtein() / maxProtein : 0.0;
+            double proteinPercent = maxProtein > 0 ? (info.getProtein() / maxProtein) * 100 : 0.0;
+            proteinBar.setProgress(Math.min(1.0, proteinProgress));
+            proteinVal.setText(String.format("%.0fg (%.0f%%)", info.getProtein(), proteinPercent));
+
+            double carbsProgress = maxCarbs > 0 ? info.getCarbs() / maxCarbs : 0.0;
+            double carbsPercent = maxCarbs > 0 ? (info.getCarbs() / maxCarbs) * 100 : 0.0;
+            carbsBar.setProgress(Math.min(1.0, carbsProgress));
+            carbsVal.setText(String.format("%.0fg (%.0f%%)", info.getCarbs(), carbsPercent));
+
+            double fatProgress = maxFat > 0 ? info.getFat() / maxFat : 0.0;
+            double fatPercent = maxFat > 0 ? (info.getFat() / maxFat) * 100 : 0.0;
+            fatBar.setProgress(Math.min(1.0, fatProgress));
+            fatVal.setText(String.format("%.0fg (%.0f%%)", info.getFat(), fatPercent));
         }
     }
 

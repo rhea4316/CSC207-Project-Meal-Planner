@@ -1,13 +1,19 @@
 package com.mealplanner.view;
 
 import com.mealplanner.entity.MealType;
+import com.mealplanner.entity.Recipe;
 import com.mealplanner.entity.Schedule;
+import com.mealplanner.exception.DataAccessException;
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.ViewScheduleController;
 import com.mealplanner.interface_adapter.view_model.ScheduleViewModel;
+import com.mealplanner.repository.RecipeRepository;
 import com.mealplanner.view.component.StyledTooltip;
 import com.mealplanner.view.util.SvgIconLoader;
+import com.mealplanner.util.ImageCacheManager;
 import javafx.application.Platform;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
@@ -35,6 +41,8 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
     private final ScheduleViewModel scheduleViewModel;
     private final ViewScheduleController controller;
     private final ViewManagerModel viewManagerModel;
+    private final RecipeRepository recipeRepository;  // PHASE 2: Added for real data integration
+    private final ImageCacheManager imageCache = ImageCacheManager.getInstance();
 
     // UI Components
     private Label dateRangeLabel;
@@ -46,13 +54,14 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
     // State
     private LocalDate currentWeekStart;
 
-    public ScheduleView(ScheduleViewModel scheduleViewModel, ViewScheduleController controller, ViewManagerModel viewManagerModel) {
+    public ScheduleView(ScheduleViewModel scheduleViewModel, ViewScheduleController controller, ViewManagerModel viewManagerModel, RecipeRepository recipeRepository) {
         this.scheduleViewModel = scheduleViewModel;
         this.scheduleViewModel.addPropertyChangeListener(this);
         this.controller = controller;
         this.viewManagerModel = viewManagerModel;
         this.viewManagerModel.addPropertyChangeListener(this);
-        
+        this.recipeRepository = recipeRepository;  // PHASE 2: Injected repository
+
         this.currentWeekStart = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
 
         // Initial Load
@@ -330,25 +339,31 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
         panel.setAlignment(Pos.CENTER);
         panel.setPadding(new Insets(10));
         panel.setPrefHeight(70);
-        
+
         if (isActive) {
             panel.setStyle("-fx-background-color: #f7fee7; -fx-background-radius: 12px; -fx-border-color: transparent;");
         } else {
             panel.setStyle("-fx-background-color: transparent;");
         }
-        
+
         Label dayLabel = new Label(dayName);
         dayLabel.getStyleClass().add(isActive ? "text-lime-700" : "text-gray-500");
         dayLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: 500;");
-        
+
         Label dateLabel = new Label(String.valueOf(date.getDayOfMonth()));
         dateLabel.getStyleClass().add(isActive ? "text-lime-700" : "text-gray-900");
         dateLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
-        
-        Label calLabel = new Label("770 cal"); // Placeholder, real logic would sum cals
+
+        // PHASE 2: Calculate actual calories from scheduled meals
+        Schedule schedule = scheduleViewModel.getSchedule();
+        Map<MealType, String> mealsForDate = schedule != null ? schedule.getAllMeals().get(date) : null;
+        int dailyCalories = calculateDailyCalories(date, mealsForDate);
+        String calText = dailyCalories > 0 ? dailyCalories + " cal" : "-- cal";
+
+        Label calLabel = new Label(calText);
         calLabel.getStyleClass().add(isActive ? "text-lime-600" : "text-gray-400");
         calLabel.setStyle("-fx-font-size: 11px;");
-        
+
         panel.getChildren().addAll(dayLabel, dateLabel, calLabel);
         return panel;
     }
@@ -388,6 +403,49 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
         controller.execute(username);
     }
 
+    /**
+     * PHASE 2: Load a recipe by ID from the repository.
+     *
+     * @param recipeId Recipe ID to load
+     * @return Recipe object or null if not found or error occurs
+     */
+    private Recipe loadRecipe(String recipeId) {
+        if (recipeId == null || recipeId.isBlank()) {
+            return null;
+        }
+
+        try {
+            return recipeRepository.findById(recipeId).orElse(null);
+        } catch (DataAccessException e) {
+            System.err.println("Error loading recipe " + recipeId + ": " + e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * PHASE 2: Calculate total calories for a specific date.
+     *
+     * @param date Date to calculate calories for
+     * @param mealsForDate Map of meal types to recipe IDs for that date
+     * @return Total calories for the day, or 0 if no meals or calculation fails
+     */
+    private int calculateDailyCalories(LocalDate date, Map<MealType, String> mealsForDate) {
+        if (mealsForDate == null || mealsForDate.isEmpty()) {
+            return 0;
+        }
+
+        int totalCalories = 0;
+
+        for (String recipeId : mealsForDate.values()) {
+            Recipe recipe = loadRecipe(recipeId);
+            if (recipe != null && recipe.getNutritionInfo() != null) {
+                totalCalories += (int) recipe.getNutritionInfo().getCalories();
+            }
+        }
+
+        return totalCalories;
+    }
+
     private void updateDayHeaders() {
         // Clear existing headers (row 0, col > 0)
         gridPane.getChildren().removeIf(node -> GridPane.getRowIndex(node) != null && GridPane.getRowIndex(node) == 0 && GridPane.getColumnIndex(node) != null && GridPane.getColumnIndex(node) > 0);
@@ -420,22 +478,41 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
         Schedule schedule = scheduleViewModel.getSchedule();
         if (schedule != null) {
             Map<LocalDate, Map<MealType, String>> allMeals = schedule.getAllMeals();
-            
+
             for (int i = 0; i < 7; i++) {
                 LocalDate date = currentWeekStart.plusDays(i);
                 Map<MealType, String> mealsForDate = allMeals.get(date);
-                
+
                 if (mealsForDate != null) {
+                    // PHASE 2: Load actual Recipe objects and pass them to MealSlotPanel
                     if (mealsForDate.containsKey(MealType.BREAKFAST)) {
-                        mealSlots[0][i].setMeal(mealsForDate.get(MealType.BREAKFAST), "320 cal"); // Mock cal
+                        String recipeId = mealsForDate.get(MealType.BREAKFAST);
+                        Recipe recipe = loadRecipe(recipeId);
+                        if (recipe != null) {
+                            mealSlots[0][i].setMeal(recipe);
+                        } else {
+                            mealSlots[0][i].setMeal(recipeId, "-- cal");
+                        }
                         filledCount++;
                     }
                     if (mealsForDate.containsKey(MealType.LUNCH)) {
-                        mealSlots[1][i].setMeal(mealsForDate.get(MealType.LUNCH), "450 cal");
+                        String recipeId = mealsForDate.get(MealType.LUNCH);
+                        Recipe recipe = loadRecipe(recipeId);
+                        if (recipe != null) {
+                            mealSlots[1][i].setMeal(recipe);
+                        } else {
+                            mealSlots[1][i].setMeal(recipeId, "-- cal");
+                        }
                         filledCount++;
                     }
                     if (mealsForDate.containsKey(MealType.DINNER)) {
-                        mealSlots[2][i].setMeal(mealsForDate.get(MealType.DINNER), "520 cal");
+                        String recipeId = mealsForDate.get(MealType.DINNER);
+                        Recipe recipe = loadRecipe(recipeId);
+                        if (recipe != null) {
+                            mealSlots[2][i].setMeal(recipe);
+                        } else {
+                            mealSlots[2][i].setMeal(recipeId, "-- cal");
+                        }
                         filledCount++;
                     }
                 }
@@ -494,44 +571,96 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
             getChildren().add(circle);
         }
 
+        /**
+         * PHASE 2: Set meal using Recipe object with real nutritional data.
+         *
+         * @param recipe Recipe object containing name, calories, and nutrition info
+         */
+        public void setMeal(Recipe recipe) {
+            if (recipe == null) {
+                clear();
+                return;
+            }
+
+            String recipeName = recipe.getName();
+            String calories = "-- cal";
+            if (recipe.getNutritionInfo() != null) {
+                int cal = (int) recipe.getNutritionInfo().getCalories();
+                calories = cal > 0 ? cal + " cal" : "-- cal";
+            }
+
+            setMeal(recipeName, calories, recipe.getImageUrl());
+        }
+
+        /**
+         * Set meal using String parameters (legacy method, kept for backward compatibility).
+         *
+         * @param recipeName Name of the recipe
+         * @param calories Calorie string (e.g., "320 cal")
+         */
         public void setMeal(String recipeName, String calories) {
+            setMeal(recipeName, calories, null);
+        }
+        
+        /**
+         * Set meal using String parameters with optional image URL.
+         *
+         * @param recipeName Name of the recipe
+         * @param calories Calorie string (e.g., "320 cal")
+         * @param imageUrl Optional image URL for the recipe
+         */
+        public void setMeal(String recipeName, String calories, String imageUrl) {
             this.isFilled = true;
             getChildren().clear();
-            
+
             // Filled Card Style
             setStyle("-fx-background-color: white; -fx-background-radius: 12px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 4, 0, 0, 2); -fx-border-width: 0;");
-            
+
             // Tooltip
             if (currentTooltip != null) {
                 Tooltip.uninstall(this, currentTooltip);
             }
             currentTooltip = new StyledTooltip(recipeName + "\n" + calories);
             Tooltip.install(this, currentTooltip);
-            
-            // Image placeholder
-            Region imagePlaceholder = new Region();
-            imagePlaceholder.setPrefHeight(80);
-            imagePlaceholder.setMinHeight(80);
-            imagePlaceholder.setStyle("-fx-background-color: #e5e7eb; -fx-background-radius: 12px 12px 0 0;");
-            // TODO: Load actual image if available
-            
+
+            // Image section - load actual image if available, otherwise use placeholder
+            Node imageNode;
+            if (imageUrl != null && !imageUrl.trim().isEmpty()) {
+                Image image = imageCache.getImage(imageUrl);
+                ImageView imageView = new ImageView(image);
+                imageView.setFitWidth(200);
+                imageView.setFitHeight(80);
+                imageView.setPreserveRatio(true);
+                imageView.setSmooth(true);
+                imageView.setCache(true);
+                imageView.setStyle("-fx-background-color: #e5e7eb; -fx-background-radius: 12px 12px 0 0;");
+                imageNode = imageView;
+            } else {
+                // Placeholder when no image available
+                Region imagePlaceholder = new Region();
+                imagePlaceholder.setPrefHeight(80);
+                imagePlaceholder.setMinHeight(80);
+                imagePlaceholder.setStyle("-fx-background-color: #e5e7eb; -fx-background-radius: 12px 12px 0 0;");
+                imageNode = imagePlaceholder;
+            }
+
             // Content section
             VBox filledContent = new VBox(4);
             filledContent.setPadding(new Insets(10));
             filledContent.setAlignment(Pos.CENTER_LEFT);
-            
+
             Label contentLabel = new Label(recipeName);
             contentLabel.getStyleClass().add("text-gray-900");
             contentLabel.setStyle("-fx-font-weight: 600; -fx-font-size: 13px;");
             contentLabel.setWrapText(true);
-            
+
             Label calLabel = new Label(calories);
             calLabel.getStyleClass().add("text-gray-500");
             calLabel.setStyle("-fx-font-size: 11px;");
-            
+
             filledContent.getChildren().addAll(contentLabel, calLabel);
-            
-            getChildren().addAll(imagePlaceholder, filledContent);
+
+            getChildren().addAll(imageNode, filledContent);
         }
 
         public void clear() {

@@ -1,9 +1,14 @@
 package com.mealplanner.view;
 
+import com.mealplanner.app.SessionManager;
 import com.mealplanner.entity.MealType;
+import com.mealplanner.entity.NutritionGoals;
+import com.mealplanner.entity.NutritionInfo;
+import com.mealplanner.entity.Recipe;
 import com.mealplanner.entity.Schedule;
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.view_model.ScheduleViewModel;
+import com.mealplanner.repository.RecipeRepository;
 import com.mealplanner.view.component.*;
 import com.mealplanner.view.component.Sonner;
 import com.mealplanner.view.util.SvgIconLoader;
@@ -28,11 +33,18 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.time.LocalDate;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DashboardView extends BorderPane implements PropertyChangeListener {
+    private static final Logger logger = LoggerFactory.getLogger(DashboardView.class);
+    
     public final String viewName = "DashboardView";
     private final ViewManagerModel viewManagerModel;
     private final ScheduleViewModel scheduleViewModel;
+    private final RecipeRepository recipeRepository;
+
+    // Default nutrition goals are now retrieved from user or NutritionGoals.createDefault()
 
     // Dynamic UI Components
     private HBox mealsContainer;
@@ -40,11 +52,13 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
     private StackPane circularProgressPane;
     private Label remainingCaloriesLabel;
     private Progress proteinBar, carbsBar, fatBar;
+    private Label proteinValLabel, carbsValLabel, fatValLabel; // Value labels for nutrient bars
     private final Sonner sonner;
 
-    public DashboardView(ViewManagerModel viewManagerModel, ScheduleViewModel scheduleViewModel) {
+    public DashboardView(ViewManagerModel viewManagerModel, ScheduleViewModel scheduleViewModel, RecipeRepository recipeRepository) {
         this.viewManagerModel = viewManagerModel;
         this.scheduleViewModel = scheduleViewModel;
+        this.recipeRepository = recipeRepository;
         this.scheduleViewModel.addPropertyChangeListener(this);
         this.sonner = new Sonner();
 
@@ -229,14 +243,20 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         VBox nutrientBars = new VBox(15);
         // VBox.setVgrow(nutrientBars, Priority.ALWAYS); // Allow this to grow if needed, but fixed size is usually fine
         
-        VBox proteinBox = createNutrientBar("Protein", "32 / 75g", 0.42, "protein");
+        VBox proteinBox = createNutrientBar("Protein", "0 / 0g", 0.0, "protein");
         proteinBar = (Progress) proteinBox.getChildren().get(1);
+        HBox proteinLabelRow = (HBox) proteinBox.getChildren().get(0);
+        proteinValLabel = (Label) proteinLabelRow.getChildren().get(2);
         
-        VBox carbsBox = createNutrientBar("Carbs", "95 / 250g", 0.38, "carbs");
+        VBox carbsBox = createNutrientBar("Carbs", "0 / 0g", 0.0, "carbs");
         carbsBar = (Progress) carbsBox.getChildren().get(1);
+        HBox carbsLabelRow = (HBox) carbsBox.getChildren().get(0);
+        carbsValLabel = (Label) carbsLabelRow.getChildren().get(2);
         
-        VBox fatBox = createNutrientBar("Fat", "28 / 70g", 0.40, "fat");
+        VBox fatBox = createNutrientBar("Fat", "0 / 0g", 0.0, "fat");
         fatBar = (Progress) fatBox.getChildren().get(1);
+        HBox fatLabelRow = (HBox) fatBox.getChildren().get(0);
+        fatValLabel = (Label) fatLabelRow.getChildren().get(2);
 
         nutrientBars.getChildren().addAll(proteinBox, carbsBox, fatBox);
 
@@ -269,7 +289,7 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         calorieValueLabel.getStyleClass().add("text-gray-900");
         calorieValueLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 28px;");
         
-        Label totalLabel = new Label("of 2000 cal");
+        Label totalLabel = new Label("of 0 cal");
         totalLabel.getStyleClass().add("text-gray-500");
         totalLabel.setStyle("-fx-font-size: 12px;");
         
@@ -710,46 +730,224 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         Schedule schedule = scheduleViewModel.getSchedule();
         LocalDate today = LocalDate.now();
 
-        String breakfastName = "Avocado Toast"; 
-        String lunchName = "Not Planned";
-        String dinnerName = "Grilled Salmon";
-        
+        // Fetch today's meals
+        Map<MealType, String> todaysMeals = null;
         if (schedule != null) {
-             Map<LocalDate, Map<MealType, String>> allMeals = schedule.getAllMeals();
-             Map<MealType, String> todaysMeals = allMeals.get(today);
-             if (todaysMeals != null) {
-                 if (todaysMeals.containsKey(MealType.BREAKFAST)) breakfastName = todaysMeals.get(MealType.BREAKFAST);
-                 if (todaysMeals.containsKey(MealType.LUNCH)) lunchName = todaysMeals.get(MealType.LUNCH);
-                 if (todaysMeals.containsKey(MealType.DINNER)) dinnerName = todaysMeals.get(MealType.DINNER);
-             }
+            Map<LocalDate, Map<MealType, String>> allMeals = schedule.getAllMeals();
+            todaysMeals = allMeals.get(today);
         }
 
-        mealsContainer.getChildren().add(createMealCard("Breakfast", breakfastName, "/svg/mug-hot.svg", 320, "10 min"));
-        mealsContainer.getChildren().add(createMealCard("Lunch", lunchName, "/svg/brightness.svg", 0, ""));
-        mealsContainer.getChildren().add(createMealCard("Dinner", dinnerName, "/svg/moon.svg", 520, "35 min"));
+        // Load all recipes once to avoid duplicate queries
+        java.util.Map<String, Recipe> recipeCache = loadRecipesForMeals(todaysMeals);
 
-        calorieValueLabel.setText("850");
-        remainingCaloriesLabel.setText("Remaining\n1150 cal");
+        // Fetch meal data for each meal type
+        MealData breakfast = fetchMealData(todaysMeals, MealType.BREAKFAST, recipeCache);
+        MealData lunch = fetchMealData(todaysMeals, MealType.LUNCH, recipeCache);
+        MealData dinner = fetchMealData(todaysMeals, MealType.DINNER, recipeCache);
+
+        // Create meal cards
+        mealsContainer.getChildren().add(
+            createMealCard("Breakfast", breakfast.name, "/svg/mug-hot.svg", breakfast.calories, breakfast.time));
+        mealsContainer.getChildren().add(
+            createMealCard("Lunch", lunch.name, "/svg/brightness.svg", lunch.calories, lunch.time));
+        mealsContainer.getChildren().add(
+            createMealCard("Dinner", dinner.name, "/svg/moon.svg", dinner.calories, dinner.time));
+
+        // Calculate today's nutrition using cached recipes
+        NutritionInfo todayNutrition = calculateTodayNutrition(recipeCache);
+        int totalCalories = (int) todayNutrition.getCalories();
         
-        if (circularProgressPane != null) {
-            if (!circularProgressPane.getChildren().isEmpty()) {
-                Node possibleGroup = circularProgressPane.getChildren().get(0);
-                if (possibleGroup instanceof javafx.scene.Group) {
-                    javafx.scene.Group group = (javafx.scene.Group) possibleGroup;
-                    for (Node node : group.getChildren()) {
-                        if (node instanceof Arc) {
-                            Arc progressArc = (Arc) node;
-                            double angle = 0.425 * 360.0;
-                            progressArc.setLength(-angle);
-                            break;
-                        }
+        // Get user's nutrition goals or use defaults
+        NutritionGoals goals = getUserNutritionGoals();
+        int dailyCalories = goals.getDailyCalories();
+        int remainingCal = Math.max(0, dailyCalories - totalCalories);
+
+        calorieValueLabel.setText(String.valueOf(totalCalories));
+        remainingCaloriesLabel.setText("Remaining\n" + remainingCal + " cal");
+
+        // Update circular progress
+        updateCircularProgress(totalCalories, dailyCalories);
+
+        // Update nutrient bars
+        updateNutrientBars(todayNutrition, goals);
+    }
+
+    /**
+     * Loads all recipes for today's meals once to avoid duplicate queries.
+     * @param todaysMeals map of meal types to recipe IDs
+     * @return map of recipe IDs to Recipe objects
+     */
+    private java.util.Map<String, Recipe> loadRecipesForMeals(Map<MealType, String> todaysMeals) {
+        java.util.Map<String, Recipe> cache = new java.util.HashMap<>();
+
+        if (todaysMeals != null) {
+            for (String recipeId : todaysMeals.values()) {
+                if (!cache.containsKey(recipeId)) {
+                    Recipe recipe = getRecipeById(recipeId);
+                    if (recipe != null) {
+                        cache.put(recipeId, recipe);
                     }
                 }
             }
         }
+
+        return cache;
+    }
+
+    /**
+     * Fetches meal data for a specific meal type using cached recipes.
+     * @param todaysMeals map of today's meals
+     * @param mealType the type of meal to fetch
+     * @param recipeCache pre-loaded cache of recipes
+     * @return MealData with name, calories, and time
+     */
+    private MealData fetchMealData(Map<MealType, String> todaysMeals, MealType mealType,
+                                   java.util.Map<String, Recipe> recipeCache) {
+        if (todaysMeals == null || !todaysMeals.containsKey(mealType)) {
+            return new MealData("Not Planned", 0, "");
+        }
+
+        String recipeId = todaysMeals.get(mealType);
+        Recipe recipe = recipeCache.get(recipeId);
+
+        if (recipe == null) {
+            // Fallback to recipe ID if recipe not found
+            return new MealData(recipeId, 0, "");
+        }
+
+        String name = recipe.getName();
+        int calories = recipe.getNutritionInfo() != null
+            ? (int) recipe.getNutritionInfo().getCalories() : 0;
+        String time = recipe.getCookTimeMinutes() != null
+            ? recipe.getCookTimeMinutes() + " min" : "";
+
+        return new MealData(name, calories, time);
+    }
+
+    /**
+     * Simple data holder for meal information.
+     */
+    private static class MealData {
+        final String name;
+        final int calories;
+        final String time;
+
+        MealData(String name, int calories, String time) {
+            this.name = name;
+            this.calories = calories;
+            this.time = time;
+        }
+    }
+
+    /**
+     * Updates the circular progress indicator for calorie consumption.
+     */
+    private void updateCircularProgress(int totalCalories, int dailyCalories) {
+        if (circularProgressPane == null || circularProgressPane.getChildren().isEmpty()) {
+            return;
+        }
+
+        Node possibleGroup = circularProgressPane.getChildren().get(0);
+        if (!(possibleGroup instanceof javafx.scene.Group)) {
+            return;
+        }
+
+        javafx.scene.Group group = (javafx.scene.Group) possibleGroup;
+        for (Node node : group.getChildren()) {
+            if (node instanceof Arc) {
+                Arc progressArc = (Arc) node;
+                double progress = Math.min(1.0, (double) totalCalories / dailyCalories);
+                double angle = progress * 360.0;
+                progressArc.setLength(-angle);
+                break;
+            }
+        }
         
-        if (proteinBar != null) proteinBar.setProgress(32.0 / 75.0);
-        if (carbsBar != null) carbsBar.setProgress(95.0 / 250.0);
-        if (fatBar != null) fatBar.setProgress(28.0 / 70.0);
+        // Update total label in the center
+        if (circularProgressPane.getChildren().size() > 1) {
+            Node textBox = circularProgressPane.getChildren().get(1);
+            if (textBox instanceof VBox) {
+                VBox vbox = (VBox) textBox;
+                if (vbox.getChildren().size() > 1) {
+                    Label totalLabel = (Label) vbox.getChildren().get(1);
+                    totalLabel.setText("of " + dailyCalories + " cal");
+                }
+            }
+        }
+    }
+
+    /**
+     * Updates the nutrient progress bars (protein, carbs, fat).
+     */
+    private void updateNutrientBars(NutritionInfo nutrition, NutritionGoals goals) {
+        if (proteinBar != null && proteinValLabel != null) {
+            double protein = nutrition.getProtein();
+            double proteinGoal = goals.getDailyProtein();
+            proteinBar.setProgress(Math.min(1.0, protein / proteinGoal));
+            proteinValLabel.setText(String.format("%.0f / %.0fg", protein, proteinGoal));
+        }
+        if (carbsBar != null && carbsValLabel != null) {
+            double carbs = nutrition.getCarbs();
+            double carbsGoal = goals.getDailyCarbs();
+            carbsBar.setProgress(Math.min(1.0, carbs / carbsGoal));
+            carbsValLabel.setText(String.format("%.0f / %.0fg", carbs, carbsGoal));
+        }
+        if (fatBar != null && fatValLabel != null) {
+            double fat = nutrition.getFat();
+            double fatGoal = goals.getDailyFat();
+            fatBar.setProgress(Math.min(1.0, fat / fatGoal));
+            fatValLabel.setText(String.format("%.0f / %.0fg", fat, fatGoal));
+        }
+    }
+    
+    /**
+     * Gets the current user's nutrition goals, or returns default goals if not available.
+     * @return NutritionGoals object
+     */
+    private NutritionGoals getUserNutritionGoals() {
+        com.mealplanner.entity.User currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser != null && currentUser.getNutritionGoals() != null) {
+            return currentUser.getNutritionGoals();
+        }
+        // Fallback to default goals
+        return NutritionGoals.createDefault();
+    }
+
+    /**
+     * Retrieves a recipe by its ID from the repository.
+     * @param recipeId the recipe identifier
+     * @return Recipe object if found, null otherwise
+     */
+    private Recipe getRecipeById(String recipeId) {
+        try {
+            return recipeRepository.findById(recipeId).orElse(null);
+        } catch (Exception e) {
+            logger.error("Failed to load recipe: {}", recipeId, e);
+            return null;
+        }
+    }
+
+    /**
+     * Calculates the total nutrition information using cached recipes.
+     * @param recipeCache map of recipe IDs to Recipe objects
+     * @return aggregated nutrition info
+     */
+    private NutritionInfo calculateTodayNutrition(java.util.Map<String, Recipe> recipeCache) {
+        int totalCalories = 0;
+        double totalProtein = 0;
+        double totalCarbs = 0;
+        double totalFat = 0;
+
+        for (Recipe recipe : recipeCache.values()) {
+            if (recipe != null && recipe.getNutritionInfo() != null) {
+                NutritionInfo info = recipe.getNutritionInfo();
+                totalCalories += info.getCalories();
+                totalProtein += info.getProtein();
+                totalCarbs += info.getCarbs();
+                totalFat += info.getFat();
+            }
+        }
+
+        return new NutritionInfo(totalCalories, totalProtein, totalCarbs, totalFat);
     }
 }

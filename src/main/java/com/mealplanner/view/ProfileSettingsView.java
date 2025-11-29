@@ -1,15 +1,21 @@
 package com.mealplanner.view;
 
+import com.mealplanner.app.SessionManager;
 import com.mealplanner.interface_adapter.ViewManagerModel;
+import com.mealplanner.interface_adapter.controller.UpdateNutritionGoalsController;
+import com.mealplanner.interface_adapter.view_model.ProfileSettingsViewModel;
 import com.mealplanner.data_access.database.FileScheduleDataAccessObject;
 import com.mealplanner.data_access.database.FileUserDataAccessObject;
+import com.mealplanner.entity.NutritionGoals;
 import com.mealplanner.entity.Schedule;
+import com.mealplanner.entity.User;
 import com.mealplanner.exception.DataAccessException;
 import com.mealplanner.repository.RecipeRepository;
 import com.mealplanner.repository.impl.FileRecipeRepository;
 import com.mealplanner.util.StringUtil;
 import com.mealplanner.view.util.DialogUtils;
 import com.mealplanner.view.util.SvgIconLoader;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -28,19 +34,47 @@ import javafx.scene.shape.Rectangle;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.UUID;
 
 public class ProfileSettingsView extends BorderPane implements PropertyChangeListener {
     public final String viewName = "ProfileSettingsView";
     private final ViewManagerModel viewManagerModel;
+    private final ProfileSettingsViewModel profileSettingsViewModel;
+    private final UpdateNutritionGoalsController updateNutritionGoalsController;
+    private final SessionManager sessionManager;
 
     private final FileScheduleDataAccessObject scheduleDataAccessObject;
     private final RecipeRepository recipeRepository;
 
-    public ProfileSettingsView(ViewManagerModel viewManagerModel, String username) {
+    // UI 컴포넌트 참조 저장
+    private Label userValueLabel;
+    private Label memberValueLabel;
+    private Slider calorieSlider;
+    private Label calorieValue;
+    private Slider proteinSlider;
+    private Label proteinValue;
+    private Slider carbsSlider;
+    private Label carbsValue;
+    private Slider fatSlider;
+    private Label fatValue;
+
+    public ProfileSettingsView(ViewManagerModel viewManagerModel, 
+                              ProfileSettingsViewModel profileSettingsViewModel,
+                              UpdateNutritionGoalsController updateNutritionGoalsController) {
         this.viewManagerModel = viewManagerModel;
+        this.profileSettingsViewModel = profileSettingsViewModel;
+        this.updateNutritionGoalsController = updateNutritionGoalsController;
+        this.sessionManager = SessionManager.getInstance();
         this.scheduleDataAccessObject = new FileScheduleDataAccessObject(new FileUserDataAccessObject());
         this.recipeRepository = new FileRecipeRepository();
+        
+        // ViewModel 리스너 등록
+        if (profileSettingsViewModel != null) {
+            profileSettingsViewModel.addPropertyChangeListener(this);
+        }
         
         getStyleClass().add("root");
         setStyle("-fx-background-color: #F5F7FA;");
@@ -64,9 +98,19 @@ public class ProfileSettingsView extends BorderPane implements PropertyChangeLis
         VBox content = new VBox(24);
         content.setAlignment(Pos.TOP_LEFT);
         
+        // 사용자 정보 로드
+        User currentUser = sessionManager.getCurrentUser();
+        String username = currentUser != null ? currentUser.getUsername() : "Guest";
+        
         content.getChildren().add(createProfileCard(username));
         content.getChildren().add(createNutritionGoalsCard());
         content.getChildren().add(createDataManagementCard());
+        
+        // 초기 데이터 로드
+        if (currentUser != null) {
+            loadUserData(currentUser);
+            loadNutritionGoals(currentUser.getNutritionGoals());
+        }
         
         ScrollPane scrollPane = new ScrollPane(content);
         scrollPane.setFitToWidth(true);
@@ -129,9 +173,9 @@ public class ProfileSettingsView extends BorderPane implements PropertyChangeLis
         VBox userRow = new VBox(4);
         Label userLabel = new Label("Username");
         userLabel.setStyle("-fx-text-fill: #888888; -fx-font-size: 12px;");
-        Label userValue = new Label(username != null ? username : "Eden Chang");
-        userValue.setStyle("-fx-text-fill: #1A1A1A; -fx-font-weight: bold; -fx-font-size: 18px;");
-        userRow.getChildren().addAll(userLabel, userValue);
+        this.userValueLabel = new Label(username != null ? username : "Guest");
+        this.userValueLabel.setStyle("-fx-text-fill: #1A1A1A; -fx-font-weight: bold; -fx-font-size: 18px;");
+        userRow.getChildren().addAll(userLabel, this.userValueLabel);
         
         // Member Since
         VBox memberRow = new VBox(4);
@@ -140,9 +184,9 @@ public class ProfileSettingsView extends BorderPane implements PropertyChangeLis
         HBox memberValBox = new HBox(8);
         memberValBox.setAlignment(Pos.CENTER_LEFT);
         Node calendarIcon = SvgIconLoader.loadIcon("/svg/calendar.svg", 14, Color.web("#888888"));
-        Label memberValue = new Label("November 2024");
-        memberValue.setStyle("-fx-text-fill: #444444; -fx-font-size: 14px;");
-        memberValBox.getChildren().addAll(calendarIcon != null ? calendarIcon : new Label(), memberValue);
+        this.memberValueLabel = new Label("November 2024");
+        this.memberValueLabel.setStyle("-fx-text-fill: #444444; -fx-font-size: 14px;");
+        memberValBox.getChildren().addAll(calendarIcon != null ? calendarIcon : new Label(), this.memberValueLabel);
         memberRow.getChildren().addAll(memberLabel, memberValBox);
         
         // Password Change
@@ -206,11 +250,17 @@ public class ProfileSettingsView extends BorderPane implements PropertyChangeLis
         calTitle.setStyle("-fx-font-size: 14px; -fx-text-fill: #444444;");
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        Label calValue = new Label("2000 kcal");
-        calValue.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #4CAF50;");
-        calLabels.getChildren().addAll(calTitle, spacer, calValue);
+        this.calorieValue = new Label("2000 kcal");
+        this.calorieValue.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #4CAF50;");
+        calLabels.getChildren().addAll(calTitle, spacer, this.calorieValue);
         
-        Slider mainSlider = createCustomSlider("#64DD17", 1000, 4000, 2000);
+        this.calorieSlider = createCustomSlider("#64DD17", 1000, 4000, 2000);
+        
+        // 칼로리 슬라이더 값 변경 리스너
+        this.calorieSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
+            int cal = (int) newVal.doubleValue();
+            this.calorieValue.setText(cal + " kcal");
+        });
         
         HBox rangeLabels = new HBox();
         Label minLabel = new Label("1000");
@@ -221,23 +271,24 @@ public class ProfileSettingsView extends BorderPane implements PropertyChangeLis
         HBox.setHgrow(rangeSpacer, Priority.ALWAYS);
         rangeLabels.getChildren().addAll(minLabel, rangeSpacer, maxLabel);
         
-        calSliderBox.getChildren().addAll(calLabels, mainSlider, rangeLabels);
+        calSliderBox.getChildren().addAll(calLabels, this.calorieSlider, rangeLabels);
         
         // B. Macro Sliders
         HBox macrosBox = new HBox(20);
-        macrosBox.getChildren().add(createMacroSlider("Protein", "150g", "#448AFF", 50, 300, 150));
-        macrosBox.getChildren().add(createMacroSlider("Carbs", "250g", "#FFA726", 50, 500, 250));
-        macrosBox.getChildren().add(createMacroSlider("Fat", "65g", "#FF4081", 20, 150, 65));
+        VBox proteinBox = createMacroSlider("Protein", "150g", "#448AFF", 50, 300, 150);
+        VBox carbsBox = createMacroSlider("Carbs", "250g", "#FFA726", 50, 500, 250);
+        VBox fatBox = createMacroSlider("Fat", "65g", "#FF4081", 20, 150, 65);
+        macrosBox.getChildren().addAll(proteinBox, carbsBox, fatBox);
         
         // Save Button
         Button saveBtn = new Button("Save Nutrition Goals");
         saveBtn.setStyle("-fx-background-color: #00C853; -fx-text-fill: white; -fx-font-weight: 600; -fx-background-radius: 8px; -fx-padding: 10 20; -fx-cursor: hand;");
-        Node saveIcon = SvgIconLoader.loadIcon("/svg/book-fill.svg", 16, Color.WHITE); // Floppy/Save fallback
+        Node saveIcon = SvgIconLoader.loadIcon("/svg/book-fill.svg", 16, Color.WHITE);
         if (saveIcon != null) {
             saveBtn.setGraphic(saveIcon);
             saveBtn.setGraphicTextGap(8);
         }
-        saveBtn.setOnAction(e -> DialogUtils.showInfoAlert("Success", "Nutrition goals updated!"));
+        saveBtn.setOnAction(e -> saveNutritionGoals());
         
         VBox.setMargin(saveBtn, new Insets(20, 0, 0, 0));
         
@@ -261,6 +312,28 @@ public class ProfileSettingsView extends BorderPane implements PropertyChangeLis
         header.getChildren().addAll(dot, name, spacer, val);
         
         Slider slider = createCustomSlider(colorHex, min, max, current);
+        
+        // 슬라이더와 라벨을 필드에 저장
+        switch (label) {
+            case "Protein":
+                this.proteinSlider = slider;
+                this.proteinValue = val;
+                break;
+            case "Carbs":
+                this.carbsSlider = slider;
+                this.carbsValue = val;
+                break;
+            case "Fat":
+                this.fatSlider = slider;
+                this.fatValue = val;
+                break;
+        }
+        
+        // 슬라이더 값 변경 리스너
+        slider.valueProperty().addListener((obs, oldVal, newVal) -> {
+            String unit = label.equals("Protein") || label.equals("Carbs") || label.equals("Fat") ? "g" : "";
+            val.setText(String.format("%.0f%s", newVal.doubleValue(), unit));
+        });
         
         container.getChildren().addAll(header, slider);
         return container;
@@ -334,6 +407,10 @@ public class ProfileSettingsView extends BorderPane implements PropertyChangeLis
             logoutBtn.setGraphicTextGap(8);
         }
         logoutBtn.setOnAction(e -> {
+            // Clear session from SessionManager
+            SessionManager.getInstance().clearSession();
+
+            // Clear ViewManagerModel
             if (viewManagerModel != null) {
                 viewManagerModel.setCurrentUserId(null);
                 viewManagerModel.setCurrentUsername(null);
@@ -421,8 +498,112 @@ public class ProfileSettingsView extends BorderPane implements PropertyChangeLis
         return card;
     }
 
+    private void loadUserData(User user) {
+        if (user == null) return;
+        
+        // 사용자 이름 업데이트
+        if (userValueLabel != null) {
+            userValueLabel.setText(user.getUsername());
+        }
+        
+        // 가입 날짜 포맷팅
+        if (memberValueLabel != null && user.getCreatedAt() != null) {
+            LocalDateTime createdAt = user.getCreatedAt();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH);
+            memberValueLabel.setText(formatter.format(createdAt));
+        }
+    }
+    
+    private void loadNutritionGoals(NutritionGoals goals) {
+        if (goals == null) {
+            // 기본값 사용
+            goals = NutritionGoals.createDefault();
+        }
+        
+        // 슬라이더 값 설정
+        if (calorieSlider != null) {
+            calorieSlider.setValue(goals.getDailyCalories());
+        }
+        if (proteinSlider != null) {
+            proteinSlider.setValue(goals.getDailyProtein());
+        }
+        if (carbsSlider != null) {
+            carbsSlider.setValue(goals.getDailyCarbs());
+        }
+        if (fatSlider != null) {
+            fatSlider.setValue(goals.getDailyFat());
+        }
+        
+        // 라벨 업데이트
+        updateNutritionLabels();
+    }
+    
+    private void updateNutritionLabels() {
+        if (calorieSlider != null && calorieValue != null) {
+            int cal = (int) calorieSlider.getValue();
+            calorieValue.setText(cal + " kcal");
+        }
+        if (proteinSlider != null && proteinValue != null) {
+            proteinValue.setText(String.format("%.0fg", proteinSlider.getValue()));
+        }
+        if (carbsSlider != null && carbsValue != null) {
+            carbsValue.setText(String.format("%.0fg", carbsSlider.getValue()));
+        }
+        if (fatSlider != null && fatValue != null) {
+            fatValue.setText(String.format("%.0fg", fatSlider.getValue()));
+        }
+    }
+    
+    private void saveNutritionGoals() {
+        User currentUser = sessionManager.getCurrentUser();
+        if (currentUser == null) {
+            DialogUtils.showErrorAlert("Error", "You must be logged in to save nutrition goals");
+            return;
+        }
+        
+        if (updateNutritionGoalsController == null) {
+            DialogUtils.showErrorAlert("Error", "Update controller is not available");
+            return;
+        }
+        
+        // 슬라이더 값 가져오기
+        int calories = (int) calorieSlider.getValue();
+        double protein = proteinSlider.getValue();
+        double carbs = carbsSlider.getValue();
+        double fat = fatSlider.getValue();
+        
+        // Controller 호출
+        updateNutritionGoalsController.execute(
+            currentUser.getUserId(),
+            calories,
+            protein,
+            carbs,
+            fat
+        );
+    }
+
     @Override
     public void propertyChange(PropertyChangeEvent evt) {
-        // Handle updates
+        String propertyName = evt.getPropertyName();
+        
+        Platform.runLater(() -> {
+            if ("nutritionGoalsUpdated".equals(propertyName)) {
+                // 성공 메시지 표시
+                DialogUtils.showInfoAlert("Success", "Nutrition goals saved successfully!");
+                
+                // SessionManager의 사용자 정보도 업데이트
+                User currentUser = sessionManager.getCurrentUser();
+                if (currentUser != null && profileSettingsViewModel.getNutritionGoals() != null) {
+                    currentUser.setNutritionGoals(profileSettingsViewModel.getNutritionGoals());
+                    sessionManager.setCurrentUser(currentUser);
+                }
+            } else if ("error".equals(propertyName)) {
+                // 에러 메시지 표시
+                String error = profileSettingsViewModel.getError();
+                if (error != null && !error.isEmpty()) {
+                    DialogUtils.showErrorAlert("Error", error);
+                }
+            }
+        });
     }
 }

@@ -3,19 +3,24 @@ package com.mealplanner.app;
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.AdjustServingSizeController;
 import com.mealplanner.interface_adapter.controller.BrowseRecipeController;
+import com.mealplanner.interface_adapter.controller.GetRecommendationsController;
 import com.mealplanner.interface_adapter.controller.LoginController;
 import com.mealplanner.interface_adapter.controller.SearchByIngredientsController;
 import com.mealplanner.interface_adapter.controller.SignupController;
 import com.mealplanner.interface_adapter.controller.StoreRecipeController;
+import com.mealplanner.interface_adapter.controller.UpdateNutritionGoalsController;
 import com.mealplanner.interface_adapter.controller.ViewScheduleController;
 import com.mealplanner.interface_adapter.presenter.AdjustServingSizePresenter;
 import com.mealplanner.interface_adapter.presenter.BrowseRecipePresenter;
+import com.mealplanner.interface_adapter.presenter.GetRecommendationsPresenter;
 import com.mealplanner.interface_adapter.presenter.LoginPresenter;
 import com.mealplanner.interface_adapter.presenter.SearchByIngredientsPresenter;
 import com.mealplanner.interface_adapter.presenter.SignupPresenter;
 import com.mealplanner.interface_adapter.presenter.StoreRecipePresenter;
+import com.mealplanner.interface_adapter.presenter.UpdateNutritionGoalsPresenter;
 import com.mealplanner.interface_adapter.presenter.ViewSchedulePresenter;
 import com.mealplanner.interface_adapter.view_model.LoginViewModel;
+import com.mealplanner.interface_adapter.view_model.ProfileSettingsViewModel;
 import com.mealplanner.interface_adapter.view_model.RecipeBrowseViewModel;
 import com.mealplanner.interface_adapter.view_model.RecipeDetailViewModel;
 import com.mealplanner.interface_adapter.view_model.RecipeSearchViewModel;
@@ -75,17 +80,24 @@ public class AppBuilder {
         buildAdjustServingSizeFlow(addMealController);
         buildSignupFlow(scheduleController);
         buildLoginFlow(scheduleController); // Ensure login is built
-        
-        // Build Schedule View
-        ScheduleView scheduleView = new ScheduleView(scheduleViewModel, scheduleController, viewManagerModel);
+
+        // PHASE 2: Create shared RecipeRepository for Schedule and Dashboard
+        FileRecipeRepository recipeRepository = new FileRecipeRepository();
+
+        // Build Schedule View - PHASE 2: Inject RecipeRepository for real data
+        ScheduleView scheduleView = new ScheduleView(scheduleViewModel, scheduleController, viewManagerModel, recipeRepository);
         viewManager.addView(ViewManager.SCHEDULE_VIEW, scheduleView);
-        
+
         // Build Dashboard View
-        DashboardView dashboardView = new DashboardView(viewManagerModel, scheduleViewModel);
+        DashboardView dashboardView = new DashboardView(viewManagerModel, scheduleViewModel, recipeRepository);
         viewManager.addView(ViewManager.DASHBOARD_VIEW, dashboardView);
-        
-        // Build Profile View (Dummy for now, matching Sidebar)
-        ProfileSettingsView profileView = new ProfileSettingsView(viewManagerModel, "Eden Chang");
+
+        // Build Profile View
+        ProfileSettingsViewModel profileViewModel = new ProfileSettingsViewModel();
+        UpdateNutritionGoalsPresenter updateNutritionGoalsPresenter = new UpdateNutritionGoalsPresenter(profileViewModel);
+        var updateNutritionGoalsInteractor = UseCaseFactory.createUpdateNutritionGoalsInteractor(updateNutritionGoalsPresenter);
+        UpdateNutritionGoalsController updateNutritionGoalsController = new UpdateNutritionGoalsController(updateNutritionGoalsInteractor);
+        ProfileSettingsView profileView = new ProfileSettingsView(viewManagerModel, profileViewModel, updateNutritionGoalsController);
         viewManager.addView(ViewManager.PROFILE_SETTINGS_VIEW, profileView);
 
         // Set initial view to Login so authentication flow is the first experience
@@ -109,7 +121,13 @@ public class AppBuilder {
         BrowseRecipePresenter presenter = new BrowseRecipePresenter(viewModel, viewManagerModel);
         var interactor = UseCaseFactory.createBrowseRecipeInteractor(presenter);
         BrowseRecipeController controller = new BrowseRecipeController(interactor);
-        BrowseRecipeView view = new BrowseRecipeView(viewModel, controller, viewManagerModel, recipeDetailViewModel);
+
+        // Phase 5: GetRecommendations flow
+        GetRecommendationsPresenter recommendationsPresenter = new GetRecommendationsPresenter(viewModel);
+        var recommendationsInteractor = UseCaseFactory.createGetRecommendationsInteractor(recommendationsPresenter);
+        GetRecommendationsController recommendationsController = new GetRecommendationsController(recommendationsInteractor);
+        
+        BrowseRecipeView view = new BrowseRecipeView(viewModel, controller, viewManagerModel, recipeDetailViewModel, recommendationsController);
         viewManager.addView(ViewManager.BROWSE_RECIPE_VIEW, view);
     }
 
