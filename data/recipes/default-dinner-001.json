@@ -1,0 +1,23 @@
+{
+  "name": "Spaghetti Carbonara",
+  "ingredients": [
+    "8 oz spaghetti",
+    "4 slices bacon",
+    "2 eggs",
+    "1/2 cup parmesan cheese",
+    "2 cloves garlic",
+    "black pepper to taste"
+  ],
+  "steps": "Cook spaghetti according to package directions.\nCook bacon in a large pan until crispy, then remove and chop.\nIn the same pan, sauté garlic for 1 minute.\nWhisk eggs and parmesan in a bowl.\nDrain pasta and immediately toss with egg mixture, bacon, and garlic.\nSeason with black pepper and serve hot.",
+  "servingSize": 2,
+  "nutritionInfo": {
+    "calories": 580,
+    "protein": 28.0,
+    "carbs": 65.0,
+    "fat": 22.0
+  },
+  "cookTimeMinutes": 20,
+  "dietaryRestrictions": [],
+  "recipeId": "default-dinner-001"
+}
+

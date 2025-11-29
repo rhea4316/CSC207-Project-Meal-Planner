@@ -1,0 +1,27 @@
+{
+  "name": "Vegan Pasta Primavera",
+  "ingredients": [
+    "8 oz pasta",
+    "2 cups mixed vegetables",
+    "2 tablespoons olive oil",
+    "3 cloves garlic",
+    "1/4 cup vegetable broth",
+    "1/4 cup nutritional yeast",
+    "fresh basil to taste"
+  ],
+  "steps": "Cook pasta according to package directions.\nHeat olive oil in a large pan over medium heat.\nAdd garlic and sauté for 1 minute.\nAdd vegetables and cook for 5-6 minutes until tender.\nAdd vegetable broth and nutritional yeast.\nToss with cooked pasta and fresh basil.\nServe hot.",
+  "servingSize": 2,
+  "nutritionInfo": {
+    "calories": 420,
+    "protein": 16.0,
+    "carbs": 68.0,
+    "fat": 12.0
+  },
+  "cookTimeMinutes": 20,
+  "dietaryRestrictions": [
+    "VEGAN",
+    "VEGETARIAN"
+  ],
+  "recipeId": "default-vegan-002"
+}
+

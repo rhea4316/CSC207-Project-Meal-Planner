@@ -1,0 +1,24 @@
+{
+  "name": "Oatmeal with Berries",
+  "ingredients": [
+    "1 cup rolled oats",
+    "2 cups water",
+    "1/2 cup mixed berries",
+    "1 tablespoon honey",
+    "1/4 cup almonds"
+  ],
+  "steps": "Bring water to a boil in a saucepan.\nAdd oats and reduce heat to medium-low.\nCook for 5-7 minutes, stirring occasionally.\nRemove from heat and let stand for 2 minutes.\nTop with berries, honey, and almonds before serving.",
+  "servingSize": 2,
+  "nutritionInfo": {
+    "calories": 380,
+    "protein": 12.0,
+    "carbs": 58.0,
+    "fat": 12.0
+  },
+  "cookTimeMinutes": 10,
+  "dietaryRestrictions": [
+    "VEGETARIAN"
+  ],
+  "recipeId": "default-breakfast-003"
+}
+

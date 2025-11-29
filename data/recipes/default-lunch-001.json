@@ -1,0 +1,23 @@
+{
+  "name": "Chicken Caesar Salad",
+  "ingredients": [
+    "2 chicken breasts",
+    "4 cups romaine lettuce",
+    "1/2 cup parmesan cheese",
+    "1/4 cup caesar dressing",
+    "1/2 cup croutons",
+    "black pepper to taste"
+  ],
+  "steps": "Season chicken breasts with salt and pepper.\nCook chicken in a pan over medium heat for 6-7 minutes per side.\nLet chicken rest, then slice into strips.\nToss lettuce with caesar dressing in a large bowl.\nTop with chicken, parmesan cheese, and croutons.\nServe immediately.",
+  "servingSize": 2,
+  "nutritionInfo": {
+    "calories": 450,
+    "protein": 42.0,
+    "carbs": 18.0,
+    "fat": 22.0
+  },
+  "cookTimeMinutes": 20,
+  "dietaryRestrictions": [],
+  "recipeId": "default-lunch-001"
+}
+

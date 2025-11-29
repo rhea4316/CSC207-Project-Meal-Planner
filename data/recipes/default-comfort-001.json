@@ -1,0 +1,26 @@
+{
+  "name": "Mac and Cheese",
+  "ingredients": [
+    "8 oz macaroni",
+    "2 cups cheddar cheese",
+    "2 tablespoons butter",
+    "2 tablespoons flour",
+    "2 cups milk",
+    "1/2 teaspoon salt",
+    "black pepper to taste"
+  ],
+  "steps": "Cook macaroni according to package directions.\nMelt butter in a saucepan over medium heat.\nWhisk in flour and cook for 1 minute.\nGradually add milk, whisking constantly.\nCook until thickened, about 5 minutes.\nRemove from heat and stir in cheese until melted.\nSeason with salt and pepper.\nMix with cooked macaroni and serve hot.",
+  "servingSize": 4,
+  "nutritionInfo": {
+    "calories": 480,
+    "protein": 20.0,
+    "carbs": 52.0,
+    "fat": 20.0
+  },
+  "cookTimeMinutes": 25,
+  "dietaryRestrictions": [
+    "VEGETARIAN"
+  ],
+  "recipeId": "default-comfort-001"
+}
+

@@ -1,0 +1,28 @@
+{
+  "name": "Gluten-Free Quinoa Salad",
+  "ingredients": [
+    "1 cup cooked quinoa",
+    "1 cup cherry tomatoes",
+    "1 cucumber",
+    "1/2 red onion",
+    "1/4 cup feta cheese",
+    "2 tablespoons olive oil",
+    "1 tablespoon lemon juice",
+    "fresh herbs to taste"
+  ],
+  "steps": "Cook quinoa according to package instructions and let cool.\nDice cucumber and red onion.\nHalve cherry tomatoes.\nMix quinoa with vegetables and feta cheese.\nWhisk olive oil and lemon juice for dressing.\nToss salad with dressing and fresh herbs.\nServe chilled or at room temperature.",
+  "servingSize": 2,
+  "nutritionInfo": {
+    "calories": 320,
+    "protein": 12.0,
+    "carbs": 38.0,
+    "fat": 14.0
+  },
+  "cookTimeMinutes": 15,
+  "dietaryRestrictions": [
+    "GLUTEN_FREE",
+    "VEGETARIAN"
+  ],
+  "recipeId": "default-glutenfree-001"
+}
+

@@ -1,0 +1,27 @@
+{
+  "name": "Keto Cauliflower Fried Rice",
+  "ingredients": [
+    "1 head cauliflower",
+    "2 eggs",
+    "1/2 cup diced chicken",
+    "1/2 cup mixed vegetables",
+    "2 tablespoons soy sauce",
+    "1 tablespoon sesame oil",
+    "2 cloves garlic"
+  ],
+  "steps": "Grate cauliflower into rice-like pieces.\nScramble eggs in a pan and set aside.\nCook chicken in sesame oil until done.\nAdd garlic and vegetables, stir-fry for 2 minutes.\nAdd cauliflower rice and cook for 3-4 minutes.\nAdd eggs, soy sauce, and mix everything together.\nServe hot.",
+  "servingSize": 2,
+  "nutritionInfo": {
+    "calories": 280,
+    "protein": 22.0,
+    "carbs": 12.0,
+    "fat": 16.0
+  },
+  "cookTimeMinutes": 20,
+  "dietaryRestrictions": [
+    "GLUTEN_FREE",
+    "KETO"
+  ],
+  "recipeId": "default-keto-001"
+}
+

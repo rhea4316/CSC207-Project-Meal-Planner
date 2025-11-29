@@ -1,0 +1,29 @@
+{
+  "name": "Greek Salad",
+  "ingredients": [
+    "2 cups romaine lettuce",
+    "1 cup cherry tomatoes",
+    "1 cucumber",
+    "1/2 red onion",
+    "1/2 cup kalamata olives",
+    "1/2 cup feta cheese",
+    "2 tablespoons olive oil",
+    "1 tablespoon red wine vinegar",
+    "oregano to taste"
+  ],
+  "steps": "Chop romaine lettuce into bite-sized pieces.\nHalve cherry tomatoes and slice cucumber.\nThinly slice red onion.\nCombine all vegetables in a large bowl.\nAdd olives and crumbled feta cheese.\nWhisk olive oil and red wine vinegar for dressing.\nToss salad with dressing and oregano.\nServe immediately.",
+  "servingSize": 2,
+  "nutritionInfo": {
+    "calories": 280,
+    "protein": 10.0,
+    "carbs": 18.0,
+    "fat": 20.0
+  },
+  "cookTimeMinutes": 10,
+  "dietaryRestrictions": [
+    "VEGETARIAN",
+    "GLUTEN_FREE"
+  ],
+  "recipeId": "default-salad-001"
+}
+

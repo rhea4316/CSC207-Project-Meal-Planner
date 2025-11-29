@@ -1,0 +1,24 @@
+{
+  "name": "Grilled Steak with Vegetables",
+  "ingredients": [
+    "2 ribeye steaks",
+    "2 cups mixed vegetables",
+    "2 tablespoons olive oil",
+    "2 cloves garlic",
+    "1 tablespoon rosemary",
+    "salt to taste",
+    "black pepper to taste"
+  ],
+  "steps": "Season steaks with salt, pepper, and rosemary.\nLet steaks rest at room temperature for 30 minutes.\nHeat grill or pan to high heat.\nCook steaks for 4-5 minutes per side for medium-rare.\nLet steaks rest for 5 minutes.\nToss vegetables with olive oil, garlic, salt, and pepper.\nRoast vegetables in oven at 400°F for 15 minutes.\nServe steak with roasted vegetables.",
+  "servingSize": 2,
+  "nutritionInfo": {
+    "calories": 580,
+    "protein": 42.0,
+    "carbs": 12.0,
+    "fat": 38.0
+  },
+  "cookTimeMinutes": 30,
+  "dietaryRestrictions": [],
+  "recipeId": "default-steak-001"
+}
+

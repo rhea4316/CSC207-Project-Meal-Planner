@@ -1,0 +1,25 @@
+{
+  "name": "Chicken Noodle Soup",
+  "ingredients": [
+    "1 lb chicken breast",
+    "6 cups chicken broth",
+    "2 cups egg noodles",
+    "1 cup carrots",
+    "1 cup celery",
+    "1 onion",
+    "2 cloves garlic",
+    "fresh parsley to taste"
+  ],
+  "steps": "Dice chicken, carrots, celery, and onion.\nHeat broth in a large pot and bring to a boil.\nAdd chicken and cook for 10 minutes.\nAdd vegetables and garlic, simmer for 10 minutes.\nAdd noodles and cook for 8-10 minutes until tender.\nSeason with salt and pepper.\nGarnish with fresh parsley before serving.",
+  "servingSize": 4,
+  "nutritionInfo": {
+    "calories": 240,
+    "protein": 24.0,
+    "carbs": 28.0,
+    "fat": 4.0
+  },
+  "cookTimeMinutes": 30,
+  "dietaryRestrictions": [],
+  "recipeId": "default-soup-001"
+}
+

@@ -1,0 +1,28 @@
+{
+  "name": "Stuffed Bell Peppers",
+  "ingredients": [
+    "4 bell peppers",
+    "1 cup cooked rice",
+    "1 can black beans",
+    "1 cup corn",
+    "1/2 cup shredded cheese",
+    "1/2 onion",
+    "2 cloves garlic",
+    "1 tablespoon olive oil",
+    "1 teaspoon cumin"
+  ],
+  "steps": "Preheat oven to 375°F.\nCut tops off bell peppers and remove seeds.\nDice onion and mince garlic.\nHeat oil and sauté onion and garlic.\nMix rice, beans, corn, cheese, and cumin.\nFill peppers with mixture.\nPlace in baking dish and bake for 25 minutes.\nServe hot.",
+  "servingSize": 4,
+  "nutritionInfo": {
+    "calories": 320,
+    "protein": 14.0,
+    "carbs": 48.0,
+    "fat": 10.0
+  },
+  "cookTimeMinutes": 35,
+  "dietaryRestrictions": [
+    "VEGETARIAN"
+  ],
+  "recipeId": "default-vegetarian-001"
+}
+

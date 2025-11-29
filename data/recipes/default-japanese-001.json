@@ -1,0 +1,24 @@
+{
+  "name": "Teriyaki Chicken Bowl",
+  "ingredients": [
+    "2 chicken thighs",
+    "1 cup cooked rice",
+    "1/4 cup teriyaki sauce",
+    "1 cup broccoli",
+    "1 carrot",
+    "1 tablespoon sesame seeds",
+    "1 tablespoon vegetable oil"
+  ],
+  "steps": "Season chicken thighs with salt and pepper.\nHeat oil in a pan and cook chicken for 5-6 minutes per side.\nAdd teriyaki sauce and simmer for 3-4 minutes until glazed.\nSteam broccoli and carrot until tender.\nServe chicken over rice with vegetables.\nGarnish with sesame seeds.",
+  "servingSize": 2,
+  "nutritionInfo": {
+    "calories": 480,
+    "protein": 32.0,
+    "carbs": 52.0,
+    "fat": 14.0
+  },
+  "cookTimeMinutes": 25,
+  "dietaryRestrictions": [],
+  "recipeId": "default-japanese-001"
+}
+

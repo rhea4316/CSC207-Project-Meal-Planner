@@ -1,0 +1,26 @@
+{
+  "name": "Penne Arrabbiata",
+  "ingredients": [
+    "12 oz penne pasta",
+    "1 can crushed tomatoes",
+    "4 cloves garlic",
+    "1 teaspoon red pepper flakes",
+    "1/4 cup olive oil",
+    "fresh basil to taste",
+    "parmesan cheese to taste"
+  ],
+  "steps": "Cook penne according to package directions.\nHeat olive oil in a large pan.\nAdd minced garlic and red pepper flakes, cook for 1 minute.\nAdd crushed tomatoes and simmer for 10 minutes.\nSeason with salt and pepper.\nToss cooked pasta with sauce.\nGarnish with fresh basil and parmesan cheese.",
+  "servingSize": 3,
+  "nutritionInfo": {
+    "calories": 420,
+    "protein": 14.0,
+    "carbs": 68.0,
+    "fat": 12.0
+  },
+  "cookTimeMinutes": 20,
+  "dietaryRestrictions": [
+    "VEGETARIAN"
+  ],
+  "recipeId": "default-pasta-001"
+}
+

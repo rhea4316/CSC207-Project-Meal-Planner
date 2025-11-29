@@ -1,0 +1,26 @@
+{
+  "name": "Bibimbap",
+  "ingredients": [
+    "2 cups cooked rice",
+    "1 cup spinach",
+    "1 cup bean sprouts",
+    "1 carrot",
+    "1 zucchini",
+    "2 eggs",
+    "2 tablespoons gochujang",
+    "1 tablespoon sesame oil",
+    "1 tablespoon soy sauce"
+  ],
+  "steps": "Cook rice and set aside.\nBlanch spinach and bean sprouts separately, season with sesame oil.\nJulienne carrot and zucchini, sauté separately.\nFry eggs sunny-side up.\nArrange vegetables over rice in a bowl.\nTop with fried egg and gochujang.\nMix everything together before eating.",
+  "servingSize": 2,
+  "nutritionInfo": {
+    "calories": 520,
+    "protein": 18.0,
+    "carbs": 75.0,
+    "fat": 16.0
+  },
+  "cookTimeMinutes": 30,
+  "dietaryRestrictions": [],
+  "recipeId": "default-korean-001"
+}
+

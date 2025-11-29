@@ -1,0 +1,29 @@
+{
+  "name": "Mediterranean Quinoa Bowl",
+  "ingredients": [
+    "1 cup cooked quinoa",
+    "1/2 cup chickpeas",
+    "1/2 cup kalamata olives",
+    "1/2 cup feta cheese",
+    "1 cup cherry tomatoes",
+    "1 cucumber",
+    "2 tablespoons olive oil",
+    "1 lemon",
+    "fresh oregano to taste"
+  ],
+  "steps": "Cook quinoa and let cool to room temperature.\nDrain and rinse chickpeas.\nHalve cherry tomatoes and dice cucumber.\nMix quinoa with chickpeas, olives, tomatoes, and cucumber.\nCrumble feta cheese over the top.\nDrizzle with olive oil and lemon juice.\nGarnish with fresh oregano and serve.",
+  "servingSize": 2,
+  "nutritionInfo": {
+    "calories": 420,
+    "protein": 16.0,
+    "carbs": 48.0,
+    "fat": 18.0
+  },
+  "cookTimeMinutes": 20,
+  "dietaryRestrictions": [
+    "VEGETARIAN",
+    "GLUTEN_FREE"
+  ],
+  "recipeId": "default-healthy-001"
+}
+

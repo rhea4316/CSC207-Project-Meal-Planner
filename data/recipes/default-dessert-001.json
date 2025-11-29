@@ -1,0 +1,27 @@
+{
+  "name": "Chocolate Chip Cookies",
+  "ingredients": [
+    "2 cups flour",
+    "1 cup butter",
+    "3/4 cup brown sugar",
+    "3/4 cup white sugar",
+    "2 eggs",
+    "2 cups chocolate chips",
+    "1 teaspoon vanilla extract",
+    "1 teaspoon baking soda"
+  ],
+  "steps": "Preheat oven to 375°F.\nCream butter and sugars until fluffy.\nBeat in eggs and vanilla.\nMix in flour and baking soda.\nStir in chocolate chips.\nDrop rounded tablespoons onto baking sheet.\nBake for 9-11 minutes until golden.\nCool on wire rack.",
+  "servingSize": 24,
+  "nutritionInfo": {
+    "calories": 180,
+    "protein": 2.0,
+    "carbs": 22.0,
+    "fat": 9.0
+  },
+  "cookTimeMinutes": 25,
+  "dietaryRestrictions": [
+    "VEGETARIAN"
+  ],
+  "recipeId": "default-dessert-001"
+}
+

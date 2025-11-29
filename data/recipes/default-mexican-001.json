@@ -1,0 +1,25 @@
+{
+  "name": "Chicken Tacos",
+  "ingredients": [
+    "1 lb chicken breast",
+    "8 corn tortillas",
+    "1 cup shredded lettuce",
+    "1/2 cup diced tomatoes",
+    "1/2 cup shredded cheese",
+    "1/4 cup sour cream",
+    "1 lime",
+    "2 tablespoons taco seasoning"
+  ],
+  "steps": "Season chicken with taco seasoning and cook until done.\nShred chicken with forks.\nWarm tortillas in a dry pan.\nFill tortillas with chicken, lettuce, tomatoes, and cheese.\nTop with sour cream and lime juice.\nServe immediately.",
+  "servingSize": 4,
+  "nutritionInfo": {
+    "calories": 380,
+    "protein": 28.0,
+    "carbs": 38.0,
+    "fat": 12.0
+  },
+  "cookTimeMinutes": 20,
+  "dietaryRestrictions": [],
+  "recipeId": "default-mexican-001"
+}
+

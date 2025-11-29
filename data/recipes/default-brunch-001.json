@@ -1,0 +1,24 @@
+{
+  "name": "Eggs Benedict",
+  "ingredients": [
+    "4 eggs",
+    "2 English muffins",
+    "4 slices ham",
+    "1/2 cup butter",
+    "2 egg yolks",
+    "1 tablespoon lemon juice",
+    "pinch of cayenne pepper"
+  ],
+  "steps": "Split and toast English muffins.\nWarm ham slices in a pan.\nPoach eggs in simmering water for 3-4 minutes.\nMelt butter in a double boiler.\nWhisk egg yolks with lemon juice over heat.\nSlowly add melted butter while whisking to make hollandaise.\nSeason with cayenne and salt.\nAssemble: muffin, ham, poached egg, hollandaise sauce.",
+  "servingSize": 2,
+  "nutritionInfo": {
+    "calories": 520,
+    "protein": 24.0,
+    "carbs": 28.0,
+    "fat": 34.0
+  },
+  "cookTimeMinutes": 25,
+  "dietaryRestrictions": [],
+  "recipeId": "default-brunch-001"
+}
+

@@ -1,0 +1,25 @@
+{
+  "name": "Turkey Club Sandwich",
+  "ingredients": [
+    "6 slices bread",
+    "8 oz sliced turkey",
+    "4 slices bacon",
+    "2 tomatoes",
+    "lettuce leaves",
+    "mayonnaise to taste",
+    "salt to taste",
+    "black pepper to taste"
+  ],
+  "steps": "Cook bacon until crispy and set aside.\nToast bread slices.\nSpread mayonnaise on one side of each slice.\nLayer turkey, bacon, tomato, and lettuce on bread.\nSeason with salt and pepper.\nTop with remaining bread slices.\nCut diagonally and serve with chips or pickles.",
+  "servingSize": 2,
+  "nutritionInfo": {
+    "calories": 480,
+    "protein": 32.0,
+    "carbs": 42.0,
+    "fat": 18.0
+  },
+  "cookTimeMinutes": 15,
+  "dietaryRestrictions": [],
+  "recipeId": "default-sandwich-001"
+}
+
