@@ -16,6 +16,8 @@ import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -37,6 +39,9 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
     private FlowPane categoryFilters;
     private ToggleGroup categoryGroup;
     private String selectedCategory = "All";
+
+    // OPTIMIZATION: Store all recipes for client-side filtering
+    private List<Recipe> allRecipes = new ArrayList<>();
 
     // Result Components
     private ScrollPane listScrollPane;
@@ -216,7 +221,7 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
                 selectedCategory = name;
                 // Update icon color to white
                 if (btn.getGraphic() != null) {
-                     // Reloading icon with white color is tricky without storing path. 
+                     // Reloading icon with white color is tricky without storing path.
                      // For now, assume simple toggle logic or just keep it simple.
                      // (In a real app, we'd have a custom button class to handle state/icon/color)
                      // Let's try to reload if we know the path or if it's "All"
@@ -226,7 +231,8 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
                         btn.setGraphic(SvgIconLoader.loadIcon("/svg/apps.svg", 16, Color.WHITE));
                      }
                 }
-                performSearch(); // Trigger search on filter change
+                // OPTIMIZATION: Apply client-side filtering instead of re-fetching from API
+                applyClientSideFilter();
             } else {
                 btn.setStyle(defaultStyle);
                 // Update icon color to gray
@@ -258,6 +264,26 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
         listScrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         listScrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
         listScrollPane.setMinHeight(400);
+        
+        // Increase scroll speed
+        listScrollPane.addEventFilter(javafx.scene.input.ScrollEvent.SCROLL, event -> {
+            if (event.getDeltaY() != 0) {
+                double delta = event.getDeltaY() * 3.0;
+                double height = listScrollPane.getContent().getBoundsInLocal().getHeight();
+                double vHeight = listScrollPane.getViewportBounds().getHeight();
+                
+                double scrollableHeight = height - vHeight;
+                if (scrollableHeight > 0) {
+                    double vValueShift = -delta / scrollableHeight;
+                    double nextVvalue = listScrollPane.getVvalue() + vValueShift;
+                    
+                    if (nextVvalue >= 0 && nextVvalue <= 1.0 || (listScrollPane.getVvalue() > 0 && listScrollPane.getVvalue() < 1.0)) {
+                        listScrollPane.setVvalue(Math.min(Math.max(nextVvalue, 0), 1));
+                        event.consume();
+                    }
+                }
+            }
+        });
 
         // 2. Loading
         loadingPanel = new VBox(15);
@@ -331,27 +357,94 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
 
     private void displayRecipes(List<Recipe> recipes) {
         Platform.runLater(() -> {
-            listPanel.getChildren().clear();
-            
-            if (recipes == null || recipes.isEmpty()) {
-                emptyPanel.getChildren().set(1, new Label("No recipes found. Try a different term."));
-                listPanel.getChildren().add(emptyPanel);
-                countLabel.setText("Showing 0 recipes");
-            } else {
-                countLabel.setText("Showing " + recipes.size() + " recipes"); // Demo count
-                
-                // Mockup shows specific "Showing 9 of 16 recipes" style
-                Node trendIcon = SvgIconLoader.loadIcon("/svg/chart.svg", 16, Color.web("#84cc16")); // Green zigzag
-                if (trendIcon != null) {
-                    countLabel.setGraphic(trendIcon);
-                    countLabel.setGraphicTextGap(8);
-                }
+            // OPTIMIZATION: Store all recipes for client-side filtering
+            allRecipes = recipes != null ? new ArrayList<>(recipes) : new ArrayList<>();
 
-                for (Recipe recipe : recipes) {
-                    listPanel.getChildren().add(createRecipeCard(recipe));
-                }
-            }
+            // Apply current filter
+            applyClientSideFilter();
         });
+    }
+
+    /**
+     * OPTIMIZATION: Apply client-side category filtering without re-fetching from API.
+     */
+    private void applyClientSideFilter() {
+        listPanel.getChildren().clear();
+
+        if (allRecipes == null || allRecipes.isEmpty()) {
+            emptyPanel.getChildren().set(1, new Label("No recipes found. Try a different term."));
+            listPanel.getChildren().add(emptyPanel);
+            countLabel.setText("Showing 0 recipes");
+            return;
+        }
+
+        // Filter recipes based on selected category
+        List<Recipe> filteredRecipes = allRecipes.stream()
+            .filter(recipe -> matchesCategory(recipe, selectedCategory))
+            .collect(java.util.stream.Collectors.toList());
+
+        if (filteredRecipes.isEmpty()) {
+            emptyPanel.getChildren().set(1, new Label("No recipes found in this category."));
+            listPanel.getChildren().add(emptyPanel);
+            countLabel.setText("Showing 0 recipes");
+        } else {
+            countLabel.setText("Showing " + filteredRecipes.size() + " of " + allRecipes.size() + " recipes");
+
+            // Mockup shows specific "Showing 9 of 16 recipes" style
+            Node trendIcon = SvgIconLoader.loadIcon("/svg/chart.svg", 16, Color.web("#84cc16")); // Green zigzag
+            if (trendIcon != null) {
+                countLabel.setGraphic(trendIcon);
+                countLabel.setGraphicTextGap(8);
+            }
+
+            for (Recipe recipe : filteredRecipes) {
+                listPanel.getChildren().add(createRecipeCard(recipe));
+            }
+        }
+    }
+
+    /**
+     * Check if a recipe matches the given category filter.
+     */
+    private boolean matchesCategory(Recipe recipe, String category) {
+        if (category == null || category.equals("All")) {
+            return true;
+        }
+
+        String recipeName = recipe.getName().toLowerCase();
+
+        // Simple category matching based on recipe name
+        // In a real application, this would use recipe tags or categories from the API
+        switch (category) {
+            case "Breakfast":
+                return recipeName.contains("breakfast") || recipeName.contains("pancake")
+                    || recipeName.contains("toast") || recipeName.contains("oatmeal")
+                    || recipeName.contains("egg");
+            case "Lunch":
+                return recipeName.contains("lunch") || recipeName.contains("sandwich")
+                    || recipeName.contains("salad") || recipeName.contains("soup");
+            case "Dinner":
+                return recipeName.contains("dinner") || recipeName.contains("steak")
+                    || recipeName.contains("chicken") || recipeName.contains("fish")
+                    || recipeName.contains("pasta");
+            case "Snacks":
+                return recipeName.contains("snack") || recipeName.contains("chip")
+                    || recipeName.contains("dip");
+            case "Desserts":
+                return recipeName.contains("dessert") || recipeName.contains("cake")
+                    || recipeName.contains("cookie") || recipeName.contains("ice cream")
+                    || recipeName.contains("chocolate");
+            case "Vegetarian":
+                return !recipeName.contains("meat") && !recipeName.contains("chicken")
+                    && !recipeName.contains("beef") && !recipeName.contains("pork")
+                    && !recipeName.contains("fish");
+            case "Vegan":
+                return !recipeName.contains("meat") && !recipeName.contains("chicken")
+                    && !recipeName.contains("beef") && !recipeName.contains("egg")
+                    && !recipeName.contains("cheese") && !recipeName.contains("milk");
+            default:
+                return true;
+        }
     }
     
     private VBox createRecipeCard(Recipe recipe) {
@@ -367,6 +460,28 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
         StackPane imageContainer = new StackPane();
         imageContainer.setPrefHeight(180);
         imageContainer.setStyle("-fx-background-color: #e5e7eb; -fx-background-radius: 12px 12px 0 0;");
+        imageContainer.setClip(new javafx.scene.shape.Rectangle(0, 0, 300, 180));
+        ((javafx.scene.shape.Rectangle) imageContainer.getClip()).setArcWidth(12);
+        ((javafx.scene.shape.Rectangle) imageContainer.getClip()).setArcHeight(12);
+        
+        // Load recipe image if available
+        String imageUrl = recipe.getImageUrl();
+        if (imageUrl != null && !imageUrl.isEmpty()) {
+            try {
+                ImageView imageView = new ImageView();
+                imageView.setFitWidth(300);
+                imageView.setFitHeight(180);
+                imageView.setPreserveRatio(true);
+                imageView.setSmooth(true);
+                imageView.setCache(true);
+                
+                Image image = new Image(imageUrl, true); // true = load in background
+                imageView.setImage(image);
+                imageContainer.getChildren().add(0, imageView); // Add image as first child (behind overlays)
+            } catch (Exception e) {
+                // If image loading fails, fall back to placeholder background
+            }
+        }
         
         // Overlay Tag (e.g., "Easy", "Medium") - Random for demo
         Label difficultyTag = new Label(new Random().nextBoolean() ? "Easy" : "Medium");
@@ -382,6 +497,7 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
         StackPane.setAlignment(saveBtn, Pos.TOP_RIGHT);
         StackPane.setMargin(saveBtn, new Insets(12));
 
+        // Add overlays (they will be on top of the image)
         imageContainer.getChildren().addAll(difficultyTag, saveBtn);
         card.getChildren().add(imageContainer);
 

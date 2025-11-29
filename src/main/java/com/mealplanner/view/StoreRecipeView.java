@@ -16,6 +16,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 
@@ -146,6 +147,26 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         scrollPane.setFitToWidth(true);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scrollPane.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
+        
+        // Increase scroll speed
+        scrollPane.addEventFilter(ScrollEvent.SCROLL, event -> {
+            if (event.getDeltaY() != 0) {
+                double delta = event.getDeltaY() * 3.0;
+                double height = scrollPane.getContent().getBoundsInLocal().getHeight();
+                double vHeight = scrollPane.getViewportBounds().getHeight();
+                
+                double scrollableHeight = height - vHeight;
+                if (scrollableHeight > 0) {
+                    double vValueShift = -delta / scrollableHeight;
+                    double nextVvalue = scrollPane.getVvalue() + vValueShift;
+                    
+                    if (nextVvalue >= 0 && nextVvalue <= 1.0 || (scrollPane.getVvalue() > 0 && scrollPane.getVvalue() < 1.0)) {
+                        scrollPane.setVvalue(Math.min(Math.max(nextVvalue, 0), 1));
+                        event.consume();
+                    }
+                }
+            }
+        });
 
         cookbookContent.getChildren().addAll(header, scrollPane);
     }
@@ -295,6 +316,26 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         editorContent.setFitToWidth(true);
         editorContent.setStyle("-fx-background: #F5F7FA; -fx-background-color: #F5F7FA; -fx-padding: 0;");
         editorContent.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        
+        // Increase scroll speed
+        editorContent.addEventFilter(ScrollEvent.SCROLL, event -> {
+            if (event.getDeltaY() != 0) {
+                double delta = event.getDeltaY() * 3.0;
+                double height = editorContent.getContent().getBoundsInLocal().getHeight();
+                double vHeight = editorContent.getViewportBounds().getHeight();
+                
+                double scrollableHeight = height - vHeight;
+                if (scrollableHeight > 0) {
+                    double vValueShift = -delta / scrollableHeight;
+                    double nextVvalue = editorContent.getVvalue() + vValueShift;
+                    
+                    if (nextVvalue >= 0 && nextVvalue <= 1.0 || (editorContent.getVvalue() > 0 && editorContent.getVvalue() < 1.0)) {
+                        editorContent.setVvalue(Math.min(Math.max(nextVvalue, 0), 1));
+                        event.consume();
+                    }
+                }
+            }
+        });
     }
 
     private void refreshCookbook() {

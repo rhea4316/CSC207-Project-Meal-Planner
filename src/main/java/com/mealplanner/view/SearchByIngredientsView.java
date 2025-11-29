@@ -17,6 +17,8 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -46,6 +48,9 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
     // Filters
     private FlowPane quickFiltersContainer;
     private List<String> activeFilters = new ArrayList<>();
+
+    // OPTIMIZATION: Store all recipes for client-side filtering
+    private List<Recipe> allRecipes = new ArrayList<>();
 
     public SearchByIngredientsView(SearchByIngredientsController controller, RecipeSearchViewModel viewModel, ViewManagerModel viewManagerModel, RecipeDetailViewModel recipeDetailViewModel) {
         if (viewModel == null) throw new IllegalArgumentException("ViewModel cannot be null");
@@ -235,8 +240,9 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
                 if (!activeFilters.contains(text)) {
                     activeFilters.add(text);
                 }
-                if (!ingredientList.isEmpty()) {
-                    performSearch();
+                // OPTIMIZATION: Apply client-side filtering instead of re-fetching from API
+                if (!allRecipes.isEmpty()) {
+                    displayRecipes(allRecipes);
                 }
             } else {
                 // Inactive State
@@ -246,8 +252,9 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
                      btn.setGraphic(inactiveIcon);
                 }
                 activeFilters.remove(text);
-                if (!ingredientList.isEmpty()) {
-                    performSearch();
+                // OPTIMIZATION: Apply client-side filtering instead of re-fetching from API
+                if (!allRecipes.isEmpty()) {
+                    displayRecipes(allRecipes);
                 }
             }
             // Trigger search logic if needed
@@ -303,6 +310,26 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         listScrollPane.setFitToWidth(true);
         listScrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
         listScrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        
+        // Increase scroll speed
+        listScrollPane.addEventFilter(javafx.scene.input.ScrollEvent.SCROLL, event -> {
+            if (event.getDeltaY() != 0) {
+                double delta = event.getDeltaY() * 3.0;
+                double height = listScrollPane.getContent().getBoundsInLocal().getHeight();
+                double vHeight = listScrollPane.getViewportBounds().getHeight();
+                
+                double scrollableHeight = height - vHeight;
+                if (scrollableHeight > 0) {
+                    double vValueShift = -delta / scrollableHeight;
+                    double nextVvalue = listScrollPane.getVvalue() + vValueShift;
+                    
+                    if (nextVvalue >= 0 && nextVvalue <= 1.0 || (listScrollPane.getVvalue() > 0 && listScrollPane.getVvalue() < 1.0)) {
+                        listScrollPane.setVvalue(Math.min(Math.max(nextVvalue, 0), 1));
+                        event.consume();
+                    }
+                }
+            }
+        });
 
         // 2. Loading View
         loadingPanel = new VBox();
@@ -385,15 +412,22 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
     }
 
     private void displayRecipes(List<Recipe> recipes) {
+        // OPTIMIZATION: Store all recipes for client-side filtering
+        allRecipes = recipes != null ? new ArrayList<>(recipes) : new ArrayList<>();
+
         listPanel.getChildren().clear();
 
-        List<Recipe> filtered = applyQuickFilters(recipes);
+        List<Recipe> filtered = applyQuickFilters(allRecipes);
 
         if (filtered == null || filtered.isEmpty()) {
             showView("EMPTY");
             // Optional: Change empty message to "No results"
             Label title = (Label) emptyPanel.getChildren().get(1);
-            title.setText("No recipes found matching your ingredients");
+            if (allRecipes.isEmpty()) {
+                title.setText("No recipes found matching your ingredients");
+            } else {
+                title.setText("No recipes match the selected filters");
+            }
             Label sub = (Label) emptyPanel.getChildren().get(2);
             sub.setText("Try removing some filters or adding different ingredients");
         } else {
@@ -414,10 +448,33 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         card.setPadding(new Insets(12));
         card.setCursor(Cursor.HAND);
 
-        // 1. Image Placeholder
-        Region thumbnail = new Region();
+        // 1. Image Placeholder or Actual Image
+        StackPane thumbnail = new StackPane();
         thumbnail.setPrefHeight(120);
         thumbnail.setStyle("-fx-background-color: #e5e7eb; -fx-background-radius: 8px;");
+        thumbnail.setClip(new javafx.scene.shape.Rectangle(0, 0, 220, 120));
+        ((javafx.scene.shape.Rectangle) thumbnail.getClip()).setArcWidth(8);
+        ((javafx.scene.shape.Rectangle) thumbnail.getClip()).setArcHeight(8);
+        
+        // Load recipe image if available
+        String imageUrl = recipe.getImageUrl();
+        if (imageUrl != null && !imageUrl.isEmpty()) {
+            try {
+                ImageView imageView = new ImageView();
+                imageView.setFitWidth(220);
+                imageView.setFitHeight(120);
+                imageView.setPreserveRatio(true);
+                imageView.setSmooth(true);
+                imageView.setCache(true);
+                
+                Image image = new Image(imageUrl, true);
+                imageView.setImage(image);
+                thumbnail.getChildren().add(imageView);
+            } catch (Exception e) {
+                // If image loading fails, fall back to placeholder background
+            }
+        }
+        
         card.getChildren().add(thumbnail);
 
         // 2. Title

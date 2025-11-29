@@ -1,0 +1,11 @@
+{
+  "scheduleId": "test-schedule-1",
+  "userId": "test-user",
+  "mealsByDate": {
+    "2024-11-27": {
+      "DINNER": "recipe-d-1",
+      "BREAKFAST": "recipe-bf-1",
+      "LUNCH": "recipe-l-1"
+    }
+  }
+}

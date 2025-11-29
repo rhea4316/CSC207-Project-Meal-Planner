@@ -14,6 +14,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Cursor;
 import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.CycleMethod;
@@ -21,6 +22,8 @@ import javafx.scene.paint.LinearGradient;
 import javafx.scene.paint.Stop;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -34,6 +37,7 @@ public class RecipeDetailView extends ScrollPane implements PropertyChangeListen
 
     // UI Components
     private StackPane heroSection;
+    private ImageView heroImageView;
 
     private Label recipeNameLabel;
     private Label subtitleLabel;
@@ -67,6 +71,26 @@ public class RecipeDetailView extends ScrollPane implements PropertyChangeListen
         setHbarPolicy(ScrollBarPolicy.NEVER);
         setVbarPolicy(ScrollBarPolicy.AS_NEEDED);
         setStyle("-fx-background-color: #F5F7FA; -fx-background: #F5F7FA; -fx-padding: 0;"); // Light gray bg
+        
+        // Increase scroll speed
+        addEventFilter(ScrollEvent.SCROLL, event -> {
+            if (event.getDeltaY() != 0) {
+                double delta = event.getDeltaY() * 3.0;
+                double height = getContent().getBoundsInLocal().getHeight();
+                double vHeight = getViewportBounds().getHeight();
+                
+                double scrollableHeight = height - vHeight;
+                if (scrollableHeight > 0) {
+                    double vValueShift = -delta / scrollableHeight;
+                    double nextVvalue = getVvalue() + vValueShift;
+                    
+                    if (nextVvalue >= 0 && nextVvalue <= 1.0 || (getVvalue() > 0 && getVvalue() < 1.0)) {
+                        setVvalue(Math.min(Math.max(nextVvalue, 0), 1));
+                        event.consume();
+                    }
+                }
+            }
+        });
 
         VBox mainContent = new VBox();
         mainContent.setSpacing(0);
@@ -85,10 +109,16 @@ public class RecipeDetailView extends ScrollPane implements PropertyChangeListen
         heroSection.setMinHeight(350);
         heroSection.setAlignment(Pos.BOTTOM_LEFT);
 
-        // 1. Background Image (Placeholder)
-        Region bgImage = new Region();
-        bgImage.setStyle("-fx-background-color: #ddd;"); // Fallback color
-        // Ideally set -fx-background-image here if URL is known
+        // 1. Background Image
+        heroImageView = new ImageView();
+        heroImageView.setFitWidth(1200); // Will be bound to heroSection width
+        heroImageView.setFitHeight(350);
+        heroImageView.setPreserveRatio(true);
+        heroImageView.setSmooth(true);
+        heroImageView.setCache(true);
+        heroImageView.setStyle("-fx-background-color: #ddd;"); // Fallback color
+        heroImageView.fitWidthProperty().bind(heroSection.widthProperty());
+        heroImageView.fitHeightProperty().bind(heroSection.heightProperty());
         
         // 2. Gradient Overlay (Transparent -> Black 70%)
         Rectangle overlay = new Rectangle();
@@ -125,7 +155,7 @@ public class RecipeDetailView extends ScrollPane implements PropertyChangeListen
         
         contentBox.getChildren().addAll(recipeNameLabel, subtitleLabel, metaChipsContainer);
         
-        heroSection.getChildren().addAll(bgImage, overlay, contentBox, backBtn);
+        heroSection.getChildren().addAll(heroImageView, overlay, contentBox, backBtn);
     }
 
     private GridPane createContentGrid() {
@@ -339,6 +369,17 @@ public class RecipeDetailView extends ScrollPane implements PropertyChangeListen
         if (recipe == null) return;
         
         recipeNameLabel.setText(recipe.getName());
+        
+        // Update hero image
+        String imageUrl = recipe.getImageUrl();
+        if (imageUrl != null && !imageUrl.isEmpty()) {
+            try {
+                Image image = new Image(imageUrl, true); // true = load in background
+                heroImageView.setImage(image);
+            } catch (Exception e) {
+                // If image loading fails, keep the placeholder
+            }
+        }
         // subtitleLabel.setText(recipe.getDescription()); // If description exists
         
         metaChipsContainer.getChildren().clear();

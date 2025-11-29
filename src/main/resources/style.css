@@ -458,3 +458,79 @@
     -fx-padding: 8px 12px;
     -fx-min-height: 40px;
 }
+
+/* =============================================================================
+   MODERN SCROLLBAR STYLES
+   ============================================================================= */
+
+/* ScrollBar Track - Flat, no depth */
+.scroll-bar {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.scroll-bar .track {
+    -fx-background-color: transparent;
+    -fx-background-radius: 0;
+    -fx-border-color: transparent;
+    -fx-effect: null;
+}
+
+/* ScrollBar Thumb - Thin, rounded, flat */
+.scroll-bar .thumb {
+    -fx-background-color: #d1d5db; /* Gray 300 */
+    -fx-background-radius: 4px;
+    -fx-background-insets: 2px;
+    -fx-border-color: transparent;
+    -fx-effect: null;
+    -fx-pref-width: 8px;
+    -fx-min-width: 8px;
+    -fx-max-width: 8px;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: #9ca3af; /* Gray 400 */
+}
+
+.scroll-bar .thumb:pressed {
+    -fx-background-color: #6b7280; /* Gray 500 */
+}
+
+/* Horizontal ScrollBar */
+.scroll-bar:horizontal .thumb {
+    -fx-pref-height: 8px;
+    -fx-min-height: 8px;
+    -fx-max-height: 8px;
+}
+
+/* Vertical ScrollBar */
+.scroll-bar:vertical .thumb {
+    -fx-pref-width: 8px;
+    -fx-min-width: 8px;
+    -fx-max-width: 8px;
+}
+
+/* ScrollBar Buttons (arrows) - Hide them for modern look */
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 0;
+    -fx-padding: 0;
+    -fx-shape: null;
+    -fx-opacity: 0;
+    -fx-pref-width: 0;
+    -fx-pref-height: 0;
+}
+
+.scroll-bar .increment-arrow,
+.scroll-bar .decrement-arrow {
+    -fx-shape: null;
+    -fx-padding: 0;
+    -fx-opacity: 0;
+}
+
+/* Corner (where horizontal and vertical scrollbars meet) */
+.scroll-bar .corner {
+    -fx-background-color: transparent;
+}

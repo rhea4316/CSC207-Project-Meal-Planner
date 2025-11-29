@@ -27,6 +27,7 @@ public class SidebarPanel extends VBox implements PropertyChangeListener {
     private final ViewManagerModel viewManagerModel;
     private Button currentActiveButton;
     private VBox authSection;
+    private java.util.List<Button> menuButtons = new java.util.ArrayList<>();
     
     // Colors matching style.css updated Green Theme
     // Text Colors
@@ -117,6 +118,7 @@ public class SidebarPanel extends VBox implements PropertyChangeListener {
         // Set initial active view
         updateActiveButton(viewManagerModel.getActiveView());
         updateAuthSection();
+        updateButtonsState();
     }
 
     private void addCategoryLabel(String text) {
@@ -174,8 +176,15 @@ public class SidebarPanel extends VBox implements PropertyChangeListener {
         // Store reference data
         btn.setUserData(new MenuItemData(viewName, activeIconPath, inactiveIconPath));
         
-        btn.setOnAction(e -> viewManagerModel.setActiveView(viewName));
+        // Disable button clicks when on login view
+        btn.setOnAction(e -> {
+            String currentView = viewManagerModel.getActiveView();
+            if (!ViewManager.LOGIN_VIEW.equals(currentView)) {
+                viewManagerModel.setActiveView(viewName);
+            }
+        });
         
+        menuButtons.add(btn);
         getChildren().add(btn);
     }
 
@@ -205,19 +214,32 @@ public class SidebarPanel extends VBox implements PropertyChangeListener {
         welcome.getStyleClass().add("text-gray-700");
         welcome.setStyle("-fx-font-weight: 600;");
 
-        Label helper = new Label("로그인하고 식단을 관리해보세요.");
+        Label helper = new Label("Log in to manage your meal plans.");
         helper.getStyleClass().add("text-gray-500");
         helper.setWrapText(true);
 
         Button loginBtn = new Button("Log In");
         loginBtn.getStyleClass().add("primary-button");
         loginBtn.setMaxWidth(Double.MAX_VALUE);
-        loginBtn.setOnAction(e -> viewManagerModel.setActiveView(ViewManager.LOGIN_VIEW));
+        boolean isLoginView = ViewManager.LOGIN_VIEW.equals(viewManagerModel.getActiveView());
+        loginBtn.setDisable(isLoginView);
+        loginBtn.setOnAction(e -> {
+            String currentView = viewManagerModel.getActiveView();
+            if (!ViewManager.LOGIN_VIEW.equals(currentView)) {
+                viewManagerModel.setActiveView(ViewManager.LOGIN_VIEW);
+            }
+        });
 
         Button signupBtn = new Button("Sign Up");
         signupBtn.getStyleClass().add("ghost-button");
         signupBtn.setMaxWidth(Double.MAX_VALUE);
-        signupBtn.setOnAction(e -> viewManagerModel.setActiveView(ViewManager.SIGNUP_VIEW));
+        signupBtn.setDisable(isLoginView);
+        signupBtn.setOnAction(e -> {
+            String currentView = viewManagerModel.getActiveView();
+            if (!ViewManager.LOGIN_VIEW.equals(currentView)) {
+                viewManagerModel.setActiveView(ViewManager.SIGNUP_VIEW);
+            }
+        });
 
         guestBox.getChildren().addAll(welcome, helper, loginBtn, signupBtn);
         return guestBox;
@@ -346,12 +368,23 @@ public class SidebarPanel extends VBox implements PropertyChangeListener {
         }
     }
 
+    private void updateButtonsState() {
+        boolean isLoginView = ViewManager.LOGIN_VIEW.equals(viewManagerModel.getActiveView());
+        for (Button btn : menuButtons) {
+            btn.setDisable(isLoginView);
+        }
+    }
+    
     @Override
     public void propertyChange(PropertyChangeEvent evt) {
         switch (evt.getPropertyName()) {
             case "view":
                 String newView = (String) evt.getNewValue();
-                Platform.runLater(() -> updateActiveButton(newView));
+                Platform.runLater(() -> {
+                    updateActiveButton(newView);
+                    updateButtonsState();
+                    updateAuthSection();
+                });
                 break;
             case "currentUserId":
             case "currentUsername":
