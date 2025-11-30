@@ -15,6 +15,8 @@ import com.mealplanner.interface_adapter.view_model.ScheduleViewModel;
 import com.mealplanner.repository.RecipeRepository;
 import com.mealplanner.view.component.*;
 import com.mealplanner.view.component.Sonner;
+import com.mealplanner.view.component.SelectRecipeDialog;
+import com.mealplanner.view.component.AddToMealPlanDialog;
 import com.mealplanner.view.util.SvgIconLoader;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -267,11 +269,24 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         HBox.setHgrow(spacer, Priority.ALWAYS);
         
         Button autoGenBtn = new Button("Auto-generate");
-        autoGenBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: -fx-theme-primary; -fx-font-weight: 600; -fx-cursor: hand;");
+        autoGenBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #2d5016; -fx-font-weight: 600; -fx-cursor: hand;");
         Node sparkIcon = SvgIconLoader.loadIcon("/svg/star.svg", 16, Color.web("#4CAF50"));
         if (sparkIcon != null) autoGenBtn.setGraphic(sparkIcon);
         // Phase 4: Add click handler for auto-generate functionality
         autoGenBtn.setOnAction(e -> handleAutoGenerate());
+        
+        // Hover effect: change to star-fill and darker text
+        autoGenBtn.setOnMouseEntered(e -> {
+            Node fillIcon = SvgIconLoader.loadIcon("/svg/star-fill.svg", 16, Color.web("#4CAF50"));
+            if (fillIcon != null) {
+                autoGenBtn.setGraphic(fillIcon);
+            }
+            autoGenBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #1a3009; -fx-font-weight: 600; -fx-cursor: hand;");
+        });
+        autoGenBtn.setOnMouseExited(e -> {
+            if (sparkIcon != null) autoGenBtn.setGraphic(sparkIcon);
+            autoGenBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #2d5016; -fx-font-weight: 600; -fx-cursor: hand;");
+        });
         
         headerRow.getChildren().addAll(title, spacer, autoGenBtn);
         
@@ -295,8 +310,8 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         VBox container = new VBox();
         container.getStyleClass().add("card-panel");
         container.setSpacing(20);
-        // Set minimum height to prevent content hiding when resized
-        container.setMinHeight(450); // Slightly increased to ensure visibility
+        // Allow container to shrink with window height
+        // Remove fixed minHeight to allow responsive resizing
 
         Label title = new Label("Daily Nutrition");
         title.getStyleClass().add("section-title");
@@ -416,8 +431,12 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         
         Label viewAll = new Label("View all >");
         viewAll.getStyleClass().add("text-lime-600");
-        viewAll.setStyle("-fx-cursor: hand; -fx-font-weight: 600; -fx-font-size: 14px;");
+        viewAll.setStyle("-fx-cursor: hand; -fx-font-weight: 600; -fx-font-size: 14px; -fx-text-fill: #65a30d;");
         viewAll.setOnMouseClicked(e -> viewManagerModel.setActiveView(ViewManager.BROWSE_RECIPE_VIEW));
+        
+        // Hover effect: change color
+        viewAll.setOnMouseEntered(e -> viewAll.setStyle("-fx-cursor: hand; -fx-font-weight: 600; -fx-font-size: 14px; -fx-text-fill: #4d7c0f;"));
+        viewAll.setOnMouseExited(e -> viewAll.setStyle("-fx-cursor: hand; -fx-font-weight: 600; -fx-font-size: 14px; -fx-text-fill: #65a30d;"));
         
         headerRow.getChildren().addAll(title, spacer, viewAll);
 
@@ -540,16 +559,38 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         }
         
         VBox card = new VBox(0);
-        String defaultStyle = "-fx-background-color: #f9fafb; -fx-background-radius: 12px; -fx-effect: null; -fx-border-color: transparent; -fx-border-width: 1px;";
-        String hoverStyle = "-fx-background-color: #ffffff; -fx-background-radius: 12px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 4); -fx-border-color: #e5e7eb; -fx-border-width: 1px;";
+        String defaultStyle = "-fx-background-color: #f9fafb; -fx-background-radius: 12px; -fx-effect: null; -fx-border-color: transparent; -fx-border-width: 1px; -fx-border-radius: 12px;";
+        String hoverStyle = "-fx-background-color: #ffffff; -fx-background-radius: 12px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.08), 12, 0, 0, 2); -fx-border-color: #e5e7eb; -fx-border-width: 1px; -fx-border-radius: 12px;";
         
         card.setStyle(defaultStyle);
         card.setPrefWidth(200);
         card.setMinWidth(200);
+        card.setPrefHeight(180);
+        card.setMinHeight(180);
+        card.setMaxHeight(180);
         card.setCursor(javafx.scene.Cursor.HAND);
         
-        card.setOnMouseEntered(e -> card.setStyle(hoverStyle));
-        card.setOnMouseExited(e -> card.setStyle(defaultStyle));
+        // 개선된 호버 효과
+        card.setOnMouseEntered(e -> {
+            card.setStyle(hoverStyle);
+            card.setScaleX(1.03);
+            card.setScaleY(1.03);
+        });
+        card.setOnMouseExited(e -> {
+            card.setStyle(defaultStyle);
+            card.setScaleX(1.0);
+            card.setScaleY(1.0);
+        });
+        
+        // 클릭 피드백 개선
+        card.setOnMousePressed(e -> {
+            card.setScaleX(0.98);
+            card.setScaleY(0.98);
+        });
+        card.setOnMouseReleased(e -> {
+            card.setScaleX(1.03);
+            card.setScaleY(1.03);
+        });
         
         Region imagePlaceholder = new Region();
         imagePlaceholder.setPrefHeight(120);
@@ -557,14 +598,19 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         
         VBox content = new VBox(8);
         content.setPadding(new Insets(12));
+        content.setPrefHeight(60); // Fixed height for content area
+        content.setMinHeight(60);
         
         Label nameLabel = new Label(recipe.getName());
         nameLabel.getStyleClass().add("text-gray-900");
         nameLabel.setStyle("-fx-font-weight: 600; -fx-font-size: 14px;");
         nameLabel.setWrapText(true);
+        nameLabel.setMaxHeight(Double.MAX_VALUE);
+        VBox.setVgrow(nameLabel, Priority.ALWAYS);
         
         HBox meta = new HBox(10);
         meta.setAlignment(Pos.CENTER_LEFT);
+        meta.setStyle("-fx-alignment: center-left;");
         
         // Fire Icon for Calories
         HBox calBox = new HBox(4);
@@ -595,11 +641,38 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         
         meta.getChildren().addAll(calBox, timeBox);
         
-        content.getChildren().addAll(nameLabel, meta);
-        card.getChildren().addAll(imagePlaceholder, content);
+        // Use StackPane to position meta at bottom
+        StackPane contentStack = new StackPane();
+        contentStack.setPrefHeight(60);
+        contentStack.setMinHeight(60);
         
-        // Phase 3: Add click handler to navigate to recipe detail
-        card.setOnMouseClicked(e -> openRecipeDetail(recipe));
+        VBox nameContainer = new VBox();
+        nameContainer.getChildren().add(nameLabel);
+        VBox.setVgrow(nameContainer, Priority.ALWAYS);
+        
+        // Meta positioned at bottom
+        VBox metaContainer = new VBox();
+        VBox.setVgrow(metaContainer, Priority.ALWAYS);
+        metaContainer.setAlignment(Pos.BOTTOM_LEFT);
+        metaContainer.getChildren().add(meta);
+        
+        contentStack.getChildren().addAll(nameContainer, metaContainer);
+        
+        card.getChildren().addAll(imagePlaceholder, contentStack);
+        
+        // Phase 3: Add click handler to navigate to recipe detail - 개선된 클릭 피드백
+        card.setOnMouseClicked(e -> {
+            // 클릭 후 약간의 딜레이를 두고 레시피 상세로 이동 (시각적 피드백)
+            javafx.animation.FadeTransition fadeOut = new javafx.animation.FadeTransition(
+                javafx.util.Duration.millis(100), card);
+            fadeOut.setFromValue(1.0);
+            fadeOut.setToValue(0.8);
+            fadeOut.setOnFinished(event -> {
+                openRecipeDetail(recipe);
+                card.setOpacity(1.0);
+            });
+            fadeOut.play();
+        });
         
         return card;
     }
@@ -619,16 +692,41 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
      * Phase 3: Opens recipe detail view when clicking on a recommendation card.
      */
     private void openRecipeDetail(Recipe recipe) {
-        if (recipe == null || recipeDetailViewModel == null || viewManagerModel == null) {
-            logger.warn("Cannot open recipe detail: recipe={}, viewModel={}, viewManager={}", 
-                recipe != null, recipeDetailViewModel != null, viewManagerModel != null);
+        if (recipe == null) {
+            logger.warn("Cannot open recipe detail: recipe is null");
+            sonner.show("Error", "Recipe information is not available.", Sonner.Type.ERROR);
             return;
         }
+        
+        if (recipeDetailViewModel == null) {
+            logger.error("Cannot open recipe detail: RecipeDetailViewModel is null");
+            sonner.show("Error", "Recipe detail view is not available. Please try again later.", Sonner.Type.ERROR);
+            return;
+        }
+        
+        if (viewManagerModel == null) {
+            logger.error("Cannot open recipe detail: ViewManagerModel is null");
+            sonner.show("Error", "Navigation service is not available. Please try again later.", Sonner.Type.ERROR);
+            return;
+        }
+        
         try {
+            // Set recipe in view model
             recipeDetailViewModel.setRecipe(recipe);
+            
+            // Switch to recipe detail view
             viewManagerModel.setActiveView(ViewManager.RECIPE_DETAIL_VIEW);
+            
+            logger.debug("Successfully opened recipe detail for: {}", recipe.getName());
+        } catch (IllegalArgumentException e) {
+            logger.error("Invalid recipe data when opening recipe detail: {}", recipe.getName(), e);
+            sonner.show("Error", "Invalid recipe data. Please try selecting another recipe.", Sonner.Type.ERROR);
+        } catch (IllegalStateException e) {
+            logger.error("View manager state error when opening recipe detail: {}", recipe.getName(), e);
+            sonner.show("Error", "Unable to navigate to recipe detail. Please try again.", Sonner.Type.ERROR);
         } catch (Exception e) {
-            logger.error("Failed to open recipe detail for recipe: {}", recipe.getName(), e);
+            logger.error("Unexpected error when opening recipe detail for recipe: {}", recipe.getName(), e);
+            sonner.show("Error", "An unexpected error occurred. Please try again later.", Sonner.Type.ERROR);
         }
     }
 
@@ -671,6 +769,8 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         btn.getStyleClass().add("quick-action-button"); 
         btn.setAlignment(Pos.CENTER);
         btn.setPrefHeight(100);
+        btn.setMaxHeight(100);
+        btn.setMaxWidth(100);
         
         // Default Style: bg #fbfbfc, no shadow, no outline
         String defaultBtnStyle = "-fx-background-color: #fbfbfc; -fx-background-radius: 12px; -fx-effect: null; -fx-border-width: 0;";
@@ -775,10 +875,15 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
             
             VBox content = new VBox(6);
             content.setPadding(new Insets(12));
+            content.setPrefHeight(80); // Fixed height for content area
+            content.setMinHeight(80);
             
             Label title = new Label(mealName);
             title.getStyleClass().add("text-gray-900");
             title.setStyle("-fx-font-weight: 600; -fx-font-size: 14px;");
+            title.setWrapText(true);
+            title.setMaxHeight(Double.MAX_VALUE);
+            VBox.setVgrow(title, Priority.ALWAYS);
             
             HBox meta = new HBox(10);
             meta.setAlignment(Pos.CENTER_LEFT);
@@ -805,11 +910,26 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
             
             meta.getChildren().addAll(calBox, timeBox);
             
-            Label scheduleTime = new Label("8:00 AM");
-            scheduleTime.getStyleClass().add("text-gray-400");
-            scheduleTime.setStyle("-fx-font-size: 11px;");
+            // Use StackPane to position meta at bottom
+            StackPane contentStack = new StackPane();
+            contentStack.setPrefHeight(80);
+            contentStack.setMinHeight(80);
             
-            content.getChildren().addAll(title, meta, scheduleTime);
+            VBox titleContainer = new VBox();
+            titleContainer.getChildren().add(title);
+            VBox.setVgrow(titleContainer, Priority.ALWAYS);
+            
+            // Meta positioned at bottom
+            VBox metaContainer = new VBox();
+            VBox.setVgrow(metaContainer, Priority.ALWAYS);
+            metaContainer.setAlignment(Pos.BOTTOM_LEFT);
+            metaContainer.getChildren().add(meta);
+            
+            contentStack.getChildren().addAll(titleContainer, metaContainer);
+            
+            // Time label removed as per user request
+            
+            content.getChildren().addAll(contentStack);
             
             card.getChildren().addAll(imageContainer, content);
             
@@ -855,15 +975,13 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
             typeLabel.getStyleClass().add("text-gray-700");
             typeLabel.setStyle("-fx-font-weight: 500; -fx-font-size: 14px;");
             
-            Label subLabel = new Label("12:30 PM");
-            subLabel.getStyleClass().add("text-gray-400");
-            subLabel.setStyle("-fx-font-size: 11px;");
+            // Time label removed as per user request
             
             Label statusLabel = new Label("Not Planned");
             statusLabel.getStyleClass().add("text-gray-400");
             statusLabel.setStyle("-fx-font-size: 11px;");
             
-            centerBox.getChildren().addAll(iconContainer, typeLabel, subLabel, statusLabel);
+            centerBox.getChildren().addAll(iconContainer, typeLabel, statusLabel);
             
             Region bottomSpacer = new Region();
             VBox.setVgrow(bottomSpacer, Priority.ALWAYS);
@@ -883,7 +1001,8 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
             
             card.getChildren().addAll(topSpacer, centerBox, bottomSpacer, bottomBox);
             
-            // Hover Effect for Not Planned
+            // Hover Effect for Not Planned - 개선된 인터랙션
+            final MealType targetMealType = getMealTypeFromString(mealType);
             card.setOnMouseEntered(e -> {
                 // Background Gradient
                 Stop[] bgStops = new Stop[] { new Stop(0, Color.web("#f7fee7")), new Stop(1, Color.web("#f1fdf4")) };
@@ -906,6 +1025,12 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
                 addBtn.setStyle("-fx-background-color: #7ccf00; -fx-background-radius: 16px; -fx-padding: 0; -fx-cursor: hand;");
                 Node whitePlus = SvgIconLoader.loadIcon("/svg/plus-small.svg", 20, Color.WHITE);
                 addBtn.setGraphic(whitePlus);
+                
+                // 스케일 효과
+                card.setScaleX(1.02);
+                card.setScaleY(1.02);
+                iconContainer.setScaleX(1.1);
+                iconContainer.setScaleY(1.1);
             });
             
             card.setOnMouseExited(e -> {
@@ -921,9 +1046,51 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
                 
                 addBtn.setStyle("-fx-background-color: #F3F4F6; -fx-background-radius: 16px; -fx-padding: 0; -fx-cursor: hand;");
                 addBtn.setGraphic(plusIcon); // Re-use original gray icon
+                
+                // 스케일 리셋
+                card.setScaleX(1.0);
+                card.setScaleY(1.0);
+                iconContainer.setScaleX(1.0);
+                iconContainer.setScaleY(1.0);
             });
             
-            card.setOnMouseClicked(e -> viewManagerModel.setActiveView(ViewManager.SCHEDULE_VIEW));
+            // 클릭 피드백 개선
+            card.setOnMousePressed(e -> {
+                card.setScaleX(0.98);
+                card.setScaleY(0.98);
+            });
+            card.setOnMouseReleased(e -> {
+                card.setScaleX(1.02);
+                card.setScaleY(1.02);
+            });
+            
+            // 빈 슬롯 클릭 시 레시피 선택 다이얼로그 열기
+            card.setOnMouseClicked(e -> {
+                if (addMealController == null || recipeRepository == null) {
+                    sonner.show("Error", "Unable to add meal. Please try again later.", Sonner.Type.ERROR);
+                    return;
+                }
+                
+                // 레시피 선택 다이얼로그 열기
+                javafx.stage.Stage stage = (javafx.stage.Stage) card.getScene().getWindow();
+                SelectRecipeDialog selectDialog = new SelectRecipeDialog(stage, recipeRepository);
+                selectDialog.setOnRecipeSelected(recipe -> {
+                    if (recipe != null) {
+                        // 레시피 선택 후 AddToMealPlanDialog 열기 (오늘 날짜와 해당 식사 타입으로 미리 설정)
+                        AddToMealPlanDialog addDialog = new AddToMealPlanDialog(
+                            stage, 
+                            addMealController, 
+                            String.valueOf(recipe.getRecipeId()), 
+                            recipe.getName()
+                        );
+                        // 다이얼로그에서 날짜를 오늘로, 식사 타입을 해당 타입으로 설정
+                        addDialog.setDefaultDate(LocalDate.now());
+                        addDialog.setDefaultMealType(targetMealType);
+                        addDialog.show();
+                    }
+                });
+                selectDialog.show();
+            });
         }
 
         return card;
@@ -1158,6 +1325,31 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         } catch (Exception e) {
             logger.error("Failed to load recipe: {}", recipeId, e);
             return null;
+        }
+    }
+    
+    /**
+     * 문자열로부터 MealType을 반환합니다.
+     * @param mealTypeString "Breakfast", "Lunch", "Dinner" 등의 문자열
+     * @return 해당하는 MealType, 없으면 BREAKFAST
+     */
+    private MealType getMealTypeFromString(String mealTypeString) {
+        if (mealTypeString == null) {
+            return MealType.BREAKFAST;
+        }
+        String upper = mealTypeString.toUpperCase();
+        try {
+            return MealType.valueOf(upper);
+        } catch (IllegalArgumentException e) {
+            // 문자열이 enum 값과 정확히 일치하지 않는 경우
+            if (upper.contains("BREAKFAST") || upper.contains("아침")) {
+                return MealType.BREAKFAST;
+            } else if (upper.contains("LUNCH") || upper.contains("점심")) {
+                return MealType.LUNCH;
+            } else if (upper.contains("DINNER") || upper.contains("저녁")) {
+                return MealType.DINNER;
+            }
+            return MealType.BREAKFAST; // 기본값
         }
     }
 

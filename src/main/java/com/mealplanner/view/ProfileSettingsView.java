@@ -24,6 +24,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Slider;
 import javafx.scene.input.ScrollEvent;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.LinearGradient;
@@ -74,6 +75,11 @@ public class ProfileSettingsView extends BorderPane implements PropertyChangeLis
         // ViewModel 리스너 등록
         if (profileSettingsViewModel != null) {
             profileSettingsViewModel.addPropertyChangeListener(this);
+        }
+        
+        // ViewManagerModel 리스너 등록 (뷰 활성화 시 저장된 값으로 복원)
+        if (viewManagerModel != null) {
+            viewManagerModel.addPropertyChangeListener(this);
         }
         
         getStyleClass().add("root");
@@ -341,26 +347,129 @@ public class ProfileSettingsView extends BorderPane implements PropertyChangeLis
     
     private Slider createCustomSlider(String colorHex, double min, double max, double val) {
         Slider slider = new Slider(min, max, val);
-        // Styling via inline CSS for colors isn't fully supported for sub-structures (track/thumb) directly without lookup.
-        // We will use style class and update CSS or set style on skin components if possible.
-        // Best approach for dynamic colors in JavaFX: bind style property or use specific IDs.
-        // Let's assume we update style.css to handle a generic custom-slider class, 
-        // but for specific colors, we might need a workaround or simple inline lookup if JavaFX version allows.
-        // Workaround: We'll use a unique ID or style class suffix and add to CSS, OR use `setStyle` on the thumb/track after skin is loaded.
-        // Simplified: Just styling the control accent color if supported, or using basic styling.
         
-        // Modern JavaFX themes often use -fx-accent. Let's try setting that.
-        slider.setStyle("-fx-accent: " + colorHex + "; -fx-control-inner-background: #E0E0E0;");
-        // Note: Default JavaFX slider doesn't use -fx-accent for thumb color directly in standard Modena.
-        // We will add a CSS rule that maps -fx-base or similar to the thumb.
-        // Or better, we use a helper to apply style classes.
+        // 모던한 슬라이더 스타일 적용
+        slider.getStyleClass().add("modern-slider");
+        slider.setStyle(String.format("-fx-accent: %s;", colorHex));
         
-        slider.getStyleClass().add("custom-slider");
-        // We can embed the color into the node's user data or ID to pick up in CSS if we wrote complex CSS, 
-        // but for this specific task, let's try inline style on the thumb via lookup (after scene load) or just rely on -fx-base/accent if customized in CSS.
+        // 슬라이더 높이 설정 (더 두껍게)
+        slider.setPrefHeight(40);
+        slider.setMinHeight(40);
+        slider.setMaxHeight(40);
         
-        // Force the specific color using a direct style that CSS can pick up variables from
-        slider.setStyle("-fx-color-slider: " + colorHex + ";"); 
+        // 스크롤 보정을 위한 변수들
+        final long[] lastChangeTime = {System.currentTimeMillis()};
+        final double[] lastValue = {val};
+        final double[] accumulatedDelta = {0.0};
+        
+        // 스크롤 이벤트 핸들러 추가 (드래그 속도 감지 및 단위 조정)
+        slider.addEventFilter(ScrollEvent.SCROLL, event -> {
+            event.consume(); // 기본 스크롤 동작 방지
+            
+            long currentTime = System.currentTimeMillis();
+            long timeDelta = currentTime - lastChangeTime[0];
+            double scrollDelta = event.getDeltaY();
+            
+            // 스크롤 속도 계산 (시간 간격이 짧을수록 빠름)
+            double speed = timeDelta > 0 ? Math.abs(scrollDelta) / timeDelta : 1000.0;
+            
+            // 속도에 따른 단위 결정
+            // 빠르게 스크롤 (시간 간격이 50ms 미만): 10단위 또는 더 큰 단위
+            // 천천히 스크롤 (시간 간격이 50ms 이상): 5단위
+            double stepSize;
+            if (timeDelta < 50 && speed > 0.5) {
+                // 빠른 스크롤: 10단위 또는 더 큰 단위 (속도에 비례)
+                stepSize = Math.max(10, Math.min(50, speed * 20));
+            } else {
+                // 느린 스크롤: 5단위
+                stepSize = 5;
+            }
+            
+            // 누적 델타 계산
+            accumulatedDelta[0] += scrollDelta;
+            
+            // 단위에 도달했을 때만 값 변경
+            double threshold = stepSize * 10; // 스크롤 감도 조정
+            if (Math.abs(accumulatedDelta[0]) >= threshold) {
+                double currentValue = slider.getValue();
+                double newValue;
+                
+                if (scrollDelta < 0) {
+                    // 아래로 스크롤 (값 감소)
+                    newValue = Math.max(min, currentValue - stepSize);
+                } else {
+                    // 위로 스크롤 (값 증가)
+                    newValue = Math.min(max, currentValue + stepSize);
+                }
+                
+                // 5단위 또는 10단위로 스냅
+                if (stepSize == 5) {
+                    newValue = Math.round(newValue / 5.0) * 5.0;
+                } else {
+                    newValue = Math.round(newValue / 10.0) * 10.0;
+                }
+                
+                // 범위 내로 제한
+                newValue = Math.max(min, Math.min(max, newValue));
+                
+                slider.setValue(newValue);
+                accumulatedDelta[0] = 0.0; // 누적 델타 리셋
+                lastChangeTime[0] = currentTime;
+                lastValue[0] = newValue;
+            }
+        });
+        
+        // 마우스 드래그 이벤트 핸들러 추가 (드래그 속도 감지)
+        slider.addEventFilter(MouseEvent.MOUSE_DRAGGED, event -> {
+            long currentTime = System.currentTimeMillis();
+            long timeDelta = currentTime - lastChangeTime[0];
+            double currentValue = slider.getValue();
+            double valueDelta = Math.abs(currentValue - lastValue[0]);
+            
+            // 드래그 속도 계산
+            double dragSpeed = timeDelta > 0 ? valueDelta / timeDelta : 0;
+            
+            // 속도에 따른 단위 조정
+            if (timeDelta < 50 && dragSpeed > 0.5) {
+                // 빠른 드래그: 10단위로 스냅
+                double snappedValue = Math.round(currentValue / 10.0) * 10.0;
+                if (Math.abs(snappedValue - currentValue) > 1) {
+                    slider.setValue(snappedValue);
+                }
+            } else {
+                // 느린 드래그: 5단위로 스냅
+                double snappedValue = Math.round(currentValue / 5.0) * 5.0;
+                if (Math.abs(snappedValue - currentValue) > 0.5) {
+                    slider.setValue(snappedValue);
+                }
+            }
+            
+            lastChangeTime[0] = currentTime;
+            lastValue[0] = slider.getValue();
+        });
+        
+        // 값 변경 리스너에서도 5단위 또는 10단위로 스냅
+        slider.valueProperty().addListener((obs, oldVal, newVal) -> {
+            long currentTime = System.currentTimeMillis();
+            long timeDelta = currentTime - lastChangeTime[0];
+            
+            // 속도에 따른 단위 결정
+            double stepSize = (timeDelta < 50) ? 10 : 5;
+            double calculatedValue = Math.round(newVal.doubleValue() / stepSize) * stepSize;
+            
+            // 범위 내로 제한
+            final double snappedValue = Math.max(min, Math.min(max, calculatedValue));
+            
+            // 스냅된 값과 현재 값이 다르면 업데이트
+            if (Math.abs(snappedValue - newVal.doubleValue()) > 0.1) {
+                Platform.runLater(() -> {
+                    slider.setValue(snappedValue);
+                });
+            }
+            
+            lastChangeTime[0] = currentTime;
+            lastValue[0] = snappedValue;
+        });
         
         return slider;
     }
@@ -587,7 +696,16 @@ public class ProfileSettingsView extends BorderPane implements PropertyChangeLis
         String propertyName = evt.getPropertyName();
         
         Platform.runLater(() -> {
-            if ("nutritionGoalsUpdated".equals(propertyName)) {
+            // ViewManagerModel의 view 변경 감지 (Settings 페이지 활성화 시 저장된 값으로 복원)
+            if ("view".equals(propertyName) && ViewManager.PROFILE_SETTINGS_VIEW.equals(evt.getNewValue())) {
+                // Settings 페이지가 활성화될 때마다 저장된 영양 목표를 다시 로드
+                User currentUser = sessionManager.getCurrentUser();
+                if (currentUser != null) {
+                    loadNutritionGoals(currentUser.getNutritionGoals());
+                }
+            }
+            // ProfileSettingsViewModel의 변경 감지
+            else if ("nutritionGoalsUpdated".equals(propertyName)) {
                 // 성공 메시지 표시
                 DialogUtils.showInfoAlert("Success", "Nutrition goals saved successfully!");
                 

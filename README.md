@@ -12,7 +12,7 @@ Open terminal and run:
 mvn clean package; if ($?) { & $env:ComSpec /c "setup_and_run.bat" }
 ```
 
-또는 JAR 파일이 이미 있는 경우:
+Or if the JAR file already exists:
 ```powershell
 & $env:ComSpec /c "setup_and_run.bat"
 ```
@@ -36,6 +36,93 @@ This script will automatically:
 
 If you prefer running via your IDE (IntelliJ, etc.), run the main class located at:
 **`src/main/java/com/mealplanner/app/Main.java`**
+
+---
+
+## JavaFX Debugging Tool (Scenic View)
+
+**Scenic View** is a visual debugger for JavaFX applications, similar to web developer tools. 
+It allows you to inspect the scene graph of a running JavaFX application in real-time.
+
+### Scenic View Installation and Usage
+
+**Method 1: Standalone Application (Recommended - Easiest)**
+
+1. **Download Scenic View:**
+   - Visit: https://github.com/JonathanGiles/scenic-view
+   - Download the latest JAR file (e.g., `scenicview-11.0.2.jar`)
+   - Or download from: https://www.oracle.com/java/technologies/javase/javafxscenebuilder-info.html
+
+2. **Run Scenic View:**
+   ```bash
+   # Run Scenic View standalone
+   java -jar scenicview-11.0.2.jar
+   ```
+
+3. **Run Your Application:**
+   - After Scenic View is running, launch the Meal Planner application
+   - Scenic View will automatically detect and connect to running JavaFX applications
+   - You'll see your application's scene graph in the Scenic View window
+
+**Method 2: Direct Integration in Code (Already Implemented)**
+
+The code already includes Scenic View integration. To enable it:
+
+**Option A: Using System Property**
+```bash
+# Windows PowerShell
+java -Dscenicview.enable=true -jar target/meal-planner-1.0-SNAPSHOT.jar
+
+# Or when running from IDE, add VM option:
+# -Dscenicview.enable=true
+```
+
+**Option B: Using Environment Variable**
+```bash
+# Windows PowerShell
+$env:SCENICVIEW_ENABLE="true"
+java -jar target/meal-planner-1.0-SNAPSHOT.jar
+
+# Mac/Linux
+export SCENICVIEW_ENABLE=true
+java -jar target/meal-planner-1.0-SNAPSHOT.jar
+```
+
+**Option C: Using Maven (Development)**
+```bash
+# Run with Maven and enable Scenic View
+mvn javafx:run -Dscenicview.enable=true
+
+# Or set environment variable first
+$env:SCENICVIEW_ENABLE="true"; mvn javafx:run
+```
+
+**Note:** For Method 2 to work, you need to add the Scenic View JAR to your classpath. The code uses reflection to load Scenic View, so it won't fail if the JAR is not present - it will just log an informational message.
+
+### What You Can Inspect with Scenic View
+
+- **Node Hierarchy (Scene Graph)**: Explore the entire UI structure in a tree format
+- **Node Size and Position Information**: bounds, layoutX, layoutY, etc.
+- **Padding and Margin Values**: Check layout-related properties
+- **CSS Style Application Status**: View applied styles and CSS classes
+- **Layout Bounds Information**: Actual rendering size and position
+
+### CSS Debugging Tips
+
+To visually identify layout issues, add the following to your CSS:
+```css
+.debug {
+    -fx-border-color: red;
+    -fx-border-width: 1;
+}
+```
+Then add `getStyleClass().add("debug")` to the node you want to debug, and it will display a red border.
+
+Example:
+```java
+VBox container = new VBox();
+container.getStyleClass().add("debug"); // Red border for layout inspection
+```
 
 ---
 

@@ -44,8 +44,8 @@ public class LoginPresenter implements LoginOutputBoundary {
         if (viewManagerModel != null) {
             viewManagerModel.setCurrentUserId(loginOutputData.getUserUId());
             viewManagerModel.setCurrentUsername(loginOutputData.getUsername());
-            // Navigate to ScheduleView after successful login
-            viewManagerModel.setActiveView("ScheduleView");
+            // Navigate to DashboardView after successful login
+            viewManagerModel.setActiveView(com.mealplanner.view.ViewManager.DASHBOARD_VIEW);
         }
         if (scheduleController != null) {
             scheduleController.execute(loginOutputData.getUsername());

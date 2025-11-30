@@ -7,8 +7,11 @@ import com.mealplanner.interface_adapter.controller.BrowseRecipeController;
 import com.mealplanner.interface_adapter.controller.GetRecommendationsController;
 import com.mealplanner.interface_adapter.view_model.RecipeBrowseViewModel;
 import com.mealplanner.interface_adapter.view_model.RecipeDetailViewModel;
+import com.mealplanner.repository.RecipeRepository;
+import com.mealplanner.exception.DataAccessException;
 import com.mealplanner.util.StringUtil;
 import com.mealplanner.util.ImageCacheManager;
+import com.mealplanner.view.component.Sonner;
 import com.mealplanner.view.util.SvgIconLoader;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -34,6 +37,7 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
     private final BrowseRecipeController controller;
     private final ViewManagerModel viewManagerModel;
     private final RecipeDetailViewModel recipeDetailViewModel;
+    private final RecipeRepository recipeRepository;
     private final ImageCacheManager imageCache = ImageCacheManager.getInstance();
     private GetRecommendationsController recommendationsController;
 
@@ -60,20 +64,24 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
     
     // Recommendations Section
     private VBox recommendationsSection;
+    
+    private Sonner sonner;
 
     /**
      * Constructor with GetRecommendationsController (Phase 5 feature).
      */
-    public BrowseRecipeView(RecipeBrowseViewModel viewModel, BrowseRecipeController controller, ViewManagerModel viewManagerModel, RecipeDetailViewModel recipeDetailViewModel, GetRecommendationsController recommendationsController) {
+    public BrowseRecipeView(RecipeBrowseViewModel viewModel, BrowseRecipeController controller, ViewManagerModel viewManagerModel, RecipeDetailViewModel recipeDetailViewModel, RecipeRepository recipeRepository, GetRecommendationsController recommendationsController) {
         if (viewModel == null) throw new IllegalArgumentException("ViewModel cannot be null");
         if (controller == null) throw new IllegalArgumentException("Controller cannot be null");
         if (viewManagerModel == null) throw new IllegalArgumentException("ViewManagerModel cannot be null");
         if (recipeDetailViewModel == null) throw new IllegalArgumentException("RecipeDetailViewModel cannot be null");
+        if (recipeRepository == null) throw new IllegalArgumentException("RecipeRepository cannot be null");
 
         this.viewModel = viewModel;
         this.controller = controller;
         this.viewManagerModel = viewManagerModel;
         this.recipeDetailViewModel = recipeDetailViewModel;
+        this.recipeRepository = recipeRepository;
         this.recommendationsController = recommendationsController;
         
         initializeView();
@@ -82,16 +90,18 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
     /**
      * Constructor without GetRecommendationsController (current version).
      */
-    public BrowseRecipeView(RecipeBrowseViewModel viewModel, BrowseRecipeController controller, ViewManagerModel viewManagerModel, RecipeDetailViewModel recipeDetailViewModel) {
+    public BrowseRecipeView(RecipeBrowseViewModel viewModel, BrowseRecipeController controller, ViewManagerModel viewManagerModel, RecipeDetailViewModel recipeDetailViewModel, RecipeRepository recipeRepository) {
         if (viewModel == null) throw new IllegalArgumentException("ViewModel cannot be null");
         if (controller == null) throw new IllegalArgumentException("Controller cannot be null");
         if (viewManagerModel == null) throw new IllegalArgumentException("ViewManagerModel cannot be null");
         if (recipeDetailViewModel == null) throw new IllegalArgumentException("RecipeDetailViewModel cannot be null");
+        if (recipeRepository == null) throw new IllegalArgumentException("RecipeRepository cannot be null");
 
         this.viewModel = viewModel;
         this.controller = controller;
         this.viewManagerModel = viewManagerModel;
         this.recipeDetailViewModel = recipeDetailViewModel;
+        this.recipeRepository = recipeRepository;
         this.recommendationsController = null;  // Phase 5 feature, not yet implemented
 
         initializeView();
@@ -103,6 +113,9 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
     private void initializeView() {
         
         viewModel.addPropertyChangeListener(this);
+
+        // Initialize Sonner
+        sonner = new Sonner();
 
         // Root Styles
         getStyleClass().add("root");
@@ -173,6 +186,43 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
         
         // Load recommendations on initialization
         loadRecommendations();
+        
+        // Load local database recipes on initialization
+        loadLocalRecipes();
+    }
+    
+    /**
+     * Loads recipes from local database and displays them initially.
+     * This ensures local recipes are shown even without a search query.
+     */
+    private void loadLocalRecipes() {
+        if (recipeRepository == null) {
+            return;
+        }
+        
+        new Thread(() -> {
+            try {
+                List<Recipe> localRecipes = recipeRepository.findAll();
+                if (localRecipes != null && !localRecipes.isEmpty()) {
+                    Platform.runLater(() -> {
+                        // Set local recipes as initial display
+                        allRecipes = new ArrayList<>(localRecipes);
+                        applyClientSideFilter();
+                    });
+                } else {
+                    // If no local recipes, show empty state
+                    Platform.runLater(() -> {
+                        listPanel.getChildren().clear();
+                        listPanel.getChildren().add(emptyPanel);
+                        countLabel.setText("Showing 0 recipes");
+                    });
+                }
+            } catch (DataAccessException e) {
+                // Silently fail - local recipes are optional
+            } catch (Exception e) {
+                // Silently fail - local recipes are optional
+            }
+        }).start();
     }
 
     private void loadRecommendations() {
@@ -429,7 +479,15 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
                 controller.execute(finalQuery, 12); 
             } catch (IOException ex) {
                 Platform.runLater(() -> {
-                    errorLabel.setText("Network error: " + ex.getMessage());
+                    sonner.show("Network Error", "Failed to search recipes. Please check your connection and try again.", Sonner.Type.ERROR);
+                    errorLabel.setText(""); // Clear error label
+                    listPanel.getChildren().clear();
+                    listPanel.getChildren().add(emptyPanel);
+                });
+            } catch (Exception ex) {
+                Platform.runLater(() -> {
+                    sonner.show("Error", "An unexpected error occurred while searching. Please try again.", Sonner.Type.ERROR);
+                    errorLabel.setText(""); // Clear error label
                     listPanel.getChildren().clear();
                     listPanel.getChildren().add(emptyPanel);
                 });
@@ -440,7 +498,31 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
     private void displayRecipes(List<Recipe> recipes) {
         Platform.runLater(() -> {
             // OPTIMIZATION: Store all recipes for client-side filtering
-            allRecipes = recipes != null ? new ArrayList<>(recipes) : new ArrayList<>();
+            List<Recipe> apiRecipes = recipes != null ? new ArrayList<>(recipes) : new ArrayList<>();
+            
+            // Merge with local database recipes
+            if (recipeRepository != null) {
+                try {
+                    List<Recipe> localRecipes = recipeRepository.findAll();
+                    if (localRecipes != null && !localRecipes.isEmpty()) {
+                        // Merge recipes, avoiding duplicates
+                        for (Recipe localRecipe : localRecipes) {
+                            boolean exists = apiRecipes.stream()
+                                .anyMatch(r -> r.getRecipeId() != null && r.getRecipeId().equals(localRecipe.getRecipeId()) ||
+                                              (r.getName() != null && r.getName().equals(localRecipe.getName())));
+                            if (!exists) {
+                                apiRecipes.add(localRecipe);
+                            }
+                        }
+                    }
+                } catch (DataAccessException e) {
+                    // Silently fail - local recipes are optional
+                } catch (Exception e) {
+                    // Silently fail - local recipes are optional
+                }
+            }
+            
+            allRecipes = apiRecipes;
 
             // Apply current filter
             applyClientSideFilter();

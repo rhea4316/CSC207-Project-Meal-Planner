@@ -5,6 +5,8 @@ import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.SearchByIngredientsController;
 import com.mealplanner.interface_adapter.view_model.RecipeSearchViewModel;
 import com.mealplanner.interface_adapter.view_model.RecipeDetailViewModel;
+import com.mealplanner.repository.RecipeRepository;
+import com.mealplanner.exception.DataAccessException;
 import com.mealplanner.util.StringUtil;
 import com.mealplanner.util.ImageCacheManager;
 import com.mealplanner.view.util.SvgIconLoader;
@@ -32,6 +34,7 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
     private final SearchByIngredientsController controller;
     private final ViewManagerModel viewManagerModel;
     private final RecipeDetailViewModel recipeDetailViewModel;
+    private final RecipeRepository recipeRepository;
     private final ImageCacheManager imageCache = ImageCacheManager.getInstance();
 
     private TextField ingredientsField;
@@ -55,16 +58,18 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
     // OPTIMIZATION: Store all recipes for client-side filtering
     private List<Recipe> allRecipes = new ArrayList<>();
 
-    public SearchByIngredientsView(SearchByIngredientsController controller, RecipeSearchViewModel viewModel, ViewManagerModel viewManagerModel, RecipeDetailViewModel recipeDetailViewModel) {
+    public SearchByIngredientsView(SearchByIngredientsController controller, RecipeSearchViewModel viewModel, ViewManagerModel viewManagerModel, RecipeDetailViewModel recipeDetailViewModel, RecipeRepository recipeRepository) {
         if (viewModel == null) throw new IllegalArgumentException("ViewModel cannot be null");
         if (controller == null) throw new IllegalArgumentException("Controller cannot be null");
         if (viewManagerModel == null) throw new IllegalArgumentException("ViewManagerModel cannot be null");
         if (recipeDetailViewModel == null) throw new IllegalArgumentException("RecipeDetailViewModel cannot be null");
+        if (recipeRepository == null) throw new IllegalArgumentException("RecipeRepository cannot be null");
 
         this.viewModel = viewModel;
         this.controller = controller;
         this.viewManagerModel = viewManagerModel;
         this.recipeDetailViewModel = recipeDetailViewModel;
+        this.recipeRepository = recipeRepository;
         this.ingredientList = new ArrayList<>();
 
         viewModel.addPropertyChangeListener(this);
@@ -103,6 +108,45 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         errorLabel.setStyle("-fx-text-fill: -fx-theme-destructive; -fx-font-weight: bold;");
         errorLabel.setPadding(new Insets(10, 0, 0, 0));
         setBottom(errorLabel);
+        
+        // Load local database recipes on initialization
+        loadLocalRecipes();
+    }
+    
+    /**
+     * Loads recipes from local database and merges with API results.
+     */
+    private void loadLocalRecipes() {
+        if (recipeRepository == null) {
+            return;
+        }
+        
+        new Thread(() -> {
+            try {
+                List<Recipe> localRecipes = recipeRepository.findAll();
+                if (localRecipes != null && !localRecipes.isEmpty()) {
+                    Platform.runLater(() -> {
+                        // Merge with existing recipes (avoid duplicates by recipe ID)
+                        List<Recipe> mergedRecipes = new ArrayList<>(allRecipes);
+                        for (Recipe localRecipe : localRecipes) {
+                            // Check if recipe already exists (by ID or name)
+                            boolean exists = mergedRecipes.stream()
+                                .anyMatch(r -> r.getRecipeId() != null && r.getRecipeId().equals(localRecipe.getRecipeId()) ||
+                                              (r.getName() != null && r.getName().equals(localRecipe.getName())));
+                            if (!exists) {
+                                mergedRecipes.add(localRecipe);
+                            }
+                        }
+                        allRecipes = mergedRecipes;
+                        displayRecipes(allRecipes);
+                    });
+                }
+            } catch (DataAccessException e) {
+                // Silently fail - local recipes are optional
+            } catch (Exception e) {
+                // Silently fail - local recipes are optional
+            }
+        }).start();
     }
 
     private VBox createSearchPanel() {
@@ -444,7 +488,31 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
 
     private void displayRecipes(List<Recipe> recipes) {
         // OPTIMIZATION: Store all recipes for client-side filtering
-        allRecipes = recipes != null ? new ArrayList<>(recipes) : new ArrayList<>();
+        List<Recipe> apiRecipes = recipes != null ? new ArrayList<>(recipes) : new ArrayList<>();
+        
+        // Merge with local database recipes
+        if (recipeRepository != null) {
+            try {
+                List<Recipe> localRecipes = recipeRepository.findAll();
+                if (localRecipes != null && !localRecipes.isEmpty()) {
+                    // Merge recipes, avoiding duplicates
+                    for (Recipe localRecipe : localRecipes) {
+                        boolean exists = apiRecipes.stream()
+                            .anyMatch(r -> r.getRecipeId() != null && r.getRecipeId().equals(localRecipe.getRecipeId()) ||
+                                          (r.getName() != null && r.getName().equals(localRecipe.getName())));
+                        if (!exists) {
+                            apiRecipes.add(localRecipe);
+                        }
+                    }
+                }
+            } catch (DataAccessException e) {
+                // Silently fail - local recipes are optional
+            } catch (Exception e) {
+                // Silently fail - local recipes are optional
+            }
+        }
+        
+        allRecipes = apiRecipes;
 
         listPanel.getChildren().clear();
 

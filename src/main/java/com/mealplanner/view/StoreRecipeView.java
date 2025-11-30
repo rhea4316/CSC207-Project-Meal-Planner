@@ -17,10 +17,19 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.*;
-import javafx.scene.control.ProgressIndicator;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+
+// ControlsFX imports
+import org.controlsfx.control.SearchableComboBox;
+import org.controlsfx.control.Notifications;
+
+// ValidatorFX imports
+import net.synedra.validatorfx.Validator;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -31,6 +40,8 @@ import java.util.Objects;
 
 public class StoreRecipeView extends BorderPane implements PropertyChangeListener {
     
+    private static final Logger logger = LoggerFactory.getLogger(StoreRecipeView.class);
+    
     private final StoreRecipeController controller;
     @SuppressWarnings("unused")
     private final RecipeStoreViewModel viewModel;
@@ -40,17 +51,17 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
 
     // Editor Form Components
     private Input nameField;
-    private Label nameErrorLabel;
     private TextArea descField;
-    private Label descErrorLabel;
     private Input imgUrlField;
-    private ComboBox<String> categoryCombo;
-    private ComboBox<String> difficultyCombo;
+    private SearchableComboBox<String> categoryCombo;
+    private SearchableComboBox<String> difficultyCombo;
     
     private Input timeField;
     private Input caloriesField;
     private Input servingSizeField;
-    private Label servingSizeErrorLabel;
+    
+    // ValidatorFX
+    private Validator validator;
     
     private Input proteinField;
     private Input carbsField;
@@ -74,6 +85,7 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
     // Loading state
     private Button saveBtn;
     private ProgressIndicator savingIndicator;
+    private ProgressIndicator loadingIndicator;
 
     public StoreRecipeView(StoreRecipeController controller, RecipeStoreViewModel viewModel, ViewManagerModel viewManagerModel, RecipeRepository recipeRepository) {
         if (controller == null) throw new IllegalArgumentException("Controller cannot be null");
@@ -91,6 +103,9 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         getStyleClass().add("root");
         setBackground(new Background(new BackgroundFill(Color.web("#F5F7FA"), CornerRadii.EMPTY, Insets.EMPTY)));
         setPadding(new Insets(0)); // Reset padding for scroll layout
+
+        // ValidatorFX 초기화
+        validator = new Validator();
 
         // Initialize Views
         createCookbookView();
@@ -150,8 +165,15 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         cookbookEmptyLabel.setStyle("-fx-font-size: 14px; -fx-text-alignment: center; -fx-alignment: center;");
         cookbookEmptyLabel.setAlignment(Pos.CENTER);
 
+        // Loading indicator for cookbook refresh
+        loadingIndicator = new ProgressIndicator();
+        loadingIndicator.setPrefSize(40, 40);
+        loadingIndicator.setVisible(false);
+        loadingIndicator.setManaged(false);
+        loadingIndicator.setStyle("-fx-progress-color: #4CAF50;");
+        
         StackPane listPane = new StackPane();
-        listPane.getChildren().addAll(cookbookGrid, cookbookEmptyLabel);
+        listPane.getChildren().addAll(cookbookGrid, cookbookEmptyLabel, loadingIndicator);
 
         ScrollPane scrollPane = new ScrollPane(listPane);
         scrollPane.setFitToWidth(true);
@@ -269,31 +291,33 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         
         // Basic Information
         VBox basicCard = createCardPanel("Basic Information");
-        nameField = new Input(); nameField.setPromptText("Avocado Toast");
-        nameErrorLabel = createErrorLabel();
-        setupNameValidation();
+        nameField = new Input(); 
+        nameField.setPromptText("Avocado Toast");
         
-        descField = new TextArea(); descField.setPromptText("Short description..."); descField.setPrefRowCount(3); descField.getStyleClass().add("text-area");
-        descErrorLabel = createErrorLabel();
-        setupDescriptionValidation();
+        descField = new TextArea(); 
+        descField.setPromptText("Short description..."); 
+        descField.setPrefRowCount(3); 
+        descField.getStyleClass().add("text-area");
         
-        imgUrlField = new Input(); imgUrlField.setPromptText("https://image.url...");
+        imgUrlField = new Input(); 
+        imgUrlField.setPromptText("https://image.url...");
         
-        categoryCombo = new ComboBox<>();
+        // ControlsFX SearchableComboBox 사용
+        categoryCombo = new SearchableComboBox<>();
         categoryCombo.getItems().addAll("Breakfast", "Lunch", "Dinner", "Snack", "Dessert");
         categoryCombo.setValue("Breakfast");
         categoryCombo.setMaxWidth(Double.MAX_VALUE);
         categoryCombo.getStyleClass().add("text-field"); // Reuse text field style
         
-        difficultyCombo = new ComboBox<>();
+        difficultyCombo = new SearchableComboBox<>();
         difficultyCombo.getItems().addAll("Easy", "Medium", "Hard");
         difficultyCombo.setValue("Easy");
         difficultyCombo.setMaxWidth(Double.MAX_VALUE);
         difficultyCombo.getStyleClass().add("text-field");
 
         basicCard.getChildren().addAll(
-            createLabel("Recipe Name *"), nameField, nameErrorLabel,
-            createLabel("Description"), descField, descErrorLabel,
+            createLabel("Recipe Name *"), nameField,
+            createLabel("Description"), descField,
             createLabel("Image URL"), imgUrlField,
             createLabel("Category *"), categoryCombo,
             createLabel("Difficulty"), difficultyCombo
@@ -301,19 +325,22 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         
         // Recipe Details (Time, Cals, Serving)
         VBox detailCard = createCardPanel("Recipe Details");
-        timeField = new Input(); timeField.setPromptText("e.g. 10 min");
+        timeField = new Input(); 
+        timeField.setPromptText("e.g. 10 min");
+        
         servingSizeField = new Input("1");
         servingSizeField.setPromptText("1-100");
-        servingSizeErrorLabel = createErrorLabel();
-        setupServingSizeValidation();
         
         Label servingSizeHelpLabel = new Label("Enter a number between 1 and 100");
         servingSizeHelpLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #6b7280; -fx-padding: 2 0 0 0;");
         
         detailCard.getChildren().addAll(
             createLabel("Time"), timeField,
-            createLabel("Servings"), servingSizeField, servingSizeHelpLabel, servingSizeErrorLabel
+            createLabel("Servings"), servingSizeField, servingSizeHelpLabel
         );
+        
+        // ValidatorFX 검증 설정
+        setupValidations();
         
         // Nutrition (Manual Entry)
         VBox nutritionCard = createCardPanel("Nutrition (per serving)");
@@ -371,19 +398,71 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         });
     }
 
-    private void refreshCookbook() {
+    /**
+     * Refresh the cookbook list with optional callback
+     * @param onComplete Optional callback to execute after refresh completes
+     */
+    private void refreshCookbook(Runnable onComplete) {
         if (recipeRepository == null) {
+            logger.warn("RecipeRepository is null, cannot refresh cookbook");
+            Platform.runLater(() -> {
+                sonner.show("Error", "Recipe repository is not available", Sonner.Type.ERROR);
+                if (onComplete != null) onComplete.run();
+            });
             return;
         }
+        
+        // Show loading indicator
+        Platform.runLater(() -> {
+            if (loadingIndicator != null) {
+                loadingIndicator.setVisible(true);
+                loadingIndicator.setManaged(true);
+            }
+        });
+        
         new Thread(() -> {
             try {
                 List<Recipe> recipes = recipeRepository.findAll();
                 recipes.sort(Comparator.comparing(Recipe::getName, String.CASE_INSENSITIVE_ORDER));
-                Platform.runLater(() -> updateCookbook(recipes));
+                Platform.runLater(() -> {
+                    if (loadingIndicator != null) {
+                        loadingIndicator.setVisible(false);
+                        loadingIndicator.setManaged(false);
+                    }
+                    updateCookbook(recipes);
+                    if (onComplete != null) {
+                        onComplete.run();
+                    }
+                });
             } catch (DataAccessException e) {
-                Platform.runLater(() -> sonner.show("Error", "Failed to load recipes: " + e.getMessage(), Sonner.Type.ERROR));
+                logger.error("Data access error while loading recipes", e);
+                Platform.runLater(() -> {
+                    if (loadingIndicator != null) {
+                        loadingIndicator.setVisible(false);
+                        loadingIndicator.setManaged(false);
+                    }
+                    sonner.show("Error", "Failed to load recipes. Please try again.", Sonner.Type.ERROR);
+                    if (onComplete != null) onComplete.run();
+                });
+            } catch (Exception e) {
+                logger.error("Unexpected error while loading recipes", e);
+                Platform.runLater(() -> {
+                    if (loadingIndicator != null) {
+                        loadingIndicator.setVisible(false);
+                        loadingIndicator.setManaged(false);
+                    }
+                    sonner.show("Error", "An unexpected error occurred while loading recipes.", Sonner.Type.ERROR);
+                    if (onComplete != null) onComplete.run();
+                });
             }
         }).start();
+    }
+    
+    /**
+     * Refresh the cookbook list without callback
+     */
+    private void refreshCookbook() {
+        refreshCookbook(null);
     }
 
     private void updateCookbook(List<Recipe> recipes) {
@@ -457,6 +536,7 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
 
     private void deleteRecipe(Recipe recipe) {
         if (recipeRepository == null || recipe == null || StringUtil.isNullOrEmpty(recipe.getRecipeId())) {
+            logger.warn("Cannot delete recipe: repository={}, recipe={}", recipeRepository != null, recipe != null);
             sonner.show("Error", "Unable to delete recipe", Sonner.Type.ERROR);
             return;
         }
@@ -472,7 +552,11 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
                     }
                 });
             } catch (DataAccessException e) {
-                Platform.runLater(() -> sonner.show("Error", "Failed to delete recipe: " + e.getMessage(), Sonner.Type.ERROR));
+                logger.error("Data access error while deleting recipe: {}", recipe.getRecipeId(), e);
+                Platform.runLater(() -> sonner.show("Error", "Failed to delete recipe. Please try again.", Sonner.Type.ERROR));
+            } catch (Exception e) {
+                logger.error("Unexpected error while deleting recipe: {}", recipe.getRecipeId(), e);
+                Platform.runLater(() -> sonner.show("Error", "An unexpected error occurred while deleting recipe.", Sonner.Type.ERROR));
             }
         }).start();
     }
@@ -533,67 +617,53 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         return l;
     }
     
-    private Label createErrorLabel() {
-        Label errorLabel = new Label();
-        errorLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #ef4444; -fx-padding: 2 0 0 0;");
-        errorLabel.setVisible(false);
-        errorLabel.setManaged(false);
-        return errorLabel;
-    }
-    
-    private void setupNameValidation() {
-        nameField.textProperty().addListener((obs, oldVal, newVal) -> {
-            String name = StringUtil.safeTrim(newVal);
-            if (StringUtil.isNullOrEmpty(name)) {
-                showFieldError(nameErrorLabel, "Recipe name is required");
-            } else if (!ValidationUtil.validateRecipeName(name)) {
-                showFieldError(nameErrorLabel, "Recipe name must be between 1 and 100 characters");
-            } else {
-                hideFieldError(nameErrorLabel);
-            }
-        });
-    }
-    
-    private void setupDescriptionValidation() {
-        descField.textProperty().addListener((obs, oldVal, newVal) -> {
-            String desc = newVal != null ? newVal : "";
-            if (!ValidationUtil.validateRecipeDescription(desc)) {
-                int currentLength = desc.length();
-                showFieldError(descErrorLabel, String.format("Description is too long (%d/500 characters)", currentLength));
-            } else {
-                hideFieldError(descErrorLabel);
-            }
-        });
-    }
-    
-    private void setupServingSizeValidation() {
-        servingSizeField.textProperty().addListener((obs, oldVal, newVal) -> {
-            String text = StringUtil.safeTrim(newVal);
-            if (StringUtil.isNullOrEmpty(text)) {
-                hideFieldError(servingSizeErrorLabel);
-                return;
-            }
-            
-            int servingSize = NumberUtil.parseInt(text, -1);
-            if (servingSize < 0) {
-                showFieldError(servingSizeErrorLabel, "Please enter a valid number");
-            } else if (!ValidationUtil.validateServingSize(servingSize)) {
-                showFieldError(servingSizeErrorLabel, "Serving size must be between 1 and 100");
-            } else {
-                hideFieldError(servingSizeErrorLabel);
-            }
-        });
-    }
-    
-    private void showFieldError(Label errorLabel, String message) {
-        errorLabel.setText(message);
-        errorLabel.setVisible(true);
-        errorLabel.setManaged(true);
-    }
-    
-    private void hideFieldError(Label errorLabel) {
-        errorLabel.setVisible(false);
-        errorLabel.setManaged(false);
+    /**
+     * ValidatorFX를 사용한 통합 검증 설정
+     */
+    private void setupValidations() {
+        // Recipe Name 검증
+        validator.createCheck()
+            .dependsOn("name", nameField.textProperty())
+            .withMethod(context -> {
+                String name = context.get("name");
+                if (StringUtil.isNullOrEmpty(name)) {
+                    context.error("Recipe name is required");
+                } else if (!ValidationUtil.validateRecipeName(name)) {
+                    context.error("Recipe name must be between 1 and 100 characters");
+                }
+            })
+            .decorates(nameField)
+            .immediate();
+
+        // Description 검증 (선택사항이지만 길이 제한 있음)
+        validator.createCheck()
+            .dependsOn("description", descField.textProperty())
+            .withMethod(context -> {
+                String desc = context.get("description");
+                if (desc != null && !ValidationUtil.validateRecipeDescription(desc)) {
+                    int currentLength = desc.length();
+                    context.error(String.format("Description is too long (%d/500 characters)", currentLength));
+                }
+            })
+            .decorates(descField)
+            .immediate();
+
+        // Serving Size 검증
+        validator.createCheck()
+            .dependsOn("servingSize", servingSizeField.textProperty())
+            .withMethod(context -> {
+                String text = StringUtil.safeTrim(context.get("servingSize"));
+                if (!StringUtil.isNullOrEmpty(text)) {
+                    int servingSize = NumberUtil.parseInt(text, -1);
+                    if (servingSize < 0) {
+                        context.error("Please enter a valid number");
+                    } else if (!ValidationUtil.validateServingSize(servingSize)) {
+                        context.error("Serving size must be between 1 and 100");
+                    }
+                }
+            })
+            .decorates(servingSizeField)
+            .immediate();
     }
     
     private HBox createDynamicInputRow(String placeholder, java.util.function.Consumer<String> onAdd) {
@@ -706,9 +776,13 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
     }
 
     private void saveRecipe() {
-        String name = StringUtil.safeTrim(nameField.getText());
-        if (StringUtil.isNullOrEmpty(name)) {
-            sonner.show("Error", "Please enter a recipe name", Sonner.Type.ERROR);
+        // ValidatorFX로 폼 검증
+        if (!validator.validate()) {
+            // ControlsFX Notification으로 에러 표시
+            Notifications.create()
+                .title("Validation Error")
+                .text("Please fix the errors in the form")
+                .showError();
             return;
         }
         
@@ -717,6 +791,8 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         savingIndicator.setVisible(true);
         savingIndicator.setManaged(true);
         saveBtn.setText("Saving...");
+        
+        String name = StringUtil.safeTrim(nameField.getText());
         
         // Harvest Ingredients
         List<String> ingredients = harvestChips(ingredientsContainer);
@@ -784,8 +860,8 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
                 resetSaveButton();
                 sonner.show("Success", (String) evt.getNewValue(), Sonner.Type.SUCCESS);
                 clearForm();
-                refreshCookbook();
-                toggleView(true); // Return to list on success
+                // Refresh cookbook and then toggle view after completion
+                refreshCookbook(() -> toggleView(true)); // Return to list on success
             } else if (RecipeStoreViewModel.PROP_ERROR_MESSAGE.equals(evt.getPropertyName())) {
                 resetSaveButton();
                 sonner.show("Error", (String) evt.getNewValue(), Sonner.Type.ERROR);

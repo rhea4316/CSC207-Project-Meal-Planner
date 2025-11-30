@@ -3,6 +3,7 @@ package com.mealplanner.view;
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.LoginController;
 import com.mealplanner.interface_adapter.view_model.LoginViewModel;
+import com.mealplanner.util.StringUtil;
 import com.mealplanner.view.component.AlertBanner;
 import com.mealplanner.view.component.Form;
 import com.mealplanner.view.component.Input;
@@ -14,6 +15,8 @@ import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
+import net.synedra.validatorfx.Validator;
+import org.controlsfx.control.Notifications;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -27,6 +30,7 @@ public class LoginView extends BorderPane implements PropertyChangeListener {
     private Input usernameField;
     private PasswordField passwordField;
     private AlertBanner errorBanner;
+    private Validator validator;
 
     public LoginView(LoginViewModel loginViewModel, LoginController loginController, ViewManagerModel viewManagerModel) {
         if (loginViewModel == null) throw new IllegalArgumentException("LoginViewModel cannot be null");
@@ -72,6 +76,10 @@ public class LoginView extends BorderPane implements PropertyChangeListener {
         passwordField.getStyleClass().add("input-field"); // Reuse Input style
         form.addField("Password", passwordField);
 
+        // ValidatorFX 초기화 및 검증 설정
+        validator = new Validator();
+        setupValidations();
+
         // Buttons
         VBox buttonBox = new VBox(10);
         buttonBox.setPadding(new Insets(10, 0, 0, 0));
@@ -96,21 +104,58 @@ public class LoginView extends BorderPane implements PropertyChangeListener {
         setCenter(centerBox);
     }
 
+    /**
+     * ValidatorFX를 사용한 로그인 폼 검증 설정
+     */
+    private void setupValidations() {
+        // Username 검증 (로그인은 형식보다는 필수 입력만 체크)
+        validator.createCheck()
+            .dependsOn("username", usernameField.textProperty())
+            .withMethod(context -> {
+                String username = context.get("username");
+                if (StringUtil.isNullOrEmpty(username)) {
+                    context.error("Please enter a username");
+                }
+                // 로그인 시에는 형식 검증을 하지 않음 (기존 사용자를 찾는 것이므로)
+            })
+            .decorates(usernameField)
+            .immediate();
+
+        // Password 검증 (로그인은 필수 입력만 체크)
+        validator.createCheck()
+            .dependsOn("password", passwordField.textProperty())
+            .withMethod(context -> {
+                String password = context.get("password");
+                if (StringUtil.isNullOrEmpty(password)) {
+                    context.error("Please enter a password");
+                }
+                // 로그인 시에는 길이 검증을 하지 않음 (기존 사용자 비밀번호 검증은 서버에서 수행)
+            })
+            .decorates(passwordField)
+            .immediate();
+    }
+
+    /**
+     * 로그인 수행
+     * ValidatorFX를 사용하여 폼 검증 후 로그인 컨트롤러 실행
+     */
     private void performLogin() {
-        String username = usernameField.getText();
+        // ValidatorFX로 폼 검증
+        if (!validator.validate()) {
+            // 검증 실패 시 ControlsFX Notification으로 에러 표시
+            Notifications.create()
+                .title("Validation Error")
+                .text("Please fix the errors in the form")
+                .showError();
+            return;
+        }
+
+        // 검증 성공 시 로그인 처리
+        String username = usernameField.getText().trim();
         String password = passwordField.getText();
 
-        if (username == null || username.isBlank()) {
-            showError("Please enter a username");
-            return;
-        }
-        if (password == null || password.isBlank()) {
-            showError("Please enter a password");
-            return;
-        }
-
         hideError();
-        loginController.execute(username.trim(), password);
+        loginController.execute(username, password);
     }
     
     private void showError(String message) {

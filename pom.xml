@@ -32,6 +32,16 @@
             <artifactId>javafx-fxml</artifactId>
             <version>${javafx.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-web</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-swing</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
 
         <!-- org.json for JSON parsing -->
         <dependency>
@@ -94,6 +104,30 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>1.4.11</version>
+        </dependency>
+
+        <!-- ControlsFX for enhanced JavaFX controls -->
+        <dependency>
+            <groupId>org.controlsfx</groupId>
+            <artifactId>controlsfx</artifactId>
+            <version>11.1.2</version>
+        </dependency>
+
+        <!-- ValidatorFX for form validation -->
+        <dependency>
+            <groupId>net.synedra</groupId>
+            <artifactId>validatorfx</artifactId>
+            <version>0.4.0</version>
+        </dependency>
+
+        <!-- Scenic View for JavaFX Debugging -->
+        <!-- 로컬 Maven 저장소에 설치된 Scenic View (libs/scenicview.jar) -->
+        <!-- 설치 방법: mvn install:install-file -Dfile=libs/scenicview.jar -DgroupId=org.scenicview -DartifactId=scenicview -Dversion=11.0.2 -Dpackaging=jar -->
+        <dependency>
+            <groupId>org.scenicview</groupId>
+            <artifactId>scenicview</artifactId>
+            <version>11.0.2</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 
@@ -159,6 +193,11 @@
                 <version>0.0.8</version>
                 <configuration>
                     <mainClass>com.mealplanner.app.Main</mainClass>
+                    <options>
+                        <option>--add-exports</option>
+                        <option>javafx.graphics/com.sun.javafx.application=ALL-UNNAMED</option>
+                    </options>
+                    <commandlineArgs>-classpath ${project.basedir}/libs/scenicview.jar</commandlineArgs>
                 </configuration>
             </plugin>
 
@@ -189,6 +228,11 @@
                                     <mainClass>com.mealplanner.app.Launcher</mainClass>
                                 </transformer>
                             </transformers>
+                            <artifactSet>
+                                <includes>
+                                    <include>*:*</include>
+                                </includes>
+                            </artifactSet>
                         </configuration>
                     </execution>
                 </executions>

@@ -159,7 +159,10 @@ public class AppBuilder {
         var recommendationsInteractor = UseCaseFactory.createGetRecommendationsInteractor(recommendationsPresenter);
         GetRecommendationsController recommendationsController = new GetRecommendationsController(recommendationsInteractor);
         
-        BrowseRecipeView view = new BrowseRecipeView(viewModel, controller, viewManagerModel, recipeDetailViewModel, recommendationsController);
+        // Create RecipeRepository for local database recipes
+        FileRecipeRepository recipeRepository = new FileRecipeRepository();
+        
+        BrowseRecipeView view = new BrowseRecipeView(viewModel, controller, viewManagerModel, recipeDetailViewModel, recipeRepository, recommendationsController);
         viewManager.addView(ViewManager.BROWSE_RECIPE_VIEW, view);
     }
 
@@ -168,7 +171,11 @@ public class AppBuilder {
         SearchByIngredientsPresenter presenter = new SearchByIngredientsPresenter(viewModel, viewManagerModel);
         var interactor = UseCaseFactory.createSearchByIngredientsInteractor(presenter);
         SearchByIngredientsController controller = new SearchByIngredientsController(interactor);
-        SearchByIngredientsView view = new SearchByIngredientsView(controller, viewModel, viewManagerModel, recipeDetailViewModel);
+        
+        // Create RecipeRepository for local database recipes
+        FileRecipeRepository recipeRepository = new FileRecipeRepository();
+        
+        SearchByIngredientsView view = new SearchByIngredientsView(controller, viewModel, viewManagerModel, recipeDetailViewModel, recipeRepository);
         viewManager.addView(ViewManager.SEARCH_BY_INGREDIENTS_VIEW, view);
     }
 
