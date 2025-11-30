@@ -26,6 +26,10 @@ public class BrowseRecipePresenter implements BrowseRecipeOutputBoundary {
     public void presentRecipeDetails(BrowseRecipeOutputData browseRecipeOutputData) {
         if (browseRecipeOutputData == null || browseRecipeOutputData.getRecipes() == null) {
             browseRecipeViewModel.setErrorMessage("No recipe data available");
+            browseRecipeViewModel.setRecipes(java.util.Collections.emptyList());
+            if (viewManager != null) {
+                viewManager.setActiveView(null);
+            }
             return;
         }
         browseRecipeViewModel.setRecipes(browseRecipeOutputData.getRecipes());
@@ -37,5 +41,9 @@ public class BrowseRecipePresenter implements BrowseRecipeOutputBoundary {
     @Override
     public void presentError(String errorMessage) {
         browseRecipeViewModel.setErrorMessage(errorMessage != null ? errorMessage : "An error occurred");
+        browseRecipeViewModel.setRecipes(java.util.Collections.emptyList());
+        if (viewManager != null) {
+            viewManager.setActiveView(null);
+        }
     }
 }

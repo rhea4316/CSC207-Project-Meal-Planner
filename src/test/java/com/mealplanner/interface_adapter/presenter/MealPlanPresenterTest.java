@@ -40,7 +40,7 @@ public class MealPlanPresenterTest {
         
         verify(viewModel).setSchedule(schedule);
         verify(viewModel).setSuccessMessage("Meal added successfully");
-        verify(viewManager).setActiveView("MealPlanView");
+        verify(viewManager).setActiveView(com.mealplanner.view.ViewManager.SCHEDULE_VIEW);
     }
 
     @Test
@@ -53,7 +53,7 @@ public class MealPlanPresenterTest {
         
         verify(viewModel).setSchedule(schedule);
         verify(viewModel).setSuccessMessage("Meal edited successfully");
-        verify(viewManager).setActiveView("MealPlanView");
+        verify(viewManager).setActiveView(com.mealplanner.view.ViewManager.SCHEDULE_VIEW);
     }
 
     @Test
@@ -66,7 +66,7 @@ public class MealPlanPresenterTest {
         
         verify(viewModel).setSchedule(schedule);
         verify(viewModel).setSuccessMessage("Meal deleted successfully");
-        verify(viewManager).setActiveView("MealPlanView");
+        verify(viewManager).setActiveView(com.mealplanner.view.ViewManager.SCHEDULE_VIEW);
     }
 
     @Test

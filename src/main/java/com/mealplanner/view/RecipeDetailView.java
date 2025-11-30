@@ -1,12 +1,16 @@
 package com.mealplanner.view;
 
+import com.mealplanner.app.SessionManager;
+import com.mealplanner.entity.NutritionGoals;
 import com.mealplanner.entity.NutritionInfo;
 import com.mealplanner.entity.Recipe;
+import com.mealplanner.entity.User;
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.AdjustServingSizeController;
 import com.mealplanner.interface_adapter.view_model.RecipeDetailViewModel;
 import com.mealplanner.view.component.*;
 import com.mealplanner.view.util.SvgIconLoader;
+import com.mealplanner.util.ImageCacheManager;
 
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -14,6 +18,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Cursor;
 import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.CycleMethod;
@@ -21,6 +26,8 @@ import javafx.scene.paint.LinearGradient;
 import javafx.scene.paint.Stop;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -31,9 +38,11 @@ public class RecipeDetailView extends ScrollPane implements PropertyChangeListen
     private final AdjustServingSizeController controller;
     private final com.mealplanner.interface_adapter.controller.AddMealController addMealController;
     private final ViewManagerModel viewManagerModel;
+    private final ImageCacheManager imageCache = ImageCacheManager.getInstance();
 
     // UI Components
     private StackPane heroSection;
+    private ImageView heroImageView;
 
     private Label recipeNameLabel;
     private Label subtitleLabel;
@@ -67,6 +76,26 @@ public class RecipeDetailView extends ScrollPane implements PropertyChangeListen
         setHbarPolicy(ScrollBarPolicy.NEVER);
         setVbarPolicy(ScrollBarPolicy.AS_NEEDED);
         setStyle("-fx-background-color: #F5F7FA; -fx-background: #F5F7FA; -fx-padding: 0;"); // Light gray bg
+        
+        // Increase scroll speed
+        addEventFilter(ScrollEvent.SCROLL, event -> {
+            if (event.getDeltaY() != 0) {
+                double delta = event.getDeltaY() * 3.0;
+                double height = getContent().getBoundsInLocal().getHeight();
+                double vHeight = getViewportBounds().getHeight();
+                
+                double scrollableHeight = height - vHeight;
+                if (scrollableHeight > 0) {
+                    double vValueShift = -delta / scrollableHeight;
+                    double nextVvalue = getVvalue() + vValueShift;
+                    
+                    if (nextVvalue >= 0 && nextVvalue <= 1.0 || (getVvalue() > 0 && getVvalue() < 1.0)) {
+                        setVvalue(Math.min(Math.max(nextVvalue, 0), 1));
+                        event.consume();
+                    }
+                }
+            }
+        });
 
         VBox mainContent = new VBox();
         mainContent.setSpacing(0);
@@ -85,10 +114,14 @@ public class RecipeDetailView extends ScrollPane implements PropertyChangeListen
         heroSection.setMinHeight(350);
         heroSection.setAlignment(Pos.BOTTOM_LEFT);
 
-        // 1. Background Image (Placeholder)
-        Region bgImage = new Region();
-        bgImage.setStyle("-fx-background-color: #ddd;"); // Fallback color
-        // Ideally set -fx-background-image here if URL is known
+        // 1. Background Image - Fill entire hero section
+        heroImageView = new ImageView();
+        heroImageView.fitWidthProperty().bind(heroSection.widthProperty());
+        heroImageView.fitHeightProperty().bind(heroSection.heightProperty());
+        heroImageView.setPreserveRatio(false); // Fill the entire area without preserving ratio
+        heroImageView.setSmooth(true);
+        heroImageView.setCache(true);
+        heroImageView.setStyle("-fx-background-color: #ddd;"); // Fallback color
         
         // 2. Gradient Overlay (Transparent -> Black 70%)
         Rectangle overlay = new Rectangle();
@@ -125,7 +158,7 @@ public class RecipeDetailView extends ScrollPane implements PropertyChangeListen
         
         contentBox.getChildren().addAll(recipeNameLabel, subtitleLabel, metaChipsContainer);
         
-        heroSection.getChildren().addAll(bgImage, overlay, contentBox, backBtn);
+        heroSection.getChildren().addAll(heroImageView, overlay, contentBox, backBtn);
     }
 
     private GridPane createContentGrid() {
@@ -336,92 +369,189 @@ public class RecipeDetailView extends ScrollPane implements PropertyChangeListen
 
     private void updateView() {
         Recipe recipe = viewModel.getRecipe();
-        if (recipe == null) return;
+        if (recipe == null) {
+            return;
+        }
         
-        recipeNameLabel.setText(recipe.getName());
-        // subtitleLabel.setText(recipe.getDescription()); // If description exists
-        
-        metaChipsContainer.getChildren().clear();
-        addMetaChip("20 min", "/svg/clock.svg"); // Mock data
-        addMetaChip("350 Cal", "/svg/fire-flame.svg");
-        addMetaChip(recipe.getServingSize() + " Servings", "/svg/users.svg");
-        addMetaChip("Breakfast", "/svg/mug-hot.svg");
-        
-        // Ingredients
-        ingredientsList.getChildren().clear();
-        for (String ing : recipe.getIngredients()) {
-            HBox item = new HBox(12);
-            item.setAlignment(Pos.TOP_LEFT);
+        try {
+            // Update recipe name
+            String recipeName = recipe.getName();
+            if (recipeName != null && !recipeName.trim().isEmpty()) {
+                recipeNameLabel.setText(recipeName);
+            } else {
+                recipeNameLabel.setText("Untitled Recipe");
+            }
             
-            // Checkbox style circle
-            Circle checkCircle = new Circle(10);
-            checkCircle.setFill(Color.TRANSPARENT);
-            checkCircle.setStroke(Color.web("#e5e7eb"));
-            checkCircle.setStrokeWidth(2);
-            checkCircle.setCursor(Cursor.HAND);
+            // Update hero image (async to prevent blocking)
+            String imageUrl = recipe.getImageUrl();
+            if (imageUrl != null && !imageUrl.trim().isEmpty()) {
+                // Load image asynchronously to prevent blocking
+                new Thread(() -> {
+                    try {
+                        Image image = imageCache.getImage(imageUrl);
+                        Platform.runLater(() -> {
+                            if (heroImageView != null) {
+                                heroImageView.setImage(image);
+                            }
+                        });
+                    } catch (Exception e) {
+                        // If image loading fails, keep the placeholder
+                        // Silently fail - placeholder will remain
+                    }
+                }).start();
+            }
             
-            // Toggle logic visual only
-            checkCircle.setOnMouseClicked(e -> {
-                if (checkCircle.getFill() == Color.TRANSPARENT) {
-                    checkCircle.setFill(Color.web("#4CAF50"));
-                    checkCircle.setStroke(Color.web("#4CAF50"));
-                } else {
+            // Update meta chips
+            metaChipsContainer.getChildren().clear();
+            
+            // Actual cook time from recipe
+            Integer cookTime = recipe.getCookTimeMinutes();
+            String timeText = (cookTime != null && cookTime > 0)
+                ? cookTime + " min"
+                : "Time not available";
+            addMetaChip(timeText, "/svg/clock.svg");
+            
+            // Calories from nutrition info
+            String calText = "350 Cal"; // Default fallback
+            if (recipe.getNutritionInfo() != null) {
+                int calories = recipe.getNutritionInfo().getCalories();
+                calText = calories + " Cal";
+            }
+            addMetaChip(calText, "/svg/fire-flame.svg");
+            
+            int servingSize = recipe.getServingSize();
+            addMetaChip(servingSize + " Servings", "/svg/users.svg");
+            addMetaChip("Breakfast", "/svg/mug-hot.svg");
+            
+            // Ingredients
+            ingredientsList.getChildren().clear();
+            if (recipe.getIngredients() != null && !recipe.getIngredients().isEmpty()) {
+                for (String ing : recipe.getIngredients()) {
+                    if (ing == null || ing.trim().isEmpty()) {
+                        continue; // Skip null or empty ingredients
+                    }
+                    
+                    HBox item = new HBox(12);
+                    item.setAlignment(Pos.TOP_LEFT);
+                    
+                    // Checkbox style circle
+                    Circle checkCircle = new Circle(10);
                     checkCircle.setFill(Color.TRANSPARENT);
                     checkCircle.setStroke(Color.web("#e5e7eb"));
+                    checkCircle.setStrokeWidth(2);
+                    checkCircle.setCursor(Cursor.HAND);
+                    
+                    // Toggle logic visual only
+                    checkCircle.setOnMouseClicked(e -> {
+                        if (checkCircle.getFill() == Color.TRANSPARENT) {
+                            checkCircle.setFill(Color.web("#4CAF50"));
+                            checkCircle.setStroke(Color.web("#4CAF50"));
+                        } else {
+                            checkCircle.setFill(Color.TRANSPARENT);
+                            checkCircle.setStroke(Color.web("#e5e7eb"));
+                        }
+                    });
+                    
+                    Label text = new Label(ing.trim());
+                    text.setWrapText(true);
+                    text.setStyle("-fx-font-size: 15px; -fx-text-fill: #374151; -fx-line-spacing: 4px;");
+                    
+                    item.getChildren().addAll(checkCircle, text);
+                    ingredientsList.getChildren().add(item);
                 }
-            });
+            } else {
+                // Show message if no ingredients
+                Label noIngredientsLabel = new Label("No ingredients listed");
+                noIngredientsLabel.setStyle("-fx-text-fill: #9ca3af; -fx-font-size: 14px;");
+                ingredientsList.getChildren().add(noIngredientsLabel);
+            }
             
-            Label text = new Label(ing);
-            text.setWrapText(true);
-            text.setStyle("-fx-font-size: 15px; -fx-text-fill: #374151; -fx-line-spacing: 4px;");
+            // Instructions
+            instructionsList.getChildren().clear();
+            String stepsText = recipe.getSteps();
+            if (stepsText != null && !stepsText.trim().isEmpty()) {
+                String[] steps = stepsText.split("\n");
+                int stepNum = 1;
+                for (String step : steps) {
+                    if (step == null || step.trim().isEmpty()) {
+                        continue;
+                    }
+                    
+                    HBox item = new HBox(16);
+                    item.setAlignment(Pos.TOP_LEFT);
+                    
+                    // Number Badge
+                    Label numBadge = new Label(String.valueOf(stepNum++));
+                    numBadge.setPrefSize(28, 28);
+                    numBadge.setMinSize(28, 28);
+                    numBadge.setAlignment(Pos.CENTER);
+                    numBadge.setStyle("-fx-background-color: #F0F2F5; -fx-background-radius: 50%; -fx-text-fill: #111827; -fx-font-weight: bold; -fx-font-size: 13px;");
+                    
+                    Label text = new Label(step.trim());
+                    text.setWrapText(true);
+                    text.setStyle("-fx-font-size: 15px; -fx-text-fill: #4b5563; -fx-line-spacing: 4px;");
+                    
+                    item.getChildren().addAll(numBadge, text);
+                    instructionsList.getChildren().add(item);
+                }
+            } else {
+                // Show message if no instructions
+                Label noInstructionsLabel = new Label("No instructions available");
+                noInstructionsLabel.setStyle("-fx-text-fill: #9ca3af; -fx-font-size: 14px;");
+                instructionsList.getChildren().add(noInstructionsLabel);
+            }
             
-            item.getChildren().addAll(checkCircle, text);
-            ingredientsList.getChildren().add(item);
-        }
-        
-        // Instructions
-        instructionsList.getChildren().clear();
-        String[] steps = recipe.getSteps().split("\n"); // Assuming newline separated
-        int stepNum = 1;
-        for (String step : steps) {
-            if (step.trim().isEmpty()) continue;
-            
-            HBox item = new HBox(16);
-            item.setAlignment(Pos.TOP_LEFT);
-            
-            // Number Badge
-            Label numBadge = new Label(String.valueOf(stepNum++));
-            numBadge.setPrefSize(28, 28);
-            numBadge.setMinSize(28, 28);
-            numBadge.setAlignment(Pos.CENTER);
-            numBadge.setStyle("-fx-background-color: #F0F2F5; -fx-background-radius: 50%; -fx-text-fill: #111827; -fx-font-weight: bold; -fx-font-size: 13px;");
-            
-            Label text = new Label(step.trim());
-            text.setWrapText(true);
-            text.setStyle("-fx-font-size: 15px; -fx-text-fill: #4b5563; -fx-line-spacing: 4px;");
-            
-            item.getChildren().addAll(numBadge, text);
-            instructionsList.getChildren().add(item);
-        }
-        
-        // Nutrition
-        NutritionInfo info = recipe.getNutritionInfo();
-        if (info != null) {
-            caloriesValueLabel.setText(String.valueOf(info.getCalories()));
-            
-            // Mock max values for progress bars
-            double maxProtein = 50.0; 
-            double maxCarbs = 100.0;
-            double maxFat = 40.0;
-            
-            proteinBar.setProgress(info.getProtein() / maxProtein);
-            proteinVal.setText(String.format("%.0fg (%.0f%%)", info.getProtein(), (info.getProtein()/maxProtein)*100));
-            
-            carbsBar.setProgress(info.getCarbs() / maxCarbs);
-            carbsVal.setText(String.format("%.0fg (%.0f%%)", info.getCarbs(), (info.getCarbs()/maxCarbs)*100));
-            
-            fatBar.setProgress(info.getFat() / maxFat);
-            fatVal.setText(String.format("%.0fg (%.0f%%)", info.getFat(), (info.getFat()/maxFat)*100));
+            // Nutrition
+            NutritionInfo info = recipe.getNutritionInfo();
+            if (info != null) {
+                caloriesValueLabel.setText(String.valueOf(info.getCalories()));
+
+                // Get user's nutrition goals from SessionManager
+                User currentUser = SessionManager.getInstance().getCurrentUser();
+                NutritionGoals goals;
+
+                if (currentUser != null && currentUser.getNutritionGoals() != null) {
+                    goals = currentUser.getNutritionGoals();
+                } else {
+                    // Use default goals if user doesn't have custom goals set
+                    goals = NutritionGoals.createDefault();
+                }
+
+                // Assume 1 meal is 1/3 of daily goals
+                double maxProtein = goals.getDailyProtein() / 3.0;
+                double maxCarbs = goals.getDailyCarbs() / 3.0;
+                double maxFat = goals.getDailyFat() / 3.0;
+
+                // Calculate progress and percentage (with division by zero protection)
+                double proteinProgress = maxProtein > 0 ? info.getProtein() / maxProtein : 0.0;
+                double proteinPercent = maxProtein > 0 ? (info.getProtein() / maxProtein) * 100 : 0.0;
+                if (proteinBar != null && proteinVal != null) {
+                    proteinBar.setProgress(Math.min(1.0, proteinProgress));
+                    proteinVal.setText(String.format("%.0fg (%.0f%%)", info.getProtein(), proteinPercent));
+                }
+
+                double carbsProgress = maxCarbs > 0 ? info.getCarbs() / maxCarbs : 0.0;
+                double carbsPercent = maxCarbs > 0 ? (info.getCarbs() / maxCarbs) * 100 : 0.0;
+                if (carbsBar != null && carbsVal != null) {
+                    carbsBar.setProgress(Math.min(1.0, carbsProgress));
+                    carbsVal.setText(String.format("%.0fg (%.0f%%)", info.getCarbs(), carbsPercent));
+                }
+
+                double fatProgress = maxFat > 0 ? info.getFat() / maxFat : 0.0;
+                double fatPercent = maxFat > 0 ? (info.getFat() / maxFat) * 100 : 0.0;
+                if (fatBar != null && fatVal != null) {
+                    fatBar.setProgress(Math.min(1.0, fatProgress));
+                    fatVal.setText(String.format("%.0fg (%.0f%%)", info.getFat(), fatPercent));
+                }
+            }
+        } catch (Exception e) {
+            // Log error and show fallback UI
+            System.err.println("Error updating recipe detail view: " + e.getMessage());
+            e.printStackTrace();
+            // At least show the recipe name if available
+            if (recipe.getName() != null) {
+                recipeNameLabel.setText(recipe.getName());
+            }
         }
     }
 
@@ -443,5 +573,18 @@ public class RecipeDetailView extends ScrollPane implements PropertyChangeListen
             target = ViewManager.BROWSE_RECIPE_VIEW;
         }
         viewManagerModel.setActiveView(target);
+    }
+    
+    /**
+     * Clean up resources and remove property change listeners to prevent memory leaks.
+     * Should be called when this view is no longer needed.
+     */
+    public void dispose() {
+        if (viewModel != null) {
+            viewModel.removePropertyChangeListener(this);
+        }
+        if (viewManagerModel != null) {
+            viewManagerModel.removePropertyChangeListener(this);
+        }
     }
 }

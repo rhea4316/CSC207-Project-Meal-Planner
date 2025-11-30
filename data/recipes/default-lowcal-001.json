@@ -1,0 +1,26 @@
+{
+  "name": "Zucchini Noodles with Turkey",
+  "ingredients": [
+    "2 large zucchinis",
+    "1/2 lb ground turkey",
+    "1 cup marinara sauce",
+    "2 cloves garlic",
+    "1 tablespoon olive oil",
+    "1/4 cup parmesan cheese",
+    "fresh basil to taste"
+  ],
+  "steps": "Spiralize zucchinis into noodles.\nHeat olive oil in a pan and cook garlic for 1 minute.\nAdd ground turkey and cook until browned.\nAdd marinara sauce and simmer for 5 minutes.\nAdd zucchini noodles and cook for 2-3 minutes until tender.\nTop with parmesan cheese and fresh basil.\nServe immediately.",
+  "servingSize": 2,
+  "nutritionInfo": {
+    "calories": 280,
+    "protein": 28.0,
+    "carbs": 18.0,
+    "fat": 12.0
+  },
+  "cookTimeMinutes": 20,
+  "dietaryRestrictions": [
+    "GLUTEN_FREE"
+  ],
+  "recipeId": "default-lowcal-001"
+}
+

@@ -16,6 +16,7 @@ public class Recipe {
     private final NutritionInfo nutritionInfo;
     private final Integer cookTimeMinutes;
     private final List<DietaryRestriction> dietaryRestrictions;
+    private final String imageUrl;
 
     // Add a unique identifier for the recipe
     private final String recipeId;
@@ -26,6 +27,16 @@ public class Recipe {
     public Recipe(String name, List<String> ingredients, String steps,
                  int servingSize, NutritionInfo nutritionInfo, Integer cookTimeMinutes,
                  List<DietaryRestriction> dietaryRestrictions, String recipeId) {
+        this(name, ingredients, steps, servingSize, nutritionInfo, cookTimeMinutes, 
+             dietaryRestrictions, null, recipeId);
+    }
+
+    /**
+     * Constructs a new Recipe with required and optional information including image URL.
+     */
+    public Recipe(String name, List<String> ingredients, String steps,
+                 int servingSize, NutritionInfo nutritionInfo, Integer cookTimeMinutes,
+                 List<DietaryRestriction> dietaryRestrictions, String imageUrl, String recipeId) {
         validateInputs(name, ingredients, steps, servingSize);
 
         this.name = name.trim();
@@ -36,6 +47,7 @@ public class Recipe {
         this.cookTimeMinutes = cookTimeMinutes; // Can be null
         this.dietaryRestrictions = dietaryRestrictions != null ? 
             new ArrayList<>(dietaryRestrictions) : new ArrayList<>();
+        this.imageUrl = imageUrl != null && !imageUrl.trim().isEmpty() ? imageUrl.trim() : null;
         this.recipeId = recipeId != null ? recipeId.trim() : null;
     }
 
@@ -82,6 +94,7 @@ public class Recipe {
                 scaledNutrition,
                 this.cookTimeMinutes,
                 this.dietaryRestrictions,
+                this.imageUrl, // Preserve the imageUrl
                 this.recipeId // Preserve the recipeId
         );
     }
@@ -136,6 +149,10 @@ public class Recipe {
         return recipeId;
     }
 
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -153,13 +170,14 @@ public class Recipe {
                 && Objects.equals(nutritionInfo, recipe.nutritionInfo)
                 && Objects.equals(cookTimeMinutes, recipe.cookTimeMinutes)
                 && Objects.equals(dietaryRestrictions, recipe.dietaryRestrictions)
+                && Objects.equals(imageUrl, recipe.imageUrl)
                 && Objects.equals(recipeId, recipe.recipeId);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(name, ingredients, steps, servingSize,
-                nutritionInfo, cookTimeMinutes, dietaryRestrictions, recipeId);
+                nutritionInfo, cookTimeMinutes, dietaryRestrictions, imageUrl, recipeId);
     }
 
     @Override

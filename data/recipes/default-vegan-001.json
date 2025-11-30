@@ -1,0 +1,27 @@
+{
+  "name": "Vegan Buddha Bowl",
+  "ingredients": [
+    "1 cup cooked chickpeas",
+    "1 cup cooked quinoa",
+    "1 cup roasted sweet potatoes",
+    "1 cup kale",
+    "1/4 cup tahini",
+    "2 tablespoons lemon juice",
+    "1 tablespoon olive oil"
+  ],
+  "steps": "Roast sweet potatoes in the oven at 400°F for 20 minutes.\nCook quinoa according to package instructions.\nMassage kale with olive oil until tender.\nMix tahini with lemon juice and a bit of water for dressing.\nAssemble bowl with quinoa, chickpeas, sweet potatoes, and kale.\nDrizzle with tahini dressing and serve.",
+  "servingSize": 2,
+  "nutritionInfo": {
+    "calories": 480,
+    "protein": 18.0,
+    "carbs": 68.0,
+    "fat": 16.0
+  },
+  "cookTimeMinutes": 30,
+  "dietaryRestrictions": [
+    "VEGAN",
+    "VEGETARIAN"
+  ],
+  "recipeId": "default-vegan-001"
+}
+

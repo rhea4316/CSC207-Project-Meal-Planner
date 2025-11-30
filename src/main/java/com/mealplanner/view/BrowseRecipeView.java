@@ -1,11 +1,17 @@
 package com.mealplanner.view;
 
+import com.mealplanner.app.SessionManager;
 import com.mealplanner.entity.Recipe;
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.BrowseRecipeController;
+import com.mealplanner.interface_adapter.controller.GetRecommendationsController;
 import com.mealplanner.interface_adapter.view_model.RecipeBrowseViewModel;
 import com.mealplanner.interface_adapter.view_model.RecipeDetailViewModel;
+import com.mealplanner.repository.RecipeRepository;
+import com.mealplanner.exception.DataAccessException;
 import com.mealplanner.util.StringUtil;
+import com.mealplanner.util.ImageCacheManager;
+import com.mealplanner.view.component.Sonner;
 import com.mealplanner.view.util.SvgIconLoader;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -16,10 +22,16 @@ import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.CycleMethod;
+import javafx.scene.paint.LinearGradient;
+import javafx.scene.paint.Stop;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -28,6 +40,19 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
     private final BrowseRecipeController controller;
     private final ViewManagerModel viewManagerModel;
     private final RecipeDetailViewModel recipeDetailViewModel;
+    private final RecipeRepository recipeRepository;
+    private final ImageCacheManager imageCache = ImageCacheManager.getInstance();
+    private GetRecommendationsController recommendationsController;
+    
+    /**
+     * Clean up resources and remove property change listeners to prevent memory leaks.
+     * Should be called when this view is no longer needed.
+     */
+    public void dispose() {
+        if (viewModel != null) {
+            viewModel.removePropertyChangeListener(this);
+        }
+    }
 
     private TextField searchField;
     @SuppressWarnings("unused")
@@ -38,26 +63,72 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
     private ToggleGroup categoryGroup;
     private String selectedCategory = "All";
 
+    // OPTIMIZATION: Store all recipes for client-side filtering
+    private List<Recipe> allRecipes = new ArrayList<>();
+
     // Result Components
     private ScrollPane listScrollPane;
     private FlowPane listPanel; 
     private VBox loadingPanel;
     private VBox emptyPanel;
+    private VBox errorPanel;
     private Label errorLabel;
     private Label countLabel; // "Showing 9 of 16 recipes"
+    
+    // Recommendations Section
+    private VBox recommendationsSection;
+    
+    private Sonner sonner;
 
-    public BrowseRecipeView(RecipeBrowseViewModel viewModel, BrowseRecipeController controller, ViewManagerModel viewManagerModel, RecipeDetailViewModel recipeDetailViewModel) {
+    /**
+     * Constructor with GetRecommendationsController (Phase 5 feature).
+     */
+    public BrowseRecipeView(RecipeBrowseViewModel viewModel, BrowseRecipeController controller, ViewManagerModel viewManagerModel, RecipeDetailViewModel recipeDetailViewModel, RecipeRepository recipeRepository, GetRecommendationsController recommendationsController) {
         if (viewModel == null) throw new IllegalArgumentException("ViewModel cannot be null");
         if (controller == null) throw new IllegalArgumentException("Controller cannot be null");
         if (viewManagerModel == null) throw new IllegalArgumentException("ViewManagerModel cannot be null");
         if (recipeDetailViewModel == null) throw new IllegalArgumentException("RecipeDetailViewModel cannot be null");
-        
+        if (recipeRepository == null) throw new IllegalArgumentException("RecipeRepository cannot be null");
+
         this.viewModel = viewModel;
         this.controller = controller;
         this.viewManagerModel = viewManagerModel;
         this.recipeDetailViewModel = recipeDetailViewModel;
+        this.recipeRepository = recipeRepository;
+        this.recommendationsController = recommendationsController;
+        
+        initializeView();
+    }
+
+    /**
+     * Constructor without GetRecommendationsController (current version).
+     */
+    public BrowseRecipeView(RecipeBrowseViewModel viewModel, BrowseRecipeController controller, ViewManagerModel viewManagerModel, RecipeDetailViewModel recipeDetailViewModel, RecipeRepository recipeRepository) {
+        if (viewModel == null) throw new IllegalArgumentException("ViewModel cannot be null");
+        if (controller == null) throw new IllegalArgumentException("Controller cannot be null");
+        if (viewManagerModel == null) throw new IllegalArgumentException("ViewManagerModel cannot be null");
+        if (recipeDetailViewModel == null) throw new IllegalArgumentException("RecipeDetailViewModel cannot be null");
+        if (recipeRepository == null) throw new IllegalArgumentException("RecipeRepository cannot be null");
+
+        this.viewModel = viewModel;
+        this.controller = controller;
+        this.viewManagerModel = viewManagerModel;
+        this.recipeDetailViewModel = recipeDetailViewModel;
+        this.recipeRepository = recipeRepository;
+        this.recommendationsController = null;  // Phase 5 feature, not yet implemented
+
+        initializeView();
+    }
+
+    /**
+     * Common initialization logic for both constructors.
+     */
+    private void initializeView() {
         
         viewModel.addPropertyChangeListener(this);
+
+        // Initialize Sonner
+        sonner = new Sonner();
 
         // Root Styles
         getStyleClass().add("root");
@@ -78,8 +149,12 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
 
         // Saved Button (Top Right) - Mockup
         Button savedBtn = new Button("3 Saved");
-        savedBtn.setStyle("-fx-background-color: #84cc16; -fx-text-fill: white; -fx-font-weight: 600; -fx-background-radius: 8px; -fx-padding: 8 16; -fx-cursor: hand;");
-        Node bookmarkIcon = SvgIconLoader.loadIcon("/svg/book-fill.svg", 14, Color.WHITE);
+        // Apply gradient background: #8be200 -> #14cd49 (top-left to bottom-right)
+        Stop[] gradientStops = new Stop[] { new Stop(0, Color.web("#8be200")), new Stop(1, Color.web("#14cd49")) };
+        LinearGradient gradient = new LinearGradient(0, 0, 1, 1, true, CycleMethod.NO_CYCLE, gradientStops);
+        savedBtn.setStyle("-fx-text-fill: white; -fx-font-weight: 600; -fx-background-radius: 8px; -fx-padding: 8 16; -fx-cursor: hand; -fx-background-color: null;");
+        savedBtn.setBackground(new Background(new BackgroundFill(gradient, new CornerRadii(8), Insets.EMPTY)));
+        Node bookmarkIcon = SvgIconLoader.loadIcon("/svg/bookmark.svg", 14, Color.WHITE);
         if (bookmarkIcon != null) {
             savedBtn.setGraphic(bookmarkIcon);
             savedBtn.setGraphicTextGap(8);
@@ -93,9 +168,17 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
         
         topBar.getChildren().addAll(headerBox, spacer, savedBtn);
         
-        VBox topSection = new VBox(24);
-        topSection.getChildren().addAll(topBar, createSearchPanel());
-        setTop(topSection);
+        // Recommendations Section (only if controller is available)
+        if (recommendationsController != null) {
+            recommendationsSection = createRecommendedSection();
+            VBox topSection = new VBox(24);
+            topSection.getChildren().addAll(topBar, createSearchPanel(), recommendationsSection);
+            setTop(topSection);
+        } else {
+            VBox topSection = new VBox(24);
+            topSection.getChildren().addAll(topBar, createSearchPanel());
+            setTop(topSection);
+        }
 
         // Results Count Label
         countLabel = new Label("");
@@ -117,6 +200,57 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
         errorLabel.setStyle("-fx-text-fill: -fx-theme-destructive; -fx-font-weight: bold;");
         errorLabel.setPadding(new Insets(10, 0, 0, 0));
         setBottom(errorLabel);
+        
+        // Load recommendations on initialization
+        loadRecommendations();
+        
+        // Load local database recipes on initialization
+        loadLocalRecipes();
+    }
+    
+    /**
+     * Loads recipes from local database and displays them initially.
+     * This ensures local recipes are shown even without a search query.
+     */
+    private void loadLocalRecipes() {
+        if (recipeRepository == null) {
+            return;
+        }
+        
+        new Thread(() -> {
+            try {
+                List<Recipe> localRecipes = recipeRepository.findAll();
+                if (localRecipes != null && !localRecipes.isEmpty()) {
+                    Platform.runLater(() -> {
+                        // Set local recipes as initial display
+                        allRecipes = new ArrayList<>(localRecipes);
+                        applyClientSideFilter();
+                    });
+                } else {
+                    // If no local recipes, show empty state
+                    Platform.runLater(() -> {
+                        listPanel.getChildren().clear();
+                        listPanel.getChildren().add(emptyPanel);
+                        countLabel.setText("Showing 0 recipes");
+                    });
+                }
+            } catch (DataAccessException e) {
+                // Silently fail - local recipes are optional
+            } catch (Exception e) {
+                // Silently fail - local recipes are optional
+            }
+        }).start();
+    }
+
+    private void loadRecommendations() {
+        if (recommendationsController == null) {
+            return;  // Phase 5 not yet implemented
+        }
+        com.mealplanner.entity.User currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser != null) {
+            String userId = currentUser.getUserId();
+            recommendationsController.execute(userId);
+        }
     }
 
     private VBox createSearchPanel() {
@@ -152,7 +286,7 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
         
         HBox filterHeader = new HBox(6);
         filterHeader.setAlignment(Pos.CENTER_LEFT);
-        Node filterIcon = SvgIconLoader.loadIcon("/svg/settings-sliders.svg", 14, Color.web("#6b7280")); // Funnel/filter icon fallback
+        Node filterIcon = SvgIconLoader.loadIcon("/svg/filter.svg", 14, Color.web("#6b7280"));
         Label filterLabel = new Label("Filter by category");
         filterLabel.getStyleClass().add("text-gray-500");
         filterLabel.setStyle("-fx-font-size: 13px;");
@@ -170,8 +304,8 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
         addCategoryFilter("Breakfast", false, "/svg/mug-hot.svg");
         addCategoryFilter("Lunch", false, "/svg/brightness.svg");
         addCategoryFilter("Dinner", false, "/svg/moon.svg");
-        addCategoryFilter("Snacks", false, "/svg/apple.svg");
-        addCategoryFilter("Desserts", false, "/svg/heart.svg");
+        addCategoryFilter("Snacks", false, "/svg/cookie.svg");
+        addCategoryFilter("Desserts", false, "/svg/cake-slice.svg");
         addCategoryFilter("Vegetarian", false, "/svg/leaf.svg");
         addCategoryFilter("Vegan", false, "/svg/leaf.svg");
 
@@ -188,10 +322,18 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
         
         // Default Style
         String defaultStyle = "-fx-background-color: white; -fx-text-fill: -fx-color-gray-600; -fx-border-color: -fx-color-gray-200; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 8 16; -fx-font-size: 13px; -fx-cursor: hand;";
-        // Selected Style (Green)
-        String selectedStyle = "-fx-background-color: #84cc16; -fx-text-fill: white; -fx-border-color: #84cc16; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 8 16; -fx-font-size: 13px; -fx-font-weight: 600; -fx-cursor: hand;";
+        // Selected Style (Gradient) - will be applied via Background
+        String selectedStyle = "-fx-text-fill: white; -fx-border-color: transparent; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 8 16; -fx-font-size: 13px; -fx-font-weight: 600; -fx-cursor: hand;";
         
-        btn.setStyle(isSelected ? selectedStyle : defaultStyle);
+        if (isSelected) {
+            // Apply gradient background matching sidebar active buttons
+            Stop[] gradientStops = new Stop[] { new Stop(0, Color.web("#8be200")), new Stop(1, Color.web("#14cd49")) };
+            LinearGradient gradient = new LinearGradient(0, 0, 1, 1, true, CycleMethod.NO_CYCLE, gradientStops);
+            btn.setStyle(selectedStyle + " -fx-background-color: null;");
+            btn.setBackground(new Background(new BackgroundFill(gradient, new CornerRadii(8), Insets.EMPTY)));
+        } else {
+            btn.setStyle(defaultStyle);
+        }
         
         if (iconPath != null) {
             Node icon = SvgIconLoader.loadIcon(iconPath, 16, isSelected ? Color.WHITE : Color.web("#6b7280"));
@@ -212,11 +354,15 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
 
         btn.selectedProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal) {
-                btn.setStyle(selectedStyle);
+                // Apply gradient background matching sidebar active buttons
+                Stop[] gradientStops = new Stop[] { new Stop(0, Color.web("#8be200")), new Stop(1, Color.web("#14cd49")) };
+                LinearGradient gradient = new LinearGradient(0, 0, 1, 1, true, CycleMethod.NO_CYCLE, gradientStops);
+                btn.setStyle(selectedStyle + " -fx-background-color: null;");
+                btn.setBackground(new Background(new BackgroundFill(gradient, new CornerRadii(8), Insets.EMPTY)));
                 selectedCategory = name;
                 // Update icon color to white
                 if (btn.getGraphic() != null) {
-                     // Reloading icon with white color is tricky without storing path. 
+                     // Reloading icon with white color is tricky without storing path.
                      // For now, assume simple toggle logic or just keep it simple.
                      // (In a real app, we'd have a custom button class to handle state/icon/color)
                      // Let's try to reload if we know the path or if it's "All"
@@ -226,8 +372,10 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
                         btn.setGraphic(SvgIconLoader.loadIcon("/svg/apps.svg", 16, Color.WHITE));
                      }
                 }
-                performSearch(); // Trigger search on filter change
+                // OPTIMIZATION: Apply client-side filtering instead of re-fetching from API
+                applyClientSideFilter();
             } else {
+                btn.setBackground(new Background(new BackgroundFill(Color.WHITE, new CornerRadii(8), Insets.EMPTY)));
                 btn.setStyle(defaultStyle);
                 // Update icon color to gray
                  if (btn.getGraphic() != null) {
@@ -258,6 +406,26 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
         listScrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         listScrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
         listScrollPane.setMinHeight(400);
+        
+        // Increase scroll speed
+        listScrollPane.addEventFilter(javafx.scene.input.ScrollEvent.SCROLL, event -> {
+            if (event.getDeltaY() != 0) {
+                double delta = event.getDeltaY() * 3.0;
+                double height = listScrollPane.getContent().getBoundsInLocal().getHeight();
+                double vHeight = listScrollPane.getViewportBounds().getHeight();
+                
+                double scrollableHeight = height - vHeight;
+                if (scrollableHeight > 0) {
+                    double vValueShift = -delta / scrollableHeight;
+                    double nextVvalue = listScrollPane.getVvalue() + vValueShift;
+                    
+                    if (nextVvalue >= 0 && nextVvalue <= 1.0 || (listScrollPane.getVvalue() > 0 && listScrollPane.getVvalue() < 1.0)) {
+                        listScrollPane.setVvalue(Math.min(Math.max(nextVvalue, 0), 1));
+                        event.consume();
+                    }
+                }
+            }
+        });
 
         // 2. Loading
         loadingPanel = new VBox(15);
@@ -278,6 +446,25 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
         emptyLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: -fx-theme-muted-foreground;");
         
         emptyPanel.getChildren().addAll(iconLabel, emptyLabel);
+        
+        // 4. Error View
+        errorPanel = new VBox(16);
+        errorPanel.setAlignment(Pos.CENTER);
+        
+        Label errorIconLabel = new Label("⚠️");
+        errorIconLabel.setStyle("-fx-font-size: 48px;");
+        
+        Label errorTitle = new Label("레시피를 불러오는 중 오류가 발생했습니다");
+        errorTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #1f2937;");
+        
+        Label errorSub = new Label("인터넷 연결을 확인하고 다시 시도해주세요");
+        errorSub.setStyle("-fx-font-size: 14px; -fx-text-fill: #6b7280;");
+        
+        Button retryButton = new Button("다시 시도");
+        retryButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: 600; -fx-background-radius: 8px; -fx-padding: 10 20; -fx-cursor: hand;");
+        retryButton.setOnAction(e -> performSearch());
+        
+        errorPanel.getChildren().addAll(errorIconLabel, errorTitle, errorSub, retryButton);
         
         // Initially show empty or welcome state?
         // Since we might want to show some default recipes, let's trigger an initial search or show empty.
@@ -312,6 +499,7 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
         // Show Loading
         listPanel.getChildren().clear();
         listPanel.getChildren().add(loadingPanel);
+        errorLabel.setText("");
 
         // Run search in background
         final String finalQuery = effectiveQuery;
@@ -321,7 +509,15 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
                 controller.execute(finalQuery, 12); 
             } catch (IOException ex) {
                 Platform.runLater(() -> {
-                    errorLabel.setText("Network error: " + ex.getMessage());
+                    sonner.show("Network Error", "Failed to search recipes. Please check your connection and try again.", Sonner.Type.ERROR);
+                    errorLabel.setText(""); // Clear error label
+                    listPanel.getChildren().clear();
+                    listPanel.getChildren().add(emptyPanel);
+                });
+            } catch (Exception ex) {
+                Platform.runLater(() -> {
+                    sonner.show("Error", "An unexpected error occurred while searching. Please try again.", Sonner.Type.ERROR);
+                    errorLabel.setText(""); // Clear error label
                     listPanel.getChildren().clear();
                     listPanel.getChildren().add(emptyPanel);
                 });
@@ -331,27 +527,118 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
 
     private void displayRecipes(List<Recipe> recipes) {
         Platform.runLater(() -> {
-            listPanel.getChildren().clear();
+            // OPTIMIZATION: Store all recipes for client-side filtering
+            List<Recipe> apiRecipes = recipes != null ? new ArrayList<>(recipes) : new ArrayList<>();
             
-            if (recipes == null || recipes.isEmpty()) {
-                emptyPanel.getChildren().set(1, new Label("No recipes found. Try a different term."));
-                listPanel.getChildren().add(emptyPanel);
-                countLabel.setText("Showing 0 recipes");
-            } else {
-                countLabel.setText("Showing " + recipes.size() + " recipes"); // Demo count
-                
-                // Mockup shows specific "Showing 9 of 16 recipes" style
-                Node trendIcon = SvgIconLoader.loadIcon("/svg/chart.svg", 16, Color.web("#84cc16")); // Green zigzag
-                if (trendIcon != null) {
-                    countLabel.setGraphic(trendIcon);
-                    countLabel.setGraphicTextGap(8);
-                }
-
-                for (Recipe recipe : recipes) {
-                    listPanel.getChildren().add(createRecipeCard(recipe));
+            // Merge with local database recipes
+            if (recipeRepository != null) {
+                try {
+                    List<Recipe> localRecipes = recipeRepository.findAll();
+                    if (localRecipes != null && !localRecipes.isEmpty()) {
+                        // Merge recipes, avoiding duplicates
+                        for (Recipe localRecipe : localRecipes) {
+                            boolean exists = apiRecipes.stream()
+                                .anyMatch(r -> r.getRecipeId() != null && r.getRecipeId().equals(localRecipe.getRecipeId()) ||
+                                              (r.getName() != null && r.getName().equals(localRecipe.getName())));
+                            if (!exists) {
+                                apiRecipes.add(localRecipe);
+                            }
+                        }
+                    }
+                } catch (DataAccessException e) {
+                    // Silently fail - local recipes are optional
+                } catch (Exception e) {
+                    // Silently fail - local recipes are optional
                 }
             }
+            
+            allRecipes = apiRecipes;
+
+            // Apply current filter
+            applyClientSideFilter();
         });
+    }
+
+    /**
+     * OPTIMIZATION: Apply client-side category filtering without re-fetching from API.
+     */
+    private void applyClientSideFilter() {
+        listPanel.getChildren().clear();
+
+        if (allRecipes == null || allRecipes.isEmpty()) {
+            emptyPanel.getChildren().set(1, new Label("No recipes found. Try a different term."));
+            listPanel.getChildren().add(emptyPanel);
+            countLabel.setText("Showing 0 recipes");
+            return;
+        }
+
+        // Filter recipes based on selected category
+        List<Recipe> filteredRecipes = allRecipes.stream()
+            .filter(recipe -> matchesCategory(recipe, selectedCategory))
+            .collect(java.util.stream.Collectors.toList());
+
+        if (filteredRecipes.isEmpty()) {
+            emptyPanel.getChildren().set(1, new Label("No recipes found in this category."));
+            listPanel.getChildren().add(emptyPanel);
+            countLabel.setText("Showing 0 recipes");
+        } else {
+            countLabel.setText("Showing " + filteredRecipes.size() + " of " + allRecipes.size() + " recipes");
+
+            // Mockup shows specific "Showing 9 of 16 recipes" style
+            Node trendIcon = SvgIconLoader.loadIcon("/svg/chart.svg", 16, Color.web("#84cc16")); // Green zigzag
+            if (trendIcon != null) {
+                countLabel.setGraphic(trendIcon);
+                countLabel.setGraphicTextGap(8);
+            }
+
+            for (Recipe recipe : filteredRecipes) {
+                listPanel.getChildren().add(createRecipeCard(recipe));
+            }
+        }
+    }
+
+    /**
+     * Check if a recipe matches the given category filter.
+     */
+    private boolean matchesCategory(Recipe recipe, String category) {
+        if (category == null || category.equals("All")) {
+            return true;
+        }
+
+        String recipeName = recipe.getName().toLowerCase();
+
+        // Simple category matching based on recipe name
+        // In a real application, this would use recipe tags or categories from the API
+        switch (category) {
+            case "Breakfast":
+                return recipeName.contains("breakfast") || recipeName.contains("pancake")
+                    || recipeName.contains("toast") || recipeName.contains("oatmeal")
+                    || recipeName.contains("egg");
+            case "Lunch":
+                return recipeName.contains("lunch") || recipeName.contains("sandwich")
+                    || recipeName.contains("salad") || recipeName.contains("soup");
+            case "Dinner":
+                return recipeName.contains("dinner") || recipeName.contains("steak")
+                    || recipeName.contains("chicken") || recipeName.contains("fish")
+                    || recipeName.contains("pasta");
+            case "Snacks":
+                return recipeName.contains("snack") || recipeName.contains("chip")
+                    || recipeName.contains("dip");
+            case "Desserts":
+                return recipeName.contains("dessert") || recipeName.contains("cake")
+                    || recipeName.contains("cookie") || recipeName.contains("ice cream")
+                    || recipeName.contains("chocolate");
+            case "Vegetarian":
+                return !recipeName.contains("meat") && !recipeName.contains("chicken")
+                    && !recipeName.contains("beef") && !recipeName.contains("pork")
+                    && !recipeName.contains("fish");
+            case "Vegan":
+                return !recipeName.contains("meat") && !recipeName.contains("chicken")
+                    && !recipeName.contains("beef") && !recipeName.contains("egg")
+                    && !recipeName.contains("cheese") && !recipeName.contains("milk");
+            default:
+                return true;
+        }
     }
     
     private VBox createRecipeCard(Recipe recipe) {
@@ -367,6 +654,28 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
         StackPane imageContainer = new StackPane();
         imageContainer.setPrefHeight(180);
         imageContainer.setStyle("-fx-background-color: #e5e7eb; -fx-background-radius: 12px 12px 0 0;");
+        imageContainer.setClip(new javafx.scene.shape.Rectangle(0, 0, 300, 180));
+        ((javafx.scene.shape.Rectangle) imageContainer.getClip()).setArcWidth(12);
+        ((javafx.scene.shape.Rectangle) imageContainer.getClip()).setArcHeight(12);
+        
+        // Load recipe image if available
+        String imageUrl = recipe.getImageUrl();
+        if (imageUrl != null && !imageUrl.isEmpty()) {
+            try {
+                ImageView imageView = new ImageView();
+                imageView.setFitWidth(300);
+                imageView.setFitHeight(180);
+                imageView.setPreserveRatio(true);
+                imageView.setSmooth(true);
+                imageView.setCache(true);
+                
+                Image image = imageCache.getImage(imageUrl);
+                imageView.setImage(image);
+                imageContainer.getChildren().add(0, imageView); // Add image as first child (behind overlays)
+            } catch (Exception e) {
+                // If image loading fails, fall back to placeholder background
+            }
+        }
         
         // Overlay Tag (e.g., "Easy", "Medium") - Random for demo
         Label difficultyTag = new Label(new Random().nextBoolean() ? "Easy" : "Medium");
@@ -382,6 +691,7 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
         StackPane.setAlignment(saveBtn, Pos.TOP_RIGHT);
         StackPane.setMargin(saveBtn, new Insets(12));
 
+        // Add overlays (they will be on top of the image)
         imageContainer.getChildren().addAll(difficultyTag, saveBtn);
         card.getChildren().add(imageContainer);
 
@@ -479,20 +789,169 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
             String prop = evt.getPropertyName();
             switch (prop) {
                 case "recipes":
+                    // Clear error when recipes are successfully loaded
+                    errorLabel.setText("");
                     displayRecipes(viewModel.getRecipes());
+                    break;
+                case "recommendations":
+                    if (recommendationsController != null) {
+                        updateRecommendationsSection(viewModel.getRecommendations());
+                    }
                     break;
                 case "errorMessage":
                     String msg = viewModel.getErrorMessage();
                     if (StringUtil.hasContent(msg)) {
                         errorLabel.setText(msg);
                         listPanel.getChildren().clear();
-                        listPanel.getChildren().add(emptyPanel);
+                        listPanel.getChildren().add(errorPanel);
+                        // Check if it's a network error
+                        String lowerMsg = msg.toLowerCase();
+                        if (lowerMsg.contains("network") || lowerMsg.contains("connection") || 
+                            lowerMsg.contains("timeout") || lowerMsg.contains("인터넷")) {
+                            // Update error panel message for network errors
+                            if (errorPanel.getChildren().size() > 2) {
+                                Label errorSubLabel = (Label) errorPanel.getChildren().get(2);
+                                errorSubLabel.setText("인터넷 연결을 확인하고 다시 시도해주세요");
+                            }
+                        }
                     } else {
                         errorLabel.setText("");
+                        // If error is cleared, show empty state if no recipes
+                        if (viewModel.getRecipes() == null || viewModel.getRecipes().isEmpty()) {
+                            listPanel.getChildren().clear();
+                            listPanel.getChildren().add(emptyPanel);
+                        }
                     }
                     break;
             }
         });
+    }
+    
+    private VBox createRecommendedSection() {
+        VBox section = new VBox(16);
+        section.setPadding(new Insets(20, 0, 20, 0));
+        
+        // 헤더
+        HBox header = new HBox(8);
+        header.setAlignment(Pos.CENTER_LEFT);
+        
+        Node sparkIcon = SvgIconLoader.loadIcon("/svg/sparkles.svg", 18, Color.web("#fbbf24"));
+        Label title = new Label("Recommended for You");
+        title.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #111827;");
+        
+        if (sparkIcon != null) header.getChildren().add(sparkIcon);
+        header.getChildren().add(title);
+        
+        // 레시피 리스트
+        HBox recipeList = new HBox(16);
+        recipeList.setAlignment(Pos.CENTER_LEFT);
+        
+        // 초기에는 로딩 표시
+        Label loadingLabel = new Label("Loading recommendations...");
+        loadingLabel.setStyle("-fx-text-fill: #6b7280; -fx-font-size: 14px;");
+        recipeList.getChildren().add(loadingLabel);
+        
+        section.getChildren().addAll(header, recipeList);
+        
+        return section;
+    }
+    
+    private void updateRecommendationsSection(List<Recipe> recommendations) {
+        Platform.runLater(() -> {
+            if (recommendationsSection == null || recommendationsSection.getChildren().size() < 2) {
+                return;
+            }
+            
+            HBox recipeList = (HBox) recommendationsSection.getChildren().get(1);
+            recipeList.getChildren().clear();
+            
+            if (recommendations == null || recommendations.isEmpty()) {
+                Label emptyLabel = new Label("No recommendations available");
+                emptyLabel.setStyle("-fx-text-fill: #6b7280; -fx-font-size: 14px;");
+                recipeList.getChildren().add(emptyLabel);
+            } else {
+                for (Recipe recipe : recommendations) {
+                    VBox card = createRecommendationCard(recipe);
+                    recipeList.getChildren().add(card);
+                }
+            }
+        });
+    }
+    
+    private VBox createRecommendationCard(Recipe recipe) {
+        VBox card = new VBox();
+        card.setPrefWidth(220);
+        card.setMinWidth(220);
+        card.setSpacing(0);
+        card.setCursor(Cursor.HAND);
+        card.setStyle("-fx-background-color: white; -fx-background-radius: 12px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 8, 0, 2, 2);");
+        
+        // 이미지
+        StackPane imageContainer = new StackPane();
+        imageContainer.setPrefHeight(140);
+        imageContainer.setStyle("-fx-background-color: #e5e7eb; -fx-background-radius: 8px 8px 0 0;");
+        imageContainer.setClip(new javafx.scene.shape.Rectangle(0, 0, 220, 140));
+        ((javafx.scene.shape.Rectangle) imageContainer.getClip()).setArcWidth(8);
+        ((javafx.scene.shape.Rectangle) imageContainer.getClip()).setArcHeight(8);
+        
+        String imageUrl = recipe.getImageUrl();
+        if (imageUrl != null && !imageUrl.isEmpty()) {
+            try {
+                ImageView imageView = new ImageView();
+                imageView.setFitWidth(220);
+                imageView.setFitHeight(140);
+                imageView.setPreserveRatio(true);
+                imageView.setSmooth(true);
+                imageView.setCache(true);
+                Image image = imageCache.getImage(imageUrl);
+                imageView.setImage(image);
+                imageContainer.getChildren().add(imageView);
+            } catch (Exception e) {
+                // 이미지 로딩 실패 시 placeholder 유지
+            }
+        }
+        
+        // 내용
+        VBox content = new VBox(8);
+        content.setPadding(new Insets(12));
+        
+        Label title = new Label(recipe.getName());
+        title.setStyle("-fx-font-weight: 600; -fx-font-size: 14px; -fx-text-fill: #111827;");
+        title.setWrapText(true);
+        title.setMaxHeight(40);
+        
+        // 메타 정보
+        HBox meta = new HBox(12);
+        String calText = recipe.getNutritionInfo() != null
+            ? recipe.getNutritionInfo().getCalories() + " cal"
+            : "-- cal";
+        Label calLabel = new Label(calText);
+        calLabel.setStyle("-fx-text-fill: #6b7280; -fx-font-size: 12px;");
+        
+        Integer cookTime = recipe.getCookTimeMinutes();
+        String timeText = (cookTime != null && cookTime > 0)
+            ? cookTime + " min"
+            : "--";
+        Label timeLabel = new Label(timeText);
+        timeLabel.setStyle("-fx-text-fill: #6b7280; -fx-font-size: 12px;");
+        
+        meta.getChildren().addAll(calLabel, timeLabel);
+        content.getChildren().addAll(title, meta);
+        
+        card.getChildren().addAll(imageContainer, content);
+        
+        // 클릭 이벤트
+        card.setOnMouseClicked(e -> openRecipeDetail(recipe));
+        
+        // Hover effect
+        card.setOnMouseEntered(e -> {
+            card.setStyle("-fx-background-color: white; -fx-background-radius: 12px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.15), 12, 0, 2, 4);");
+        });
+        card.setOnMouseExited(e -> {
+            card.setStyle("-fx-background-color: white; -fx-background-radius: 12px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 8, 0, 2, 2);");
+        });
+        
+        return card;
     }
 
     private void openRecipeDetail(Recipe recipe) {

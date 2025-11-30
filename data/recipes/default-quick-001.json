@@ -1,0 +1,24 @@
+{
+  "name": "Quick Quesadilla",
+  "ingredients": [
+    "4 flour tortillas",
+    "1 cup shredded cheese",
+    "1/2 cup black beans",
+    "1/4 cup salsa",
+    "2 tablespoons sour cream"
+  ],
+  "steps": "Heat a large pan over medium heat.\nPlace one tortilla in the pan, add cheese and beans on one half.\nFold tortilla in half and cook for 2-3 minutes per side until golden.\nRepeat with remaining tortillas.\nServe with salsa and sour cream.",
+  "servingSize": 2,
+  "nutritionInfo": {
+    "calories": 420,
+    "protein": 18.0,
+    "carbs": 48.0,
+    "fat": 16.0
+  },
+  "cookTimeMinutes": 10,
+  "dietaryRestrictions": [
+    "VEGETARIAN"
+  ],
+  "recipeId": "default-quick-001"
+}
+

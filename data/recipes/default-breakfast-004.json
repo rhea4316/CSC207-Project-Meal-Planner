@@ -1,0 +1,26 @@
+{
+  "name": "French Toast",
+  "ingredients": [
+    "6 slices bread",
+    "3 eggs",
+    "1/2 cup milk",
+    "1 teaspoon vanilla extract",
+    "1/2 teaspoon cinnamon",
+    "2 tablespoons butter",
+    "maple syrup to taste"
+  ],
+  "steps": "Whisk eggs, milk, vanilla, and cinnamon in a shallow dish.\nDip bread slices in the egg mixture, coating both sides.\nMelt butter in a large pan over medium heat.\nCook bread for 3-4 minutes per side until golden brown.\nServe hot with maple syrup.",
+  "servingSize": 3,
+  "nutritionInfo": {
+    "calories": 320,
+    "protein": 12.0,
+    "carbs": 38.0,
+    "fat": 14.0
+  },
+  "cookTimeMinutes": 15,
+  "dietaryRestrictions": [
+    "VEGETARIAN"
+  ],
+  "recipeId": "default-breakfast-004"
+}
+

@@ -57,7 +57,14 @@ echo.
 REM Run the fat JAR created by maven-shade-plugin
 REM Use start command to run in a separate window so the batch file doesn't block
 echo [INFO] Launching application in a new window...
-start "Meal Planner" java -jar "target\meal-planner-1.0-SNAPSHOT.jar"
+
+REM Check if Scenic View should be enabled (via environment variable)
+if "%SCENICVIEW_ENABLE%"=="true" (
+    echo [INFO] Scenic View debugging enabled.
+    start "Meal Planner" java -Dscenicview.enable=true -cp "libs\scenicview.jar;target\meal-planner-1.0-SNAPSHOT.jar" com.mealplanner.app.Launcher
+) else (
+    start "Meal Planner" java -jar "target\meal-planner-1.0-SNAPSHOT.jar"
+)
 
 echo [INFO] Application launch command executed.
 echo [INFO] The Meal Planner window should appear shortly.

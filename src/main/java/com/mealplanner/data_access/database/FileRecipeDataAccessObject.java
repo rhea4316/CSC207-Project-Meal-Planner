@@ -1,23 +1,48 @@
 package com.mealplanner.data_access.database;
 
 import com.mealplanner.entity.Recipe;
+import com.mealplanner.entity.User;
 import com.mealplanner.exception.DataAccessException;
+import com.mealplanner.repository.RecipeRepository;
+import com.mealplanner.repository.UserRepository;
+import com.mealplanner.use_case.get_recommendations.GetRecommendationsDataAccessInterface;
 import com.mealplanner.use_case.store_recipe.StoreRecipeDataAccessInterface;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 // Data access object for recipe persistence - reads/writes recipe data to JSON files.
 // Responsible: Aaryan (primary for storage), Everyone (database shared responsibility)
 
-public class FileRecipeDataAccessObject implements StoreRecipeDataAccessInterface {
+public class FileRecipeDataAccessObject implements StoreRecipeDataAccessInterface, GetRecommendationsDataAccessInterface {
 
+    private static final Logger logger = LoggerFactory.getLogger(FileRecipeDataAccessObject.class);
+    
     private static final String RECIPES_DIRECTORY = "data/recipes/";
     private static final String FILE_EXTENSION = ".json";
+    
+    private final UserRepository userRepository;
+    private final RecipeRepository recipeRepository;
 
     public FileRecipeDataAccessObject() {
+        this(null, null);
+    }
+    
+    public FileRecipeDataAccessObject(UserRepository userRepository) {
+        this(userRepository, null);
+    }
+    
+    public FileRecipeDataAccessObject(UserRepository userRepository, RecipeRepository recipeRepository) {
+        this.userRepository = userRepository;
+        this.recipeRepository = recipeRepository;
         ensureDirectoryExists();
     }
 
@@ -42,6 +67,31 @@ public class FileRecipeDataAccessObject implements StoreRecipeDataAccessInterfac
             }
         } catch (IOException e) {
             throw new DataAccessException("Failed to save recipe: " + recipeId, e);
+        }
+    }
+
+    /**
+     * Retrieves a recipe by its ID.
+     * @param recipeId the unique identifier of the recipe
+     * @return Recipe object if found, null otherwise
+     */
+    public Recipe getRecipeById(String recipeId) {
+        if (recipeId == null || recipeId.trim().isEmpty()) {
+            return null;
+        }
+
+        String fileName = sanitizeFileName(recipeId) + FILE_EXTENSION;
+        Path filePath = Path.of(RECIPES_DIRECTORY + fileName);
+
+        if (!Files.exists(filePath)) {
+            return null;
+        }
+
+        try {
+            String json = Files.readString(filePath);
+            return JsonConverter.jsonToRecipe(json);
+        } catch (IOException e) {
+            throw new DataAccessException("Failed to read recipe: " + recipeId, e);
         }
     }
 
@@ -74,5 +124,68 @@ public class FileRecipeDataAccessObject implements StoreRecipeDataAccessInterfac
      */
     private String sanitizeFileName(String fileName) {
         return fileName.replaceAll("[^a-zA-Z0-9_-]", "_");
+    }
+    
+    @Override
+    public List<Recipe> getSavedRecipesByUser(String userId) {
+        List<Recipe> recipes = new ArrayList<>();
+        
+        if (userId == null || userId.trim().isEmpty()) {
+            return recipes;
+        }
+        
+        if (userRepository == null) {
+            // UserRepository가 없으면 빈 리스트 반환
+            return recipes;
+        }
+        
+        try {
+            // User 조회
+            java.util.Optional<User> userOpt = userRepository.findById(userId);
+            if (userOpt.isEmpty()) {
+                return recipes;
+            }
+            
+            User user = userOpt.get();
+            List<String> savedRecipeIds = user.getSavedRecipeIds();
+            
+            // 각 recipeId로 레시피 조회
+            for (String recipeId : savedRecipeIds) {
+                Recipe recipe = getRecipeById(recipeId);
+                if (recipe != null) {
+                    recipes.add(recipe);
+                }
+            }
+        } catch (Exception e) {
+            // 에러 발생 시 로깅 후 빈 리스트 반환
+            logger.error("Error while getting saved recipes for user {}: {}", userId, e.getMessage(), e);
+            return recipes;
+        }
+        
+        return recipes;
+    }
+    
+    @Override
+    public List<Recipe> getAllRecipes() {
+        List<Recipe> recipes = new ArrayList<>();
+        
+        if (recipeRepository == null) {
+            logger.error("RecipeRepository is null in FileRecipeDataAccessObject. " +
+                    "This indicates a configuration issue. Returning empty list.");
+            return recipes;
+        }
+        
+        try {
+            recipes = recipeRepository.findAll();
+            logger.info("Successfully loaded {} recipes from repository", recipes.size());
+        } catch (DataAccessException e) {
+            logger.error("Failed to load recipes from repository: {}", e.getMessage(), e);
+            return recipes;
+        } catch (Exception e) {
+            logger.error("Unexpected error while loading recipes: {}", e.getMessage(), e);
+            return recipes;
+        }
+        
+        return recipes;
     }
 }

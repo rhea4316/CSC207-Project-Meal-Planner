@@ -1,0 +1,27 @@
+{
+  "name": "Pad Thai",
+  "ingredients": [
+    "8 oz rice noodles",
+    "1/2 lb shrimp",
+    "2 eggs",
+    "1 cup bean sprouts",
+    "1/4 cup peanuts",
+    "2 tablespoons fish sauce",
+    "2 tablespoons tamarind paste",
+    "1 tablespoon brown sugar",
+    "2 cloves garlic",
+    "1 lime"
+  ],
+  "steps": "Soak rice noodles in warm water for 30 minutes.\nHeat oil in a wok and scramble eggs, set aside.\nCook shrimp until pink, remove from pan.\nAdd garlic and soaked noodles to the pan.\nMix fish sauce, tamarind paste, and brown sugar for sauce.\nAdd sauce to noodles and toss.\nAdd eggs, shrimp, and bean sprouts.\nGarnish with peanuts and lime wedges.",
+  "servingSize": 2,
+  "nutritionInfo": {
+    "calories": 480,
+    "protein": 28.0,
+    "carbs": 68.0,
+    "fat": 12.0
+  },
+  "cookTimeMinutes": 25,
+  "dietaryRestrictions": [],
+  "recipeId": "default-thai-001"
+}
+

@@ -1,4 +1,5 @@
 package com.mealplanner.entity;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -10,6 +11,7 @@ public class User {
     private final String userId;
     private String username;
     private String password;
+    private final LocalDateTime createdAt;
 
     private List<String> savedRecipeIds;              /// user saved recipes by recipe ID
     private List<Ingredient> groceryList;            /// user ingredient shopping list
@@ -18,18 +20,18 @@ public class User {
 
 
     public User(String userId, String username, String password) {
-        this.userId = requireNonBlank(userId, "userId");
-        this.username = requireNonBlank(username, "username");
-        this.password = requireNonBlank(password, "password");
-        this.savedRecipeIds = new ArrayList<>();
-        this.groceryList = new ArrayList<>();
-
+        this(userId, username, password, null, null, LocalDateTime.now());
     }
 
     public User(String userId, String username, String password, NutritionGoals nutritionGoals, Schedule mealSchedule) {
+        this(userId, username, password, nutritionGoals, mealSchedule, LocalDateTime.now());
+    }
+
+    public User(String userId, String username, String password, NutritionGoals nutritionGoals, Schedule mealSchedule, LocalDateTime createdAt) {
         this.userId = requireNonBlank(userId, "userId");
         this.username = requireNonBlank(username, "username");
         this.password = requireNonBlank(password, "password");
+        this.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
         this.savedRecipeIds = new ArrayList<>();
         this.groceryList = new ArrayList<>();
         this.nutritionGoals = nutritionGoals;
@@ -75,6 +77,10 @@ public class User {
 
     public void setMealSchedule(Schedule mealSchedule) {
         this.mealSchedule = mealSchedule;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 
 

@@ -1,0 +1,27 @@
+{
+  "name": "Protein Power Bowl",
+  "ingredients": [
+    "1 cup cooked quinoa",
+    "8 oz grilled chicken breast",
+    "1/2 cup black beans",
+    "1/2 cup Greek yogurt",
+    "1/2 avocado",
+    "1 cup spinach",
+    "1 tablespoon olive oil",
+    "lemon to taste"
+  ],
+  "steps": "Cook quinoa and let cool.\nGrill chicken breast and slice.\nDrain and rinse black beans.\nDice avocado.\nAssemble bowl with quinoa, spinach, chicken, and beans.\nTop with Greek yogurt, avocado, and olive oil.\nSqueeze lemon juice over everything.\nServe at room temperature.",
+  "servingSize": 2,
+  "nutritionInfo": {
+    "calories": 480,
+    "protein": 42.0,
+    "carbs": 38.0,
+    "fat": 16.0
+  },
+  "cookTimeMinutes": 25,
+  "dietaryRestrictions": [
+    "GLUTEN_FREE"
+  ],
+  "recipeId": "default-highprotein-001"
+}
+

@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import java.util.Collections;
 import java.util.List;
@@ -70,9 +69,9 @@ public class BrowseRecipePresenterTest {
         // Act
         presenter.presentRecipeDetails(outputData);
 
-        assertEquals("No recipe data available", viewModel.getErrorMessage());
-        assertTrue(viewModel.getRecipes().isEmpty());
-        assertNull(viewManager.getActiveView());
+        verify(viewModel).setErrorMessage("No recipe data available");
+        verify(viewModel).setRecipes(Collections.emptyList());
+        verify(viewManager).setActiveView(null);
     }
 
     @Test
@@ -84,8 +83,8 @@ public class BrowseRecipePresenterTest {
         // Act
         presenter.presentRecipeDetails(outputData);
 
-        assertEquals(emptyRecipes, viewModel.getRecipes());
-        assertEquals("BrowseRecipeView", viewManager.getActiveView());
+        verify(viewModel).setRecipes(emptyRecipes);
+        verify(viewManager).setActiveView("BrowseRecipeView");
     }
 
 
@@ -111,8 +110,8 @@ public class BrowseRecipePresenterTest {
 
         presenter.presentError(errorMessage);
 
-        assertEquals(anyString(), viewModel.getErrorMessage());
-        assertTrue(viewModel.getRecipes().isEmpty());
-        assertNull(viewManager.getActiveView());
+        verify(viewModel).setErrorMessage(anyString());
+        verify(viewModel).setRecipes(Collections.emptyList());
+        verify(viewManager).setActiveView(null);
     }
 }

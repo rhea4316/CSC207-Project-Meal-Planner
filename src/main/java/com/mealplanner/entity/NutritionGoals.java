@@ -79,6 +79,7 @@ public class NutritionGoals {
      *
      * @param consumed the nutrition already consumed
      * @return NutritionInfo representing remaining amounts (negative if over)
+     * @throws UnsupportedOperationException if consumed nutrition exceeds goals (negative remaining)
      */
     public NutritionInfo calculateRemaining(NutritionInfo consumed) {
         if (consumed == null) {
@@ -89,16 +90,9 @@ public class NutritionGoals {
         double remainingCarbs = this.dailyCarbs - consumed.getCarbs();
         double remainingFat = this.dailyFat - consumed.getFat();
 
-        // Allow negative values to indicate overconsumption
+        // Throw exception if any nutrient exceeds the goal
         if (remainingCalories < 0 || remainingProtein < 0 || remainingCarbs < 0 || remainingFat < 0) {
-            // Create a special case to allow negative values
-            // We'll use Math.max to ensure we can create NutritionInfo even with negative remainders
-            return new NutritionInfo(
-                    Math.max(0, remainingCalories),
-                    Math.max(0, remainingProtein),
-                    Math.max(0, remainingCarbs),
-                    Math.max(0, remainingFat)
-            );
+            throw new UnsupportedOperationException("Cannot calculate remaining nutrition when goals are exceeded");
         }
         return new NutritionInfo(remainingCalories, remainingProtein, remainingCarbs, remainingFat);
     }

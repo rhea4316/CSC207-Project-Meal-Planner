@@ -1,0 +1,26 @@
+{
+  "name": "Shrimp Scampi",
+  "ingredients": [
+    "1 lb shrimp",
+    "8 oz linguine",
+    "4 cloves garlic",
+    "1/4 cup white wine",
+    "1/4 cup lemon juice",
+    "3 tablespoons butter",
+    "2 tablespoons olive oil",
+    "fresh parsley to taste",
+    "red pepper flakes to taste"
+  ],
+  "steps": "Cook linguine according to package directions.\nHeat butter and olive oil in a large pan.\nAdd minced garlic and red pepper flakes, cook for 1 minute.\nAdd shrimp and cook for 2-3 minutes per side.\nAdd white wine and lemon juice, simmer for 2 minutes.\nToss with cooked linguine.\nGarnish with fresh parsley and serve immediately.",
+  "servingSize": 2,
+  "nutritionInfo": {
+    "calories": 520,
+    "protein": 38.0,
+    "carbs": 58.0,
+    "fat": 14.0
+  },
+  "cookTimeMinutes": 20,
+  "dietaryRestrictions": [],
+  "recipeId": "default-seafood-001"
+}
+

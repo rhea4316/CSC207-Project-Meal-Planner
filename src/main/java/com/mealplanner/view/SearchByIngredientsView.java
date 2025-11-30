@@ -5,7 +5,10 @@ import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.SearchByIngredientsController;
 import com.mealplanner.interface_adapter.view_model.RecipeSearchViewModel;
 import com.mealplanner.interface_adapter.view_model.RecipeDetailViewModel;
+import com.mealplanner.repository.RecipeRepository;
+import com.mealplanner.exception.DataAccessException;
 import com.mealplanner.util.StringUtil;
+import com.mealplanner.util.ImageCacheManager;
 import com.mealplanner.view.util.SvgIconLoader;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -16,7 +19,12 @@ import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.CycleMethod;
+import javafx.scene.paint.LinearGradient;
+import javafx.scene.paint.Stop;
 import javafx.scene.shape.Circle;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -29,6 +37,8 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
     private final SearchByIngredientsController controller;
     private final ViewManagerModel viewManagerModel;
     private final RecipeDetailViewModel recipeDetailViewModel;
+    private final RecipeRepository recipeRepository;
+    private final ImageCacheManager imageCache = ImageCacheManager.getInstance();
 
     private TextField ingredientsField;
     private FlowPane chipsContainer;
@@ -41,22 +51,28 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
     private FlowPane listPanel; 
     private VBox loadingPanel;
     private VBox emptyPanel;
+    private VBox errorPanel;
     private Label errorLabel;
 
     // Filters
     private FlowPane quickFiltersContainer;
     private List<String> activeFilters = new ArrayList<>();
 
-    public SearchByIngredientsView(SearchByIngredientsController controller, RecipeSearchViewModel viewModel, ViewManagerModel viewManagerModel, RecipeDetailViewModel recipeDetailViewModel) {
+    // OPTIMIZATION: Store all recipes for client-side filtering
+    private List<Recipe> allRecipes = new ArrayList<>();
+
+    public SearchByIngredientsView(SearchByIngredientsController controller, RecipeSearchViewModel viewModel, ViewManagerModel viewManagerModel, RecipeDetailViewModel recipeDetailViewModel, RecipeRepository recipeRepository) {
         if (viewModel == null) throw new IllegalArgumentException("ViewModel cannot be null");
         if (controller == null) throw new IllegalArgumentException("Controller cannot be null");
         if (viewManagerModel == null) throw new IllegalArgumentException("ViewManagerModel cannot be null");
         if (recipeDetailViewModel == null) throw new IllegalArgumentException("RecipeDetailViewModel cannot be null");
+        if (recipeRepository == null) throw new IllegalArgumentException("RecipeRepository cannot be null");
 
         this.viewModel = viewModel;
         this.controller = controller;
         this.viewManagerModel = viewManagerModel;
         this.recipeDetailViewModel = recipeDetailViewModel;
+        this.recipeRepository = recipeRepository;
         this.ingredientList = new ArrayList<>();
 
         viewModel.addPropertyChangeListener(this);
@@ -95,6 +111,45 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         errorLabel.setStyle("-fx-text-fill: -fx-theme-destructive; -fx-font-weight: bold;");
         errorLabel.setPadding(new Insets(10, 0, 0, 0));
         setBottom(errorLabel);
+        
+        // Load local database recipes on initialization
+        loadLocalRecipes();
+    }
+    
+    /**
+     * Loads recipes from local database and merges with API results.
+     */
+    private void loadLocalRecipes() {
+        if (recipeRepository == null) {
+            return;
+        }
+        
+        new Thread(() -> {
+            try {
+                List<Recipe> localRecipes = recipeRepository.findAll();
+                if (localRecipes != null && !localRecipes.isEmpty()) {
+                    Platform.runLater(() -> {
+                        // Merge with existing recipes (avoid duplicates by recipe ID)
+                        List<Recipe> mergedRecipes = new ArrayList<>(allRecipes);
+                        for (Recipe localRecipe : localRecipes) {
+                            // Check if recipe already exists (by ID or name)
+                            boolean exists = mergedRecipes.stream()
+                                .anyMatch(r -> r.getRecipeId() != null && r.getRecipeId().equals(localRecipe.getRecipeId()) ||
+                                              (r.getName() != null && r.getName().equals(localRecipe.getName())));
+                            if (!exists) {
+                                mergedRecipes.add(localRecipe);
+                            }
+                        }
+                        allRecipes = mergedRecipes;
+                        displayRecipes(allRecipes);
+                    });
+                }
+            } catch (DataAccessException e) {
+                // Silently fail - local recipes are optional
+            } catch (Exception e) {
+                // Silently fail - local recipes are optional
+            }
+        }).start();
     }
 
     private VBox createSearchPanel() {
@@ -137,7 +192,11 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
 
         searchButton = new Button("Search");
         searchButton.getStyleClass().add("primary-button"); // Green button
-        searchButton.setStyle("-fx-background-color: #4ade80; -fx-text-fill: white; -fx-font-weight: 600; -fx-background-radius: 8px; -fx-padding: 10 24; -fx-font-size: 14px;");
+        // Apply gradient background matching sidebar active buttons
+        Stop[] gradientStops = new Stop[] { new Stop(0, Color.web("#8be200")), new Stop(1, Color.web("#14cd49")) };
+        LinearGradient gradient = new LinearGradient(0, 0, 1, 1, true, CycleMethod.NO_CYCLE, gradientStops);
+        searchButton.setStyle("-fx-text-fill: white; -fx-background-radius: 8px; -fx-font-weight: 600; -fx-padding: 10 24; -fx-font-size: 14px; -fx-background-color: null;");
+        searchButton.setBackground(new Background(new BackgroundFill(gradient, new CornerRadii(8), Insets.EMPTY)));
         Node btnIcon = SvgIconLoader.loadIcon("/svg/search.svg", 16, Color.WHITE);
         if (btnIcon != null) {
             searchButton.setGraphic(btnIcon);
@@ -153,7 +212,7 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         
         HBox popularHeader = new HBox(6);
         popularHeader.setAlignment(Pos.CENTER_LEFT);
-        Node sparkIcon = SvgIconLoader.loadIcon("/svg/star.svg", 14, Color.web("#6b7280"));
+        Node sparkIcon = SvgIconLoader.loadIcon("/svg/sparkles.svg", 14, Color.web("#6b7280"));
         Label popularLabel = new Label("Popular ingredients");
         popularLabel.getStyleClass().add("text-gray-500");
         popularLabel.setStyle("-fx-font-size: 13px;");
@@ -202,7 +261,7 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         addFilterButton("Lunch", "/svg/brightness.svg");
         addFilterButton("Dinner", "/svg/moon.svg");
         addFilterButton("Vegetarian", "/svg/leaf.svg");
-        addFilterButton("Quick (< 30min)", "/svg/time-fast.svg"); // Assumed icon
+        addFilterButton("Quick (< 30min)", "/svg/bolt.svg");
         
         filtersSection.getChildren().addAll(filtersLabel, quickFiltersContainer);
 
@@ -235,8 +294,9 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
                 if (!activeFilters.contains(text)) {
                     activeFilters.add(text);
                 }
-                if (!ingredientList.isEmpty()) {
-                    performSearch();
+                // OPTIMIZATION: Apply client-side filtering instead of re-fetching from API
+                if (!allRecipes.isEmpty()) {
+                    displayRecipes(allRecipes);
                 }
             } else {
                 // Inactive State
@@ -246,8 +306,9 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
                      btn.setGraphic(inactiveIcon);
                 }
                 activeFilters.remove(text);
-                if (!ingredientList.isEmpty()) {
-                    performSearch();
+                // OPTIMIZATION: Apply client-side filtering instead of re-fetching from API
+                if (!allRecipes.isEmpty()) {
+                    displayRecipes(allRecipes);
                 }
             }
             // Trigger search logic if needed
@@ -303,6 +364,26 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         listScrollPane.setFitToWidth(true);
         listScrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
         listScrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        
+        // Increase scroll speed
+        listScrollPane.addEventFilter(javafx.scene.input.ScrollEvent.SCROLL, event -> {
+            if (event.getDeltaY() != 0) {
+                double delta = event.getDeltaY() * 3.0;
+                double height = listScrollPane.getContent().getBoundsInLocal().getHeight();
+                double vHeight = listScrollPane.getViewportBounds().getHeight();
+                
+                double scrollableHeight = height - vHeight;
+                if (scrollableHeight > 0) {
+                    double vValueShift = -delta / scrollableHeight;
+                    double nextVvalue = listScrollPane.getVvalue() + vValueShift;
+                    
+                    if (nextVvalue >= 0 && nextVvalue <= 1.0 || (listScrollPane.getVvalue() > 0 && listScrollPane.getVvalue() < 1.0)) {
+                        listScrollPane.setVvalue(Math.min(Math.max(nextVvalue, 0), 1));
+                        event.consume();
+                    }
+                }
+            }
+        });
 
         // 2. Loading View
         loadingPanel = new VBox();
@@ -337,7 +418,32 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
 
         emptyPanel.getChildren().addAll(iconCircle, startTitle, startSub, hintLabel);
 
-        resultsContainer.getChildren().addAll(emptyPanel, loadingPanel, listScrollPane);
+        // 4. Error View
+        errorPanel = new VBox(16);
+        errorPanel.setAlignment(Pos.CENTER);
+        
+        StackPane errorIconCircle = new StackPane();
+        Circle errorBg = new Circle(32);
+        errorBg.setFill(Color.web("#fee2e2")); // red-100
+        errorBg.setEffect(new javafx.scene.effect.DropShadow(10, Color.rgb(239, 68, 68, 0.4)));
+        
+        Node errorIcon = SvgIconLoader.loadIcon("/svg/cross-small.svg", 24, Color.web("#dc2626")); // red-600
+        if (errorIcon != null) errorIconCircle.getChildren().addAll(errorBg, errorIcon);
+        else errorIconCircle.getChildren().add(errorBg);
+
+        Label errorTitle = new Label("검색 중 오류가 발생했습니다");
+        errorTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: 600; -fx-text-fill: #1f2937;");
+        
+        Label errorSub = new Label("인터넷 연결을 확인하고 다시 시도해주세요");
+        errorSub.setStyle("-fx-font-size: 14px; -fx-text-fill: #6b7280;");
+        
+        Button retryButton = new Button("다시 시도");
+        retryButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: 600; -fx-background-radius: 8px; -fx-padding: 10 20; -fx-cursor: hand;");
+        retryButton.setOnAction(e -> performSearch());
+        
+        errorPanel.getChildren().addAll(errorIconCircle, errorTitle, errorSub, retryButton);
+
+        resultsContainer.getChildren().addAll(emptyPanel, loadingPanel, errorPanel, listScrollPane);
         
         showView("EMPTY");
     }
@@ -345,6 +451,7 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
     private void showView(String viewName) {
         loadingPanel.setVisible(false);
         emptyPanel.setVisible(false);
+        errorPanel.setVisible(false);
         if (listScrollPane != null) {
             listScrollPane.setVisible(false);
         }
@@ -352,6 +459,7 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         switch(viewName) {
             case "LOADING": loadingPanel.setVisible(true); break;
             case "EMPTY": emptyPanel.setVisible(true); break;
+            case "ERROR": errorPanel.setVisible(true); break;
             case "LIST": 
                 if (listScrollPane != null) listScrollPane.setVisible(true);
                 // Reset container style to default card panel or transparent if list is shown?
@@ -377,6 +485,7 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         
         String query = String.join(",", ingredientList);
         
+        // Clear previous errors
         errorLabel.setText("");
         viewModel.setLoading(true);
         viewModel.setErrorMessage("");
@@ -385,15 +494,46 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
     }
 
     private void displayRecipes(List<Recipe> recipes) {
+        // OPTIMIZATION: Store all recipes for client-side filtering
+        List<Recipe> apiRecipes = recipes != null ? new ArrayList<>(recipes) : new ArrayList<>();
+        
+        // Merge with local database recipes
+        if (recipeRepository != null) {
+            try {
+                List<Recipe> localRecipes = recipeRepository.findAll();
+                if (localRecipes != null && !localRecipes.isEmpty()) {
+                    // Merge recipes, avoiding duplicates
+                    for (Recipe localRecipe : localRecipes) {
+                        boolean exists = apiRecipes.stream()
+                            .anyMatch(r -> r.getRecipeId() != null && r.getRecipeId().equals(localRecipe.getRecipeId()) ||
+                                          (r.getName() != null && r.getName().equals(localRecipe.getName())));
+                        if (!exists) {
+                            apiRecipes.add(localRecipe);
+                        }
+                    }
+                }
+            } catch (DataAccessException e) {
+                // Silently fail - local recipes are optional
+            } catch (Exception e) {
+                // Silently fail - local recipes are optional
+            }
+        }
+        
+        allRecipes = apiRecipes;
+
         listPanel.getChildren().clear();
 
-        List<Recipe> filtered = applyQuickFilters(recipes);
+        List<Recipe> filtered = applyQuickFilters(allRecipes);
 
         if (filtered == null || filtered.isEmpty()) {
             showView("EMPTY");
             // Optional: Change empty message to "No results"
             Label title = (Label) emptyPanel.getChildren().get(1);
-            title.setText("No recipes found matching your ingredients");
+            if (allRecipes.isEmpty()) {
+                title.setText("No recipes found matching your ingredients");
+            } else {
+                title.setText("No recipes match the selected filters");
+            }
             Label sub = (Label) emptyPanel.getChildren().get(2);
             sub.setText("Try removing some filters or adding different ingredients");
         } else {
@@ -414,10 +554,33 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         card.setPadding(new Insets(12));
         card.setCursor(Cursor.HAND);
 
-        // 1. Image Placeholder
-        Region thumbnail = new Region();
+        // 1. Image Placeholder or Actual Image
+        StackPane thumbnail = new StackPane();
         thumbnail.setPrefHeight(120);
         thumbnail.setStyle("-fx-background-color: #e5e7eb; -fx-background-radius: 8px;");
+        thumbnail.setClip(new javafx.scene.shape.Rectangle(0, 0, 220, 120));
+        ((javafx.scene.shape.Rectangle) thumbnail.getClip()).setArcWidth(8);
+        ((javafx.scene.shape.Rectangle) thumbnail.getClip()).setArcHeight(8);
+        
+        // Load recipe image if available
+        String imageUrl = recipe.getImageUrl();
+        if (imageUrl != null && !imageUrl.isEmpty()) {
+            try {
+                ImageView imageView = new ImageView();
+                imageView.setFitWidth(220);
+                imageView.setFitHeight(120);
+                imageView.setPreserveRatio(true);
+                imageView.setSmooth(true);
+                imageView.setCache(true);
+                
+                Image image = imageCache.getImage(imageUrl);
+                imageView.setImage(image);
+                thumbnail.getChildren().add(imageView);
+            } catch (Exception e) {
+                // If image loading fails, fall back to placeholder background
+            }
+        }
+        
         card.getChildren().add(thumbnail);
 
         // 2. Title
@@ -542,15 +705,42 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
                     searchButton.setDisable(false);
                 }
             } else if (RecipeSearchViewModel.PROP_RECIPES.equals(propertyName)) {
+                // Clear error when recipes are successfully loaded
+                errorLabel.setText("");
                 displayRecipes(viewModel.getRecipes());
             } else if (RecipeSearchViewModel.PROP_ERROR_MESSAGE.equals(propertyName)) {
                 String errorMsg = viewModel.getErrorMessage();
                 if (StringUtil.hasContent(errorMsg)) {
                     errorLabel.setText(errorMsg);
+                    showView("ERROR");
+                    // Check if it's a network error
+                    String lowerMsg = errorMsg.toLowerCase();
+                    if (lowerMsg.contains("network") || lowerMsg.contains("connection") || 
+                        lowerMsg.contains("timeout") || lowerMsg.contains("인터넷")) {
+                        // Update error panel message for network errors
+                        if (errorPanel.getChildren().size() > 2) {
+                            Label errorSubLabel = (Label) errorPanel.getChildren().get(2);
+                            errorSubLabel.setText("인터넷 연결을 확인하고 다시 시도해주세요");
+                        }
+                    }
                 } else {
                     errorLabel.setText("");
+                    // If error is cleared, show empty state if no recipes
+                    if (viewModel.getRecipes() == null || viewModel.getRecipes().isEmpty()) {
+                        showView("EMPTY");
+                    }
                 }
             }
         });
+    }
+    
+    /**
+     * Clean up resources and remove property change listeners to prevent memory leaks.
+     * Should be called when this view is no longer needed.
+     */
+    public void dispose() {
+        if (viewModel != null) {
+            viewModel.removePropertyChangeListener(this);
+        }
     }
 }

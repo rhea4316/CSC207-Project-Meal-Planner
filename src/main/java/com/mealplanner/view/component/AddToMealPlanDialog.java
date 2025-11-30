@@ -99,6 +99,18 @@ public class AddToMealPlanDialog {
         }
     }
 
+    public void setDefaultDate(LocalDate date) {
+        if (datePicker != null && date != null) {
+            datePicker.setValue(date);
+        }
+    }
+    
+    public void setDefaultMealType(MealType mealType) {
+        if (mealTypeComboBox != null && mealType != null) {
+            mealTypeComboBox.setValue(mealType);
+        }
+    }
+    
     public void show() {
         dialog.show();
     }

@@ -143,7 +143,7 @@ public class ViewScheduleInteractorTest {
         
         interactor.execute(inputData);
         
-        verify(presenter).presentError("Unexpected error");
+        verify(presenter).presentError("Unexpected error: Database error");
     }
 
     @Test
@@ -168,11 +168,17 @@ public class ViewScheduleInteractorTest {
 
     @Test
     public void testLoadSchedule() {
-        String scheduleId = "schedule-1";
-        ViewScheduleInputData inputData = new ViewScheduleInputData(scheduleId);
-        com.mealplanner.entity.Schedule schedule = new com.mealplanner.entity.Schedule(scheduleId, "user-1");
+        String username = "testuser";
+        ViewScheduleInputData inputData = new ViewScheduleInputData(username);
+        com.mealplanner.entity.Schedule schedule = new com.mealplanner.entity.Schedule("schedule-1", "user-1");
+        // Add a meal to make schedule non-empty
+        try {
+            schedule.addMeal(java.time.LocalDate.now(), com.mealplanner.entity.MealType.BREAKFAST, "recipe-1");
+        } catch (Exception e) {
+            // Ignore
+        }
         
-        when(dataAccess.loadSchedule(scheduleId)).thenReturn(schedule);
+        when(dataAccess.loadScheduleByUsername(username)).thenReturn(schedule);
         
         interactor.loadSchedule(inputData);
         

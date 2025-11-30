@@ -1,0 +1,22 @@
+{
+  "name": "Classic Scrambled Eggs",
+  "ingredients": [
+    "3 eggs",
+    "2 tablespoons butter",
+    "2 tablespoons milk",
+    "salt to taste",
+    "pepper to taste"
+  ],
+  "steps": "Crack eggs into a bowl and whisk with milk, salt, and pepper.\nMelt butter in a non-stick pan over medium heat.\nPour egg mixture into the pan.\nGently scramble with a spatula until cooked but still creamy.\nServe immediately.",
+  "servingSize": 2,
+  "nutritionInfo": {
+    "calories": 280,
+    "protein": 18.0,
+    "carbs": 2.0,
+    "fat": 22.0
+  },
+  "cookTimeMinutes": 10,
+  "dietaryRestrictions": [],
+  "recipeId": "default-breakfast-001"
+}
+

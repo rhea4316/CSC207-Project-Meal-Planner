@@ -1,6 +1,8 @@
 package com.mealplanner.util;
 
 import javafx.scene.text.Font;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
 
@@ -10,6 +12,7 @@ import java.io.InputStream;
  */
 public class FontLoader {
     
+    private static final Logger logger = LoggerFactory.getLogger(FontLoader.class);
     private static boolean fontsLoaded = false;
     
     /**
@@ -48,16 +51,15 @@ public class FontLoader {
                 Font font = Font.loadFont(fontStream, 12);
                 fontStream.close();
                 if (font != null) {
-                    System.out.println("Loaded font: " + fontPath + " -> Family: " + font.getFamily() + ", Name: " + font.getName());
+                    logger.debug("Loaded font: {} -> Family: {}, Name: {}", fontPath, font.getFamily(), font.getName());
                 } else {
-                    System.err.println("Failed to load font (returned null): " + fontPath);
+                    logger.warn("Failed to load font (returned null): {}", fontPath);
                 }
             } else {
-                System.err.println("Font file not found: " + fontPath);
+                logger.warn("Font file not found: {}", fontPath);
             }
         } catch (Exception e) {
-            System.err.println("Exception loading font: " + fontPath);
-            e.printStackTrace();
+            logger.warn("Exception loading font: {}", fontPath, e);
         }
     }
     

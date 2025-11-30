@@ -32,7 +32,9 @@ public class LoginInteractorTest {
     @Test
     public void testLoginSuccess() throws UserNotFoundException {
         LoginInputData inputData = new LoginInputData("testuser", "password");
-        com.mealplanner.entity.User user = new com.mealplanner.entity.User("user-1", "testuser", "password");
+        // User stores password as hash, so we need to hash it first
+        String passwordHash = com.mealplanner.util.PasswordUtil.hashPassword("password");
+        com.mealplanner.entity.User user = new com.mealplanner.entity.User("user-1", "testuser", passwordHash);
         
         when(dataAccess.getUserByUsername("testuser")).thenReturn(user);
         
@@ -83,7 +85,7 @@ public class LoginInteractorTest {
         
         interactor.execute(inputData);
         
-        verify(presenter).presentLoginFailure("Username cannot be empty");
+        verify(presenter).presentLoginFailure("Password cannot be empty");
     }
 
     @Test
@@ -100,7 +102,9 @@ public class LoginInteractorTest {
     @Test
     public void testPasswordSecurity() throws UserNotFoundException {
         LoginInputData inputData = new LoginInputData("testuser", "password");
-        com.mealplanner.entity.User user = new com.mealplanner.entity.User("user-1", "testuser", "password");
+        // User stores password as hash, so we need to hash it first
+        String passwordHash = com.mealplanner.util.PasswordUtil.hashPassword("password");
+        com.mealplanner.entity.User user = new com.mealplanner.entity.User("user-1", "testuser", passwordHash);
         
         when(dataAccess.getUserByUsername("testuser")).thenReturn(user);
         

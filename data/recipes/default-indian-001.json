@@ -1,0 +1,29 @@
+{
+  "name": "Chicken Curry",
+  "ingredients": [
+    "1.5 lbs chicken thighs",
+    "1 onion",
+    "2 tomatoes",
+    "2 tablespoons curry powder",
+    "1 tablespoon garam masala",
+    "1 cup coconut milk",
+    "2 cloves garlic",
+    "1 tablespoon ginger",
+    "2 tablespoons vegetable oil",
+    "1 cup cooked rice"
+  ],
+  "steps": "Cut chicken into bite-sized pieces.\nHeat oil in a large pot over medium heat.\nAdd diced onion and cook until golden.\nAdd minced garlic and ginger, cook for 1 minute.\nAdd curry powder and garam masala, stir for 30 seconds.\nAdd diced tomatoes and cook until soft.\nAdd chicken and cook for 5 minutes.\nAdd coconut milk and simmer for 20 minutes.\nServe over rice.",
+  "servingSize": 3,
+  "nutritionInfo": {
+    "calories": 420,
+    "protein": 32.0,
+    "carbs": 28.0,
+    "fat": 20.0
+  },
+  "cookTimeMinutes": 40,
+  "dietaryRestrictions": [
+    "GLUTEN_FREE"
+  ],
+  "recipeId": "default-indian-001"
+}
+

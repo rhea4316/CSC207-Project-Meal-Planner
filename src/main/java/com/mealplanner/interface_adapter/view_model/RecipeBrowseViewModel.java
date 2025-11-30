@@ -12,12 +12,14 @@ import java.util.List;
 
 public class RecipeBrowseViewModel {
     private List<Recipe> recipes;
+    private List<Recipe> recommendations;
     private String errorMessage;
     private boolean displayRecipes;
     private final PropertyChangeSupport propertyChangeSupport = new PropertyChangeSupport(this);
 
     public RecipeBrowseViewModel() {
         this.recipes = new ArrayList<>();
+        this.recommendations = new ArrayList<>();
         this.errorMessage = "";
         this.displayRecipes = false;
     }
@@ -56,8 +58,21 @@ public class RecipeBrowseViewModel {
         this.propertyChangeSupport.firePropertyChange("displayRecipes", oldDisplayRecipes, this.displayRecipes);
     }
 
+    public void setRecommendations(List<Recipe> recommendations) {
+        List<Recipe> oldRecommendations = this.recommendations;
+        this.recommendations = recommendations != null 
+            ? new ArrayList<>(recommendations) 
+            : new ArrayList<>();
+        this.propertyChangeSupport.firePropertyChange("recommendations", 
+            oldRecommendations, this.recommendations);
+    }
+
     //Getters:
     public List<Recipe> getRecipes() {return this.recipes;}
+
+    public List<Recipe> getRecommendations() {
+        return new ArrayList<>(recommendations);
+    }
 
     public String getErrorMessage() {return this.errorMessage;}
 

@@ -4,15 +4,19 @@ package com.mealplanner.use_case.store_recipe;
 // Responsible: Aaryan
 import java.util.Objects;
 import java.util.UUID;
+import java.util.List;
 
 import com.mealplanner.entity.Recipe;
 import com.mealplanner.exception.DataAccessException;
 import com.mealplanner.repository.RecipeRepository;
 import com.mealplanner.util.StringUtil;
 import com.mealplanner.util.ValidationUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class StoreRecipeInteractor implements StoreRecipeInputBoundary {
 
+	private static final Logger logger = LoggerFactory.getLogger(StoreRecipeInteractor.class);
 	private final StoreRecipeOutputBoundary presenter;
 	private final RecipeRepository recipeRepository;
 
@@ -54,9 +58,30 @@ public class StoreRecipeInteractor implements StoreRecipeInputBoundary {
 			return;
 		}
 
-		// Use existing id when provided, otherwise generate a new one
+		// Check for duplicate recipe name (case-insensitive)
+		// Only check if this is a new recipe (no recipeId provided)
 		String recipeId = inputData.getRecipeId();
 		if (StringUtil.isNullOrEmpty(recipeId)) {
+			try {
+				List<Recipe> existingRecipes = recipeRepository.findByName(inputData.getName());
+				if (existingRecipes != null && !existingRecipes.isEmpty()) {
+					// Check for exact match (case-insensitive)
+					boolean exactMatch = existingRecipes.stream()
+							.anyMatch(r -> r.getName().equalsIgnoreCase(inputData.getName()));
+					
+					if (exactMatch) {
+						logger.info("Duplicate recipe name detected: '{}'", inputData.getName());
+						presenter.presentError("A recipe with the name '" + inputData.getName() + 
+								"' already exists. Please choose a different name or edit the existing recipe.");
+						return;
+					}
+				}
+			} catch (DataAccessException e) {
+				// If we can't check for duplicates, log but continue (don't block recipe creation)
+				// This is a non-critical check
+				logger.warn("Failed to check for duplicate recipe name '{}': {}", inputData.getName(), e.getMessage(), e);
+			}
+			
 			recipeId = "recipe-" + UUID.randomUUID().toString();
 		}
 

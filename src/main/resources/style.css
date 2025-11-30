@@ -458,3 +458,161 @@
     -fx-padding: 8px 12px;
     -fx-min-height: 40px;
 }
+
+/* =============================================================================
+   MODERN SCROLLBAR STYLES
+   ============================================================================= */
+
+/* ScrollBar Track - Flat, no depth */
+.scroll-bar {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.scroll-bar .track {
+    -fx-background-color: transparent;
+    -fx-background-radius: 0;
+    -fx-border-color: transparent;
+    -fx-effect: null;
+}
+
+/* ScrollBar Thumb - Thin, rounded, flat */
+.scroll-bar .thumb {
+    -fx-background-color: #d1d5db; /* Gray 300 */
+    -fx-background-radius: 4px;
+    -fx-background-insets: 2px;
+    -fx-border-color: transparent;
+    -fx-effect: null;
+    -fx-pref-width: 8px;
+    -fx-min-width: 8px;
+    -fx-max-width: 8px;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: #9ca3af; /* Gray 400 */
+}
+
+.scroll-bar .thumb:pressed {
+    -fx-background-color: #6b7280; /* Gray 500 */
+}
+
+/* Horizontal ScrollBar */
+.scroll-bar:horizontal .thumb {
+    -fx-pref-height: 8px;
+    -fx-min-height: 8px;
+    -fx-max-height: 8px;
+}
+
+/* Vertical ScrollBar */
+.scroll-bar:vertical .thumb {
+    -fx-pref-width: 8px;
+    -fx-min-width: 8px;
+    -fx-max-width: 8px;
+}
+
+/* ScrollBar Buttons (arrows) - Hide them for modern look */
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 0;
+    -fx-padding: 0;
+    -fx-shape: null;
+    -fx-opacity: 0;
+    -fx-pref-width: 0;
+    -fx-pref-height: 0;
+}
+
+.scroll-bar .increment-arrow,
+.scroll-bar .decrement-arrow {
+    -fx-shape: null;
+    -fx-padding: 0;
+    -fx-opacity: 0;
+}
+
+/* Corner (where horizontal and vertical scrollbars meet) */
+.scroll-bar .corner {
+    -fx-background-color: transparent;
+}
+
+/* =============================================================================
+   MODERN SLIDER STYLES (Settings Page)
+   ============================================================================= */
+
+.modern-slider {
+    -fx-pref-height: 40px;
+    -fx-min-height: 40px;
+    -fx-max-height: 40px;
+}
+
+/* Slider Track - Modern rounded design */
+.modern-slider .track {
+    -fx-background-color: #E8E8E8;
+    -fx-background-radius: 20px;
+    -fx-pref-height: 8px;
+    -fx-min-height: 8px;
+    -fx-max-height: 8px;
+    -fx-effect: dropshadow(one-pass-box, rgba(0,0,0,0.05), 2, 0, 0, 1);
+}
+
+/* Slider Fill (filled portion) - Gradient effect */
+.modern-slider .track {
+    -fx-background-color: linear-gradient(to right, #E8E8E8 0%, #E8E8E8 100%);
+}
+
+.modern-slider .filled-track {
+    -fx-background-color: linear-gradient(to right, derive(-fx-accent, -10%), -fx-accent);
+    -fx-background-radius: 20px;
+    -fx-pref-height: 8px;
+    -fx-min-height: 8px;
+    -fx-max-height: 8px;
+}
+
+/* Slider Thumb - Large, modern, with shadow */
+.modern-slider .thumb {
+    -fx-background-color: white;
+    -fx-background-radius: 50%;
+    -fx-pref-width: 24px;
+    -fx-pref-height: 24px;
+    -fx-min-width: 24px;
+    -fx-min-height: 24px;
+    -fx-max-width: 24px;
+    -fx-max-height: 24px;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 8, 0, 0, 2);
+    -fx-border-color: -fx-accent;
+    -fx-border-width: 3px;
+    -fx-border-radius: 50%;
+}
+
+/* Thumb hover effect */
+.modern-slider .thumb:hover {
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 10, 0, 0, 3);
+    -fx-scale-x: 1.1;
+    -fx-scale-y: 1.1;
+}
+
+/* Thumb pressed effect */
+.modern-slider .thumb:pressed {
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.25), 6, 0, 0, 2);
+    -fx-scale-x: 0.95;
+    -fx-scale-y: 0.95;
+}
+
+/* Hide default increment/decrement buttons */
+.modern-slider .increment-button,
+.modern-slider .decrement-button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 0;
+    -fx-padding: 0;
+    -fx-shape: null;
+    -fx-opacity: 0;
+    -fx-pref-width: 0;
+    -fx-pref-height: 0;
+}
+
+.modern-slider .increment-arrow,
+.modern-slider .decrement-arrow {
+    -fx-shape: null;
+    -fx-padding: 0;
+    -fx-opacity: 0;
+}

@@ -3,6 +3,7 @@ package com.mealplanner.view;
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.SignupController;
 import com.mealplanner.interface_adapter.view_model.SignupViewModel;
+import com.mealplanner.util.StringUtil;
 import com.mealplanner.view.component.AlertBanner;
 import com.mealplanner.view.component.Form;
 import com.mealplanner.view.component.Input;
@@ -14,6 +15,8 @@ import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
+import net.synedra.validatorfx.Validator;
+import org.controlsfx.control.Notifications;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -28,6 +31,7 @@ public class SignupView extends BorderPane implements PropertyChangeListener {
     private PasswordField passwordField;
     private PasswordField confirmPasswordField;
     private AlertBanner errorBanner;
+    private Validator validator;
 
     public SignupView(SignupViewModel signupViewModel, SignupController signupController, ViewManagerModel viewManagerModel) {
         if (signupViewModel == null) throw new IllegalArgumentException("SignupViewModel cannot be null");
@@ -77,6 +81,10 @@ public class SignupView extends BorderPane implements PropertyChangeListener {
         confirmPasswordField.getStyleClass().add("input-field");
         form.addField("Confirm Password", confirmPasswordField);
 
+        // ValidatorFX 초기화 및 검증 설정
+        validator = new Validator();
+        setupValidations();
+
         // Buttons
         VBox buttonBox = new VBox(10);
         buttonBox.setPadding(new Insets(10, 0, 0, 0));
@@ -101,26 +109,76 @@ public class SignupView extends BorderPane implements PropertyChangeListener {
         setCenter(centerBox);
     }
 
-    private void performSignup() {
-        String username = usernameField.getText();
-        String password = passwordField.getText();
-        String confirm = confirmPasswordField.getText();
+    /**
+     * ValidatorFX를 사용한 회원가입 폼 검증 설정
+     */
+    private void setupValidations() {
+        // Username 검증
+        validator.createCheck()
+            .dependsOn("username", usernameField.textProperty())
+            .withMethod(context -> {
+                String username = context.get("username");
+                if (StringUtil.isNullOrEmpty(username)) {
+                    context.error("Please enter a username");
+                } else if (!StringUtil.isValidUsername(username)) {
+                    context.error("Username must be 3-20 characters (letters, numbers, underscore, hyphen only)");
+                }
+            })
+            .decorates(usernameField)
+            .immediate();
 
-        if (username == null || username.isBlank()) {
-            showError("Please enter a username");
+        // Password 검증
+        validator.createCheck()
+            .dependsOn("password", passwordField.textProperty())
+            .withMethod(context -> {
+                String password = context.get("password");
+                if (StringUtil.isNullOrEmpty(password)) {
+                    context.error("Please enter a password");
+                } else if (password.length() < 6) {
+                    context.error("Password must be at least 6 characters");
+                }
+            })
+            .decorates(passwordField)
+            .immediate();
+
+        // Confirm Password 검증
+        validator.createCheck()
+            .dependsOn("password", passwordField.textProperty())
+            .dependsOn("confirmPassword", confirmPasswordField.textProperty())
+            .withMethod(context -> {
+                String password = context.get("password");
+                String confirmPassword = context.get("confirmPassword");
+                if (StringUtil.isNullOrEmpty(confirmPassword)) {
+                    context.error("Please confirm your password");
+                } else if (!StringUtil.isNullOrEmpty(password) && !password.equals(confirmPassword)) {
+                    context.error("Passwords do not match");
+                }
+            })
+            .decorates(confirmPasswordField)
+            .immediate();
+    }
+
+    /**
+     * 회원가입 수행
+     * ValidatorFX를 사용하여 폼 검증 후 회원가입 컨트롤러 실행
+     */
+    private void performSignup() {
+        // ValidatorFX로 폼 검증
+        if (!validator.validate()) {
+            // 검증 실패 시 ControlsFX Notification으로 에러 표시
+            Notifications.create()
+                .title("Validation Error")
+                .text("Please fix the errors in the form")
+                .showError();
             return;
         }
-        if (password == null || password.isBlank()) {
-            showError("Please enter a password");
-            return;
-        }
-        if (!password.equals(confirm)) {
-            showError("Passwords do not match");
-            return;
-        }
+
+        // 검증 성공 시 회원가입 처리
+        String username = usernameField.getText().trim();
+        String password = passwordField.getText();
 
         hideError();
-        signupController.execute(username.trim(), password);
+        signupController.execute(username, password);
     }
 
     private void showError(String message) {
@@ -150,5 +208,15 @@ public class SignupView extends BorderPane implements PropertyChangeListener {
                 }
             }
         });
+    }
+    
+    /**
+     * Clean up resources and remove property change listeners to prevent memory leaks.
+     * Should be called when this view is no longer needed.
+     */
+    public void dispose() {
+        if (signupViewModel != null) {
+            signupViewModel.removePropertyChangeListener(this);
+        }
     }
 }

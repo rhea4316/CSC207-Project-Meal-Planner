@@ -38,7 +38,7 @@ public class LoginInteractor implements LoginInputBoundary {
 
         try {
             User user = userDataAccess.getUserByUsername(username);
-            
+
             // Verify password
             String storedPasswordHash = user.getPassword();
             if (!PasswordUtil.verifyPassword(password, storedPasswordHash)) {
@@ -46,7 +46,7 @@ public class LoginInteractor implements LoginInputBoundary {
                 return;
             }
 
-            LoginOutputData outputData = new LoginOutputData(user.getUserId(), user.getUsername());
+            LoginOutputData outputData = new LoginOutputData(user.getUserId(), user.getUsername(), user);
             presenter.presentLoginSuccess(outputData);
         } catch (UserNotFoundException e) {
             presenter.presentLoginFailure("User not found");

@@ -1,0 +1,25 @@
+{
+  "name": "Avocado Toast",
+  "ingredients": [
+    "2 slices whole grain bread",
+    "1 ripe avocado",
+    "1 tablespoon olive oil",
+    "pinch of salt",
+    "red pepper flakes to taste",
+    "1 lemon"
+  ],
+  "steps": "Toast the bread until golden brown.\nCut avocado in half, remove pit, and scoop out flesh.\nMash avocado with a fork and mix with olive oil, salt, and lemon juice.\nSpread avocado mixture on toast.\nSprinkle with red pepper flakes and serve.",
+  "servingSize": 2,
+  "nutritionInfo": {
+    "calories": 320,
+    "protein": 8.0,
+    "carbs": 28.0,
+    "fat": 22.0
+  },
+  "cookTimeMinutes": 5,
+  "dietaryRestrictions": [
+    "VEGETARIAN"
+  ],
+  "recipeId": "default-breakfast-002"
+}
+

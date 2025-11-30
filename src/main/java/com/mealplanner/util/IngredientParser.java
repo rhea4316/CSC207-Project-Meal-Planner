@@ -12,10 +12,41 @@ import java.util.Objects;
  */
 public class IngredientParser {
 
+    // Common unit names (single word or two words)
+    // This helps distinguish units from ingredient names
+    private static final String UNIT_PATTERN_STR = 
+        "(?:cups?|tablespoons?|teaspoons?|ounces?|pounds?|lbs?|grams?|kilograms?|kg|ml|milliliters?|liters?|L|" +
+        "fluid\\s+ounces?|fl\\s+oz|pieces?|items?|whole|pinch|dash|to\\s+taste|handful|sprinkle)";
+    
     // Pattern to match: optional number (integer or decimal or fraction), optional unit, ingredient name
     // Examples: "2 cups flour", "1/2 cup milk", "3 eggs", "1.5 cups sugar", "pinch of salt"
-    private static final Pattern INGREDIENT_PATTERN = Pattern.compile(
-        "^\\s*(?:(\\d+(?:\\.\\d+)?|\\d+/\\d+|\\d+\\s+\\d+/\\d+))\\s+)?(?:([a-zA-Z]+(?:\\s+[a-zA-Z]+)?)\\s+)?(?:of\\s+)?(.+?)\\s*$",
+    // Simplified pattern to avoid PatternSyntaxException - split into patterns for clarity
+    
+    // Pattern 1: With quantity and unit - matches "2 cups flour", "1/2 cup milk", "1 1/2 cups water"
+    // Group 1: quantity, Group 2: unit, Group 3: name
+    private static final Pattern INGREDIENT_WITH_QUANTITY_AND_UNIT_PATTERN = Pattern.compile(
+        "^\\s*(\\d+(?:\\.\\d+)?|\\d+/\\d+|\\d+\\s+\\d+/\\d+)\\s+(" + UNIT_PATTERN_STR + ")\\s+(?:of\\s+)?(.+)\\s*$",
+        Pattern.CASE_INSENSITIVE
+    );
+    
+    // Pattern 2: With quantity but no unit - matches "3 eggs", "2 tomatoes"
+    // Group 1: quantity, Group 2: name
+    private static final Pattern INGREDIENT_WITH_QUANTITY_NO_UNIT_PATTERN = Pattern.compile(
+        "^\\s*(\\d+(?:\\.\\d+)?|\\d+/\\d+|\\d+\\s+\\d+/\\d+)\\s+(.+)\\s*$",
+        Pattern.CASE_INSENSITIVE
+    );
+    
+    // Pattern 3: Without quantity but with unit - matches "pinch of salt", "cup flour"
+    // Group 1: unit, Group 2: name
+    private static final Pattern INGREDIENT_WITHOUT_QUANTITY_WITH_UNIT_PATTERN = Pattern.compile(
+        "^\\s*(" + UNIT_PATTERN_STR + ")\\s+(?:of\\s+)?(.+)\\s*$",
+        Pattern.CASE_INSENSITIVE
+    );
+    
+    // Pattern 4: Without quantity and unit - matches "salt", "flour"
+    // Group 1: name
+    private static final Pattern INGREDIENT_NAME_ONLY_PATTERN = Pattern.compile(
+        "^\\s*(.+)\\s*$",
         Pattern.CASE_INSENSITIVE
     );
 
@@ -113,16 +144,42 @@ public class IngredientParser {
             throw new IllegalArgumentException("Ingredient string cannot be empty");
         }
 
-        Matcher matcher = INGREDIENT_PATTERN.matcher(trimmed);
+        // Try patterns in order of specificity
+        String quantityStr = null;
+        String unitStr = null;
+        String nameStr = null;
+        Matcher matcher;
         
-        if (!matcher.find()) {
-            // No pattern match, treat entire string as ingredient name
-            return new ParsedIngredient(0, "", trimmed);
+        // Pattern 1: With quantity and unit (most specific)
+        matcher = INGREDIENT_WITH_QUANTITY_AND_UNIT_PATTERN.matcher(trimmed);
+        if (matcher.matches()) {
+            quantityStr = matcher.group(1);
+            unitStr = matcher.group(2);
+            nameStr = matcher.group(3);
+        } else {
+            // Pattern 2: With quantity but no unit
+            matcher = INGREDIENT_WITH_QUANTITY_NO_UNIT_PATTERN.matcher(trimmed);
+            if (matcher.matches()) {
+                quantityStr = matcher.group(1);
+                nameStr = matcher.group(2);
+            } else {
+                // Pattern 3: Without quantity but with unit
+                matcher = INGREDIENT_WITHOUT_QUANTITY_WITH_UNIT_PATTERN.matcher(trimmed);
+                if (matcher.matches()) {
+                    unitStr = matcher.group(1);
+                    nameStr = matcher.group(2);
+                } else {
+                    // Pattern 4: Name only
+                    matcher = INGREDIENT_NAME_ONLY_PATTERN.matcher(trimmed);
+                    if (matcher.matches()) {
+                        nameStr = matcher.group(1);
+                    } else {
+                        // Fallback: treat entire string as ingredient name
+                        return new ParsedIngredient(0, "", trimmed);
+                    }
+                }
+            }
         }
-
-        String quantityStr = matcher.group(1);
-        String unitStr = matcher.group(2);
-        String nameStr = matcher.group(3);
 
         // Parse quantity
         double quantity = parseQuantity(quantityStr);
@@ -133,8 +190,8 @@ public class IngredientParser {
             unit = "";
         }
 
-        // Clean up name
-        String name = nameStr != null ? nameStr.trim() : trimmed;
+        // Clean up name - if nameStr is null or empty, use trimmed string
+        String name = (nameStr != null && !nameStr.trim().isEmpty()) ? nameStr.trim() : trimmed;
 
         return new ParsedIngredient(quantity, unit, name);
     }

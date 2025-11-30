@@ -27,6 +27,7 @@ public class SidebarPanel extends VBox implements PropertyChangeListener {
     private final ViewManagerModel viewManagerModel;
     private Button currentActiveButton;
     private VBox authSection;
+    private java.util.List<Button> menuButtons = new java.util.ArrayList<>();
     
     // Colors matching style.css updated Green Theme
     // Text Colors
@@ -70,8 +71,8 @@ public class SidebarPanel extends VBox implements PropertyChangeListener {
         // Increased left padding to 20 to match right visual weight/border
         brandBox.setPadding(new Insets(10, 10, 30, 20));
         
-        // Icon placeholder (Green square with rounded corners)
-        Node brandIcon = SvgIconLoader.loadIcon("/svg/leaf.svg", 24, Color.web("#4CAF50")); // Use leaf or similar
+        // Logo icon
+        Node brandIcon = SvgIconLoader.loadIcon("/svg/PlanEat.svg", 32, Color.web("#231815")); // PlanEat logo
         if (brandIcon == null) {
             // Fallback shape
             Region r = new Region();
@@ -117,6 +118,7 @@ public class SidebarPanel extends VBox implements PropertyChangeListener {
         // Set initial active view
         updateActiveButton(viewManagerModel.getActiveView());
         updateAuthSection();
+        updateButtonsState();
     }
 
     private void addCategoryLabel(String text) {
@@ -174,8 +176,15 @@ public class SidebarPanel extends VBox implements PropertyChangeListener {
         // Store reference data
         btn.setUserData(new MenuItemData(viewName, activeIconPath, inactiveIconPath));
         
-        btn.setOnAction(e -> viewManagerModel.setActiveView(viewName));
+        // Disable button clicks when on login view
+        btn.setOnAction(e -> {
+            String currentView = viewManagerModel.getActiveView();
+            if (!ViewManager.LOGIN_VIEW.equals(currentView)) {
+                viewManagerModel.setActiveView(viewName);
+            }
+        });
         
+        menuButtons.add(btn);
         getChildren().add(btn);
     }
 
@@ -205,19 +214,32 @@ public class SidebarPanel extends VBox implements PropertyChangeListener {
         welcome.getStyleClass().add("text-gray-700");
         welcome.setStyle("-fx-font-weight: 600;");
 
-        Label helper = new Label("로그인하고 식단을 관리해보세요.");
+        Label helper = new Label("Log in to manage your meal plans.");
         helper.getStyleClass().add("text-gray-500");
         helper.setWrapText(true);
 
         Button loginBtn = new Button("Log In");
         loginBtn.getStyleClass().add("primary-button");
         loginBtn.setMaxWidth(Double.MAX_VALUE);
-        loginBtn.setOnAction(e -> viewManagerModel.setActiveView(ViewManager.LOGIN_VIEW));
+        boolean isLoginView = ViewManager.LOGIN_VIEW.equals(viewManagerModel.getActiveView());
+        loginBtn.setDisable(isLoginView);
+        loginBtn.setOnAction(e -> {
+            String currentView = viewManagerModel.getActiveView();
+            if (!ViewManager.LOGIN_VIEW.equals(currentView)) {
+                viewManagerModel.setActiveView(ViewManager.LOGIN_VIEW);
+            }
+        });
 
         Button signupBtn = new Button("Sign Up");
         signupBtn.getStyleClass().add("ghost-button");
         signupBtn.setMaxWidth(Double.MAX_VALUE);
-        signupBtn.setOnAction(e -> viewManagerModel.setActiveView(ViewManager.SIGNUP_VIEW));
+        signupBtn.setDisable(isLoginView);
+        signupBtn.setOnAction(e -> {
+            String currentView = viewManagerModel.getActiveView();
+            if (!ViewManager.LOGIN_VIEW.equals(currentView)) {
+                viewManagerModel.setActiveView(ViewManager.SIGNUP_VIEW);
+            }
+        });
 
         guestBox.getChildren().addAll(welcome, helper, loginBtn, signupBtn);
         return guestBox;
@@ -246,15 +268,19 @@ public class SidebarPanel extends VBox implements PropertyChangeListener {
         
         userInfo.getChildren().addAll(nameLabel, statusLabel);
         
-        // Dropdown icon
-        Label arrow = new Label("⌄");
-        arrow.getStyleClass().add("text-gray-400");
-        arrow.setStyle("-fx-font-size: 16px; -fx-padding: 0 0 5 0;");
+        // Menu dots icon
+        Node menuDotsIcon = SvgIconLoader.loadIcon("/svg/menu-dots.svg", 16, Color.web("#9ca3af"));
+        if (menuDotsIcon == null) {
+            // Fallback: create a simple label with dots
+            Label dotsLabel = new Label("⋯");
+            dotsLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: #9ca3af;");
+            menuDotsIcon = dotsLabel;
+        }
         
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         
-        profileBox.getChildren().addAll(avatar, userInfo, spacer, arrow);
+        profileBox.getChildren().addAll(avatar, userInfo, spacer, menuDotsIcon);
         
         // Action to profile settings
         profileBox.setOnMouseClicked(e -> viewManagerModel.setActiveView(ViewManager.PROFILE_SETTINGS_VIEW));
@@ -292,7 +318,7 @@ public class SidebarPanel extends VBox implements PropertyChangeListener {
                 if (!iconContainer.getChildren().isEmpty() && iconContainer.getChildren().get(0) instanceof Rectangle) {
                     Rectangle bg = (Rectangle) iconContainer.getChildren().get(0);
                     if (isActive) {
-                        Stop[] stops = new Stop[] { new Stop(0, Color.web("#77ce00")), new Stop(1, Color.web("#00c94f")) };
+                        Stop[] stops = new Stop[] { new Stop(0, Color.web("#8be200")), new Stop(1, Color.web("#14cd49")) };
                         LinearGradient lg = new LinearGradient(0, 0, 1, 1, true, CycleMethod.NO_CYCLE, stops);
                         bg.setFill(lg);
                     } else {
@@ -346,12 +372,23 @@ public class SidebarPanel extends VBox implements PropertyChangeListener {
         }
     }
 
+    private void updateButtonsState() {
+        boolean isLoginView = ViewManager.LOGIN_VIEW.equals(viewManagerModel.getActiveView());
+        for (Button btn : menuButtons) {
+            btn.setDisable(isLoginView);
+        }
+    }
+    
     @Override
     public void propertyChange(PropertyChangeEvent evt) {
         switch (evt.getPropertyName()) {
             case "view":
                 String newView = (String) evt.getNewValue();
-                Platform.runLater(() -> updateActiveButton(newView));
+                Platform.runLater(() -> {
+                    updateActiveButton(newView);
+                    updateButtonsState();
+                    updateAuthSection();
+                });
                 break;
             case "currentUserId":
             case "currentUsername":
@@ -359,6 +396,16 @@ public class SidebarPanel extends VBox implements PropertyChangeListener {
                 break;
             default:
                 break;
+        }
+    }
+    
+    /**
+     * Clean up resources and remove property change listeners to prevent memory leaks.
+     * Should be called when this view is no longer needed.
+     */
+    public void dispose() {
+        if (viewManagerModel != null) {
+            viewManagerModel.removePropertyChangeListener(this);
         }
     }
 }
