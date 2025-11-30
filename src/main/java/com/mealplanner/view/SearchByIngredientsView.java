@@ -45,6 +45,7 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
     private FlowPane listPanel; 
     private VBox loadingPanel;
     private VBox emptyPanel;
+    private VBox errorPanel;
     private Label errorLabel;
 
     // Filters
@@ -366,7 +367,32 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
 
         emptyPanel.getChildren().addAll(iconCircle, startTitle, startSub, hintLabel);
 
-        resultsContainer.getChildren().addAll(emptyPanel, loadingPanel, listScrollPane);
+        // 4. Error View
+        errorPanel = new VBox(16);
+        errorPanel.setAlignment(Pos.CENTER);
+        
+        StackPane errorIconCircle = new StackPane();
+        Circle errorBg = new Circle(32);
+        errorBg.setFill(Color.web("#fee2e2")); // red-100
+        errorBg.setEffect(new javafx.scene.effect.DropShadow(10, Color.rgb(239, 68, 68, 0.4)));
+        
+        Node errorIcon = SvgIconLoader.loadIcon("/svg/cross-small.svg", 24, Color.web("#dc2626")); // red-600
+        if (errorIcon != null) errorIconCircle.getChildren().addAll(errorBg, errorIcon);
+        else errorIconCircle.getChildren().add(errorBg);
+
+        Label errorTitle = new Label("검색 중 오류가 발생했습니다");
+        errorTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: 600; -fx-text-fill: #1f2937;");
+        
+        Label errorSub = new Label("인터넷 연결을 확인하고 다시 시도해주세요");
+        errorSub.setStyle("-fx-font-size: 14px; -fx-text-fill: #6b7280;");
+        
+        Button retryButton = new Button("다시 시도");
+        retryButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: 600; -fx-background-radius: 8px; -fx-padding: 10 20; -fx-cursor: hand;");
+        retryButton.setOnAction(e -> performSearch());
+        
+        errorPanel.getChildren().addAll(errorIconCircle, errorTitle, errorSub, retryButton);
+
+        resultsContainer.getChildren().addAll(emptyPanel, loadingPanel, errorPanel, listScrollPane);
         
         showView("EMPTY");
     }
@@ -374,6 +400,7 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
     private void showView(String viewName) {
         loadingPanel.setVisible(false);
         emptyPanel.setVisible(false);
+        errorPanel.setVisible(false);
         if (listScrollPane != null) {
             listScrollPane.setVisible(false);
         }
@@ -381,6 +408,7 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         switch(viewName) {
             case "LOADING": loadingPanel.setVisible(true); break;
             case "EMPTY": emptyPanel.setVisible(true); break;
+            case "ERROR": errorPanel.setVisible(true); break;
             case "LIST": 
                 if (listScrollPane != null) listScrollPane.setVisible(true);
                 // Reset container style to default card panel or transparent if list is shown?
@@ -406,6 +434,7 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         
         String query = String.join(",", ingredientList);
         
+        // Clear previous errors
         errorLabel.setText("");
         viewModel.setLoading(true);
         viewModel.setErrorMessage("");
@@ -601,13 +630,30 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
                     searchButton.setDisable(false);
                 }
             } else if (RecipeSearchViewModel.PROP_RECIPES.equals(propertyName)) {
+                // Clear error when recipes are successfully loaded
+                errorLabel.setText("");
                 displayRecipes(viewModel.getRecipes());
             } else if (RecipeSearchViewModel.PROP_ERROR_MESSAGE.equals(propertyName)) {
                 String errorMsg = viewModel.getErrorMessage();
                 if (StringUtil.hasContent(errorMsg)) {
                     errorLabel.setText(errorMsg);
+                    showView("ERROR");
+                    // Check if it's a network error
+                    String lowerMsg = errorMsg.toLowerCase();
+                    if (lowerMsg.contains("network") || lowerMsg.contains("connection") || 
+                        lowerMsg.contains("timeout") || lowerMsg.contains("인터넷")) {
+                        // Update error panel message for network errors
+                        if (errorPanel.getChildren().size() > 2) {
+                            Label errorSubLabel = (Label) errorPanel.getChildren().get(2);
+                            errorSubLabel.setText("인터넷 연결을 확인하고 다시 시도해주세요");
+                        }
+                    }
                 } else {
                     errorLabel.setText("");
+                    // If error is cleared, show empty state if no recipes
+                    if (viewModel.getRecipes() == null || viewModel.getRecipes().isEmpty()) {
+                        showView("EMPTY");
+                    }
                 }
             }
         });

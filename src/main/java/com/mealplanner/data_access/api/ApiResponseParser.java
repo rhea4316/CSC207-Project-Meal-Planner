@@ -154,10 +154,63 @@ public class ApiResponseParser {
     }
 
     private static String parseStepsFromJson(JSONObject json) {
+        // First, try to get analyzedInstructions (structured format from Spoonacular API)
+        if (json.has("analyzedInstructions")) {
+            JSONArray analyzedInstructions = json.optJSONArray("analyzedInstructions");
+            if (analyzedInstructions != null && analyzedInstructions.length() > 0) {
+                JSONObject instructionSet = analyzedInstructions.getJSONObject(0);
+                if (instructionSet.has("steps")) {
+                    JSONArray steps = instructionSet.getJSONArray("steps");
+                    List<String> stepList = new ArrayList<>();
+                    for (int i = 0; i < steps.length(); i++) {
+                        JSONObject step = steps.getJSONObject(i);
+                        String stepText = step.optString("step", "");
+                        if (!stepText.isEmpty()) {
+                            stepList.add(stepText);
+                        }
+                    }
+                    if (!stepList.isEmpty()) {
+                        return String.join("\n", stepList);
+                    }
+                }
+            }
+        }
+        
+        // Fallback to plain instructions field
         if (json.has("instructions")) {
             String instructions = json.optString("instructions", "");
             if (!instructions.isEmpty()) {
-                return instructions;
+                // Remove HTML tags if present (Spoonacular sometimes returns HTML)
+                String cleaned = instructions.replaceAll("<[^>]+>", "").trim();
+                
+                // Split by period followed by space (most common pattern)
+                // This will split "Step 1. Step 2. Step 3." into separate steps
+                String[] sentences = cleaned.split("\\.\\s+");
+                
+                List<String> stepList = new ArrayList<>();
+                for (String sentence : sentences) {
+                    String trimmed = sentence.trim();
+                    if (!trimmed.isEmpty()) {
+                        // Add period back if it was removed by split (except for last sentence)
+                        if (!trimmed.endsWith(".") && !trimmed.endsWith("!") && !trimmed.endsWith("?")) {
+                            trimmed += ".";
+                        }
+                        stepList.add(trimmed);
+                    }
+                }
+                
+                // If we successfully split into multiple steps, join with newlines
+                if (stepList.size() > 1) {
+                    return String.join("\n", stepList);
+                }
+                
+                // If splitting didn't create multiple steps, check if it's already newline-separated
+                if (cleaned.contains("\n")) {
+                    return cleaned;
+                }
+                
+                // If all else fails, return as-is (single long instruction)
+                return cleaned;
             }
         }
         

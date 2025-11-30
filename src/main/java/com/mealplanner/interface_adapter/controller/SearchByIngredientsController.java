@@ -6,6 +6,8 @@ package com.mealplanner.interface_adapter.controller;
 import com.mealplanner.use_case.search_by_ingredients.SearchByIngredientsInputBoundary;
 import com.mealplanner.use_case.search_by_ingredients.SearchByIngredientsInputData;
 import com.mealplanner.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import java.util.Arrays;
@@ -14,6 +16,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class SearchByIngredientsController {
+    private static final Logger logger = LoggerFactory.getLogger(SearchByIngredientsController.class);
     private final SearchByIngredientsInputBoundary interactor;
 
     public SearchByIngredientsController(SearchByIngredientsInputBoundary interactor) {
@@ -43,7 +46,7 @@ public class SearchByIngredientsController {
                 try {
                     get(); // Check for exceptions
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    logger.error("Error in search by ingredients", e);
                     // Ideally, we should have an error handling path in the interactor/presenter for exceptions
                 }
             }

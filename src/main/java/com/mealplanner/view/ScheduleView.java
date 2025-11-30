@@ -13,6 +13,7 @@ import com.mealplanner.interface_adapter.view_model.ScheduleViewModel;
 import com.mealplanner.repository.RecipeRepository;
 import com.mealplanner.app.SessionManager;
 import com.mealplanner.view.component.StyledTooltip;
+import com.mealplanner.view.component.Sonner;
 import com.mealplanner.view.util.SvgIconLoader;
 import com.mealplanner.util.ImageCacheManager;
 import javafx.application.Platform;
@@ -25,11 +26,13 @@ import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
+import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Tooltip;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -41,6 +44,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,9 +81,14 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
     private MealSlotPanel[][] mealSlots; // [row][col] -> row=meal, col=day
     private ProgressBar mealsPlannedProgress;
     private Label mealsPlannedLabel;
+    private Button copyBtn;
+    private ProgressIndicator copyingIndicator;
 
     // State
     private LocalDate currentWeekStart;
+    
+    // Empty state
+    private VBox emptyStatePanel;
 
     /**
      * Constructor for ScheduleView.
@@ -127,6 +136,9 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
         mainContainer.getChildren().add(createHeader());
         mainContainer.getChildren().add(createStatsSection());
         
+        // Empty state panel
+        emptyStatePanel = createEmptyStatePanel();
+        
         // Calendar Grid wrapped in ScrollPane if needed, but usually fits
         ScrollPane scrollPane = new ScrollPane(createGrid());
         scrollPane.setFitToWidth(true);
@@ -134,6 +146,10 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
         scrollPane.setStyle("-fx-background-color: transparent; -fx-background: transparent; -fx-padding: 0;");
         scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        
+        // Stack empty state and grid
+        StackPane contentStack = new StackPane();
+        contentStack.getChildren().addAll(scrollPane, emptyStatePanel);
         
         // Increase scroll speed
         scrollPane.addEventFilter(ScrollEvent.SCROLL, event -> {
@@ -155,7 +171,7 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
             }
         });
 
-        mainContainer.getChildren().add(scrollPane);
+        mainContainer.getChildren().add(contentStack);
         setCenter(mainContainer);
         
         updateView(); 
@@ -215,8 +231,14 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
         HBox actionBox = new HBox(12);
         actionBox.setAlignment(Pos.CENTER_RIGHT);
         
-        Button copyBtn = createActionButton("Copy Last Week", "/svg/calendar.svg"); // Fallback icon
+        copyBtn = createActionButton("Copy Last Week", "/svg/calendar.svg"); // Fallback icon
         copyBtn.setOnAction(e -> handleCopyLastWeek());  // PHASE 6: Copy Last Week functionality
+        
+        // Loading indicator for copy button
+        copyingIndicator = new ProgressIndicator();
+        copyingIndicator.setPrefSize(14, 14);
+        copyingIndicator.setVisible(false);
+        copyingIndicator.setManaged(false);
         Button autoFillBtn = createActionButton("Auto-fill", "/svg/star.svg");
         autoFillBtn.setOnAction(e -> handleAutoFill());  // Phase 5: Auto-fill functionality
         
@@ -224,7 +246,10 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
         newPlanBtn.setStyle("-fx-background-color: -fx-theme-primary; -fx-text-fill: white; -fx-background-radius: 8px; -fx-font-weight: 600; -fx-cursor: hand; -fx-padding: 8 16;");
         newPlanBtn.setOnAction(e -> viewManagerModel.setActiveView(ViewManager.BROWSE_RECIPE_VIEW));
         
-        actionBox.getChildren().addAll(copyBtn, autoFillBtn, newPlanBtn);
+        HBox copyBtnContainer = new HBox(8);
+        copyBtnContainer.setAlignment(Pos.CENTER);
+        copyBtnContainer.getChildren().addAll(copyBtn, copyingIndicator);
+        actionBox.getChildren().addAll(copyBtnContainer, autoFillBtn, newPlanBtn);
         
         topRow.getChildren().addAll(titleBox, spacer1, navBox, spacer2, actionBox);
         container.getChildren().add(topRow);
@@ -479,7 +504,7 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
         try {
             return recipeRepository.findById(recipeId).orElse(null);
         } catch (DataAccessException e) {
-            System.err.println("Error loading recipe " + recipeId + ": " + e.getMessage());
+            logger.error("Error loading recipe {}: {}", recipeId, e.getMessage(), e);
             return null;
         }
     }
@@ -522,6 +547,50 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
         }
     }
 
+    private VBox createEmptyStatePanel() {
+        VBox container = new VBox(20);
+        container.setAlignment(Pos.CENTER);
+        container.setPadding(new Insets(60, 40, 60, 40));
+        container.setStyle("-fx-background-color: transparent;");
+        
+        // Icon
+        StackPane iconCircle = new StackPane();
+        Circle bg = new Circle(48);
+        bg.setFill(Color.web("#e5e7eb"));
+        Node calendarIcon = SvgIconLoader.loadIcon("/svg/calendar.svg", 32, Color.web("#9ca3af"));
+        if (calendarIcon != null) {
+            iconCircle.getChildren().addAll(bg, calendarIcon);
+        } else {
+            iconCircle.getChildren().add(bg);
+        }
+        
+        // Title
+        Label titleLabel = new Label("이번 주 일정이 비어있습니다");
+        titleLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: 600; -fx-text-fill: #1f2937;");
+        
+        // Subtitle
+        Label subLabel = new Label("레시피를 추가하여 주간 식사 계획을 시작하세요");
+        subLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #6b7280;");
+        
+        // Action buttons
+        HBox actionButtons = new HBox(12);
+        actionButtons.setAlignment(Pos.CENTER);
+        
+        Button browseBtn = new Button("레시피 찾기");
+        browseBtn.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: 600; -fx-background-radius: 8px; -fx-padding: 10 20; -fx-cursor: hand;");
+        browseBtn.setOnAction(e -> viewManagerModel.setActiveView(ViewManager.BROWSE_RECIPE_VIEW));
+        
+        Button autoFillBtn = new Button("자동 채우기");
+        autoFillBtn.setStyle("-fx-background-color: white; -fx-text-fill: #4CAF50; -fx-border-color: #4CAF50; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 10 20; -fx-cursor: hand; -fx-font-weight: 600;");
+        autoFillBtn.setOnAction(e -> handleAutoFill());
+        
+        actionButtons.getChildren().addAll(browseBtn, autoFillBtn);
+        
+        container.getChildren().addAll(iconCircle, titleLabel, subLabel, actionButtons);
+        
+        return container;
+    }
+
     private void updateView() {
         updateDayHeaders();
         
@@ -537,6 +606,7 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
         }
 
         int filledCount = 0;
+        boolean hasAnyMeals = false;
         Schedule schedule = scheduleViewModel.getSchedule();
         if (schedule != null) {
             Map<LocalDate, Map<MealType, String>> allMeals = schedule.getAllMeals();
@@ -545,7 +615,8 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
                 LocalDate date = currentWeekStart.plusDays(i);
                 Map<MealType, String> mealsForDate = allMeals.get(date);
 
-                if (mealsForDate != null) {
+                if (mealsForDate != null && !mealsForDate.isEmpty()) {
+                    hasAnyMeals = true;
                     // PHASE 2: Load actual Recipe objects and pass them to MealSlotPanel
                     if (mealsForDate.containsKey(MealType.BREAKFAST)) {
                         String recipeId = mealsForDate.get(MealType.BREAKFAST);
@@ -579,6 +650,12 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
                     }
                 }
             }
+        }
+        
+        // Show/hide empty state
+        if (emptyStatePanel != null) {
+            emptyStatePanel.setVisible(!hasAnyMeals);
+            emptyStatePanel.setManaged(!hasAnyMeals);
         }
         
         // Update Stats
@@ -747,23 +824,32 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
     private void handleCopyLastWeek() {
         // Check if AddMealController is available
         if (addMealController == null) {
-            System.err.println("Cannot copy last week: AddMealController is not available");
+            logger.warn("Cannot copy last week: AddMealController is not available");
+            showCopyFeedback("Error", "Meal planning service is not available.", Sonner.Type.ERROR);
             return;
         }
 
         // Check if user is logged in
         String userId = SessionManager.getInstance().getCurrentUserId();
         if (userId == null || userId.trim().isEmpty()) {
-            System.err.println("Cannot copy last week: User not logged in");
+            logger.warn("Cannot copy last week: User not logged in");
+            showCopyFeedback("Please log in", "You need to be logged in to copy last week's meals.", Sonner.Type.ERROR);
             return;
         }
 
         // Get current schedule
         Schedule currentSchedule = scheduleViewModel.getSchedule();
         if (currentSchedule == null) {
-            System.err.println("Cannot copy last week: No schedule available");
+            logger.warn("Cannot copy last week: No schedule available");
+            showCopyFeedback("Error", "No schedule available.", Sonner.Type.ERROR);
             return;
         }
+
+        // Show loading state
+        copyBtn.setDisable(true);
+        copyingIndicator.setVisible(true);
+        copyingIndicator.setManaged(true);
+        copyBtn.setText("Copying...");
 
         // Calculate last week's date range
         LocalDate lastWeekStart = currentWeekStart.minusWeeks(1);
@@ -774,66 +860,108 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
 
         if (lastWeekMeals.isEmpty()) {
             // No meals to copy - this is not an error, just inform the user
-            System.out.println("No meals found in last week to copy");
+            logger.info("No meals found in last week to copy");
+            resetCopyButton();
+            showCopyFeedback("No meals to copy", "No meals were found in last week's schedule.", Sonner.Type.INFO);
             return;
         }
 
-        // Copy meals to current week
-        int copiedCount = 0;
-        int skippedCount = 0;
-        int errorCount = 0;
+        // Copy meals to current week in background thread
+        new Thread(() -> {
+            AtomicInteger copiedCount = new AtomicInteger(0);
+            AtomicInteger skippedCount = new AtomicInteger(0);
+            AtomicInteger errorCount = new AtomicInteger(0);
 
-        for (int i = 0; i < 7; i++) {
-            LocalDate currentDate = currentWeekStart.plusDays(i);
-            LocalDate lastWeekDate = lastWeekStart.plusDays(i);
+            for (int i = 0; i < 7; i++) {
+                LocalDate currentDate = currentWeekStart.plusDays(i);
+                LocalDate lastWeekDate = lastWeekStart.plusDays(i);
 
-            Map<MealType, String> mealsForLastWeekDate = lastWeekMeals.get(lastWeekDate);
-            if (mealsForLastWeekDate == null || mealsForLastWeekDate.isEmpty()) {
-                continue;
-            }
-
-            // Copy each meal type (Breakfast, Lunch, Dinner)
-            for (MealType mealType : MealType.values()) {
-                String recipeId = mealsForLastWeekDate.get(mealType);
-                if (recipeId == null || recipeId.trim().isEmpty()) {
+                Map<MealType, String> mealsForLastWeekDate = lastWeekMeals.get(lastWeekDate);
+                if (mealsForLastWeekDate == null || mealsForLastWeekDate.isEmpty()) {
                     continue;
                 }
 
-                // Only copy if the current slot is empty
-                if (currentSchedule.isSlotFree(currentDate, mealType)) {
-                    try {
-                        addMealController.execute(
-                            currentDate.toString(),
-                            mealType.name(),
-                            recipeId
-                        );
-                        copiedCount++;
-                    } catch (IllegalArgumentException e) {
-                        // Handle invalid date/mealType format
-                        System.err.println("Error copying meal for " + currentDate + " " + mealType + ": Invalid format - " + e.getMessage());
-                        errorCount++;
-                    } catch (Exception e) {
-                        // Handle other unexpected errors
-                        System.err.println("Error copying meal for " + currentDate + " " + mealType + ": " + e.getMessage());
-                        errorCount++;
+                // Copy each meal type (Breakfast, Lunch, Dinner)
+                for (MealType mealType : MealType.values()) {
+                    String recipeId = mealsForLastWeekDate.get(mealType);
+                    if (recipeId == null || recipeId.trim().isEmpty()) {
+                        continue;
                     }
-                } else {
-                    skippedCount++;
+
+                    // Only copy if the current slot is empty
+                    if (currentSchedule.isSlotFree(currentDate, mealType)) {
+                        try {
+                            addMealController.execute(
+                                currentDate.toString(),
+                                mealType.name(),
+                                recipeId
+                            );
+                            copiedCount.incrementAndGet();
+                        } catch (IllegalArgumentException e) {
+                            // Handle invalid date/mealType format
+                            logger.error("Error copying meal for {} {}: Invalid format - {}", currentDate, mealType, e.getMessage(), e);
+                            errorCount.incrementAndGet();
+                        } catch (Exception e) {
+                            // Handle other unexpected errors
+                            logger.error("Error copying meal for {} {}: {}", currentDate, mealType, e.getMessage(), e);
+                            errorCount.incrementAndGet();
+                        }
+                    } else {
+                        skippedCount.incrementAndGet();
+                    }
                 }
             }
-        }
 
-        // Refresh the schedule view on JavaFX thread after all meals are added
-        Platform.runLater(() -> {
-            requestScheduleForActiveUser();
-            updateView();
-        });
+            // Store final values for use in Platform.runLater
+            final int finalCopiedCount = copiedCount.get();
+            final int finalSkippedCount = skippedCount.get();
+            final int finalErrorCount = errorCount.get();
 
-        // Log summary
-        if (copiedCount > 0 || skippedCount > 0 || errorCount > 0) {
-            System.out.println("Copy Last Week completed: " + copiedCount + " meals copied, " 
-                + skippedCount + " skipped (slots already filled)" 
-                + (errorCount > 0 ? ", " + errorCount + " errors" : ""));
+            // Update UI on JavaFX thread
+            Platform.runLater(() -> {
+                resetCopyButton();
+                requestScheduleForActiveUser();
+                updateView();
+                
+                // Show feedback
+                if (finalCopiedCount > 0) {
+                    String message = String.format("Successfully copied %d meal(s) to this week.", finalCopiedCount);
+                    if (finalSkippedCount > 0) {
+                        message += String.format(" %d meal(s) were skipped (slots already filled).", finalSkippedCount);
+                    }
+                    if (finalErrorCount > 0) {
+                        message += String.format(" %d meal(s) failed to copy.", finalErrorCount);
+                    }
+                    showCopyFeedback("Copy completed", message, Sonner.Type.SUCCESS);
+                } else if (finalErrorCount > 0) {
+                    showCopyFeedback("Copy failed", String.format("Failed to copy %d meal(s). Please try again.", finalErrorCount), Sonner.Type.ERROR);
+                } else {
+                    showCopyFeedback("No meals copied", "All slots are already filled for this week.", Sonner.Type.INFO);
+                }
+            });
+
+            // Log summary
+            if (finalCopiedCount > 0 || finalSkippedCount > 0 || finalErrorCount > 0) {
+                logger.info("Copy Last Week completed: {} meals copied, {} skipped (slots already filled){}", 
+                    finalCopiedCount, finalSkippedCount, (finalErrorCount > 0 ? ", " + finalErrorCount + " errors" : ""));
+            }
+        }).start();
+    }
+    
+    private void resetCopyButton() {
+        copyBtn.setDisable(false);
+        copyingIndicator.setVisible(false);
+        copyingIndicator.setManaged(false);
+        copyBtn.setText("Copy Last Week");
+    }
+    
+    private void showCopyFeedback(String title, String message, Sonner.Type type) {
+        // Use Sonner if available, otherwise just log
+        try {
+            Sonner sonner = new Sonner();
+            sonner.show(title, message, type);
+        } catch (Exception e) {
+            logger.info("Copy feedback: {} - {}", title, message);
         }
     }
     

@@ -29,6 +29,20 @@ public class ValidationUtil {
         return StringUtil.isValidLength(name, 1, 100);
     }
 
+    /**
+     * Validate recipe description length.
+     * Description is optional, but if provided, must not exceed 500 characters.
+     *
+     * @param description Recipe description to validate
+     * @return true if valid (null/empty is valid, or length <= 500)
+     */
+    public static boolean validateRecipeDescription(String description) {
+        if (StringUtil.isNullOrEmpty(description)) {
+            return true; // Description is optional
+        }
+        return StringUtil.isValidLength(description, 0, 500);
+    }
+
     public static boolean validateQuantity(double quantity) {
         return quantity > 0;
     }

@@ -7,6 +7,8 @@ import com.mealplanner.use_case.browse_recipe.BrowseRecipeDataAccessInterface;
 import com.mealplanner.use_case.browse_recipe.BrowseRecipeInputData;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -14,6 +16,8 @@ import java.util.List;
 import java.util.Objects;
 
 public class BrowseRecipeAPIParser implements BrowseRecipeDataAccessInterface {
+    
+    private static final Logger logger = LoggerFactory.getLogger(BrowseRecipeAPIParser.class);
     //would probably need a getrecipe/list of recipes method:
     // i.e. input search filters or recipe name and then the method would call the api and return the parsed information
     private final SpoonacularApiClient apiClient;
@@ -59,7 +63,7 @@ public class BrowseRecipeAPIParser implements BrowseRecipeDataAccessInterface {
                 recipes.add(recipe);
             } catch (Exception e) {
                 // Skip recipes that fail to parse - continue with others
-                System.err.println("Failed to parse recipe: " + e.getMessage());
+                logger.warn("Failed to parse recipe from API response: {}", e.getMessage(), e);
             }
         }
 

@@ -22,8 +22,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SpoonacularApiClient {
+    
+    private static final Logger logger = LoggerFactory.getLogger(SpoonacularApiClient.class);
 
     // OPTIMIZATION: Simple LRU cache for API responses (max 50 entries, 5-minute TTL)
     private static final int MAX_CACHE_SIZE = 50;
@@ -345,7 +349,7 @@ public class SpoonacularApiClient {
         synchronized (responseCache) {
             CacheEntry cached = responseCache.get(url);
             if (cached != null && !cached.isExpired()) {
-                System.out.println("Cache HIT for: " + url.substring(0, Math.min(100, url.length())));
+                logger.debug("Cache HIT for: {}", url.substring(0, Math.min(100, url.length())));
                 return cached.response;
             }
         }
@@ -380,7 +384,7 @@ public class SpoonacularApiClient {
             // OPTIMIZATION: Store in cache
             synchronized (responseCache) {
                 responseCache.put(url, new CacheEntry(responseBody));
-                System.out.println("Cache MISS - storing for: " + url.substring(0, Math.min(100, url.length())));
+                logger.debug("Cache MISS - storing for: {}", url.substring(0, Math.min(100, url.length())));
             }
 
             return responseBody;

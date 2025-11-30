@@ -54,6 +54,7 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
     private FlowPane listPanel; 
     private VBox loadingPanel;
     private VBox emptyPanel;
+    private VBox errorPanel;
     private Label errorLabel;
     private Label countLabel; // "Showing 9 of 16 recipes"
     
@@ -366,6 +367,25 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
         
         emptyPanel.getChildren().addAll(iconLabel, emptyLabel);
         
+        // 4. Error View
+        errorPanel = new VBox(16);
+        errorPanel.setAlignment(Pos.CENTER);
+        
+        Label errorIconLabel = new Label("⚠️");
+        errorIconLabel.setStyle("-fx-font-size: 48px;");
+        
+        Label errorTitle = new Label("레시피를 불러오는 중 오류가 발생했습니다");
+        errorTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #1f2937;");
+        
+        Label errorSub = new Label("인터넷 연결을 확인하고 다시 시도해주세요");
+        errorSub.setStyle("-fx-font-size: 14px; -fx-text-fill: #6b7280;");
+        
+        Button retryButton = new Button("다시 시도");
+        retryButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: 600; -fx-background-radius: 8px; -fx-padding: 10 20; -fx-cursor: hand;");
+        retryButton.setOnAction(e -> performSearch());
+        
+        errorPanel.getChildren().addAll(errorIconLabel, errorTitle, errorSub, retryButton);
+        
         // Initially show empty or welcome state?
         // Since we might want to show some default recipes, let's trigger an initial search or show empty.
         // Let's show empty state initially.
@@ -399,6 +419,7 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
         // Show Loading
         listPanel.getChildren().clear();
         listPanel.getChildren().add(loadingPanel);
+        errorLabel.setText("");
 
         // Run search in background
         final String finalQuery = effectiveQuery;
@@ -656,6 +677,8 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
             String prop = evt.getPropertyName();
             switch (prop) {
                 case "recipes":
+                    // Clear error when recipes are successfully loaded
+                    errorLabel.setText("");
                     displayRecipes(viewModel.getRecipes());
                     break;
                 case "recommendations":
@@ -668,9 +691,24 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
                     if (StringUtil.hasContent(msg)) {
                         errorLabel.setText(msg);
                         listPanel.getChildren().clear();
-                        listPanel.getChildren().add(emptyPanel);
+                        listPanel.getChildren().add(errorPanel);
+                        // Check if it's a network error
+                        String lowerMsg = msg.toLowerCase();
+                        if (lowerMsg.contains("network") || lowerMsg.contains("connection") || 
+                            lowerMsg.contains("timeout") || lowerMsg.contains("인터넷")) {
+                            // Update error panel message for network errors
+                            if (errorPanel.getChildren().size() > 2) {
+                                Label errorSubLabel = (Label) errorPanel.getChildren().get(2);
+                                errorSubLabel.setText("인터넷 연결을 확인하고 다시 시도해주세요");
+                            }
+                        }
                     } else {
                         errorLabel.setText("");
+                        // If error is cleared, show empty state if no recipes
+                        if (viewModel.getRecipes() == null || viewModel.getRecipes().isEmpty()) {
+                            listPanel.getChildren().clear();
+                            listPanel.getChildren().add(emptyPanel);
+                        }
                     }
                     break;
             }

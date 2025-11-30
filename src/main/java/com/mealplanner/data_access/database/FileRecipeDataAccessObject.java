@@ -7,6 +7,8 @@ import com.mealplanner.repository.RecipeRepository;
 import com.mealplanner.repository.UserRepository;
 import com.mealplanner.use_case.get_recommendations.GetRecommendationsDataAccessInterface;
 import com.mealplanner.use_case.store_recipe.StoreRecipeDataAccessInterface;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -22,6 +24,8 @@ import java.util.UUID;
 
 public class FileRecipeDataAccessObject implements StoreRecipeDataAccessInterface, GetRecommendationsDataAccessInterface {
 
+    private static final Logger logger = LoggerFactory.getLogger(FileRecipeDataAccessObject.class);
+    
     private static final String RECIPES_DIRECTORY = "data/recipes/";
     private static final String FILE_EXTENSION = ".json";
     
@@ -153,7 +157,8 @@ public class FileRecipeDataAccessObject implements StoreRecipeDataAccessInterfac
                 }
             }
         } catch (Exception e) {
-            // 에러 발생 시 빈 리스트 반환
+            // 에러 발생 시 로깅 후 빈 리스트 반환
+            logger.error("Error while getting saved recipes for user {}: {}", userId, e.getMessage(), e);
             return recipes;
         }
         
@@ -165,14 +170,19 @@ public class FileRecipeDataAccessObject implements StoreRecipeDataAccessInterfac
         List<Recipe> recipes = new ArrayList<>();
         
         if (recipeRepository == null) {
-            // RecipeRepository가 없으면 빈 리스트 반환
+            logger.error("RecipeRepository is null in FileRecipeDataAccessObject. " +
+                    "This indicates a configuration issue. Returning empty list.");
             return recipes;
         }
         
         try {
             recipes = recipeRepository.findAll();
+            logger.info("Successfully loaded {} recipes from repository", recipes.size());
+        } catch (DataAccessException e) {
+            logger.error("Failed to load recipes from repository: {}", e.getMessage(), e);
+            return recipes;
         } catch (Exception e) {
-            // 에러 발생 시 빈 리스트 반환
+            logger.error("Unexpected error while loading recipes: {}", e.getMessage(), e);
             return recipes;
         }
         

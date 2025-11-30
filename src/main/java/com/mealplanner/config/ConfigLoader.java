@@ -5,6 +5,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Utility class for loading application configuration from properties files.
@@ -13,6 +15,7 @@ import java.util.Properties;
  */
 public class ConfigLoader {
 
+    private static final Logger logger = LoggerFactory.getLogger(ConfigLoader.class);
     private static final Properties properties = new Properties();
     private static boolean initialized = false;
 
@@ -36,7 +39,7 @@ public class ConfigLoader {
             initialized = true;
         } catch (IOException e) {
             // If loading fails, continue with empty properties (will use defaults)
-            System.err.println("Warning: Could not load configuration: " + e.getMessage());
+            logger.warn("Could not load configuration: {}", e.getMessage(), e);
         }
     }
 

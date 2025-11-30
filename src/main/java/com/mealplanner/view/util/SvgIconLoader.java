@@ -4,6 +4,8 @@ import javafx.scene.Node;
 import javafx.scene.layout.StackPane;
 import javafx.scene.shape.SVGPath;
 import javafx.scene.paint.Color;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
 import java.util.Scanner;
@@ -13,6 +15,8 @@ import java.util.Scanner;
  * Parses SVG path data and creates JavaFX SVGPath nodes.
  */
 public class SvgIconLoader {
+    
+    private static final Logger logger = LoggerFactory.getLogger(SvgIconLoader.class);
     
     /**
      * Loads an SVG icon from resources and converts it to a JavaFX Node.
@@ -25,7 +29,7 @@ public class SvgIconLoader {
     public static Node loadIcon(String resourcePath, double size, Color color) {
         try (InputStream inputStream = SvgIconLoader.class.getResourceAsStream(resourcePath)) {
             if (inputStream == null) {
-                System.err.println("SVG icon not found: " + resourcePath);
+                logger.debug("SVG icon not found: {}", resourcePath);
                 return null;
             }
             
@@ -37,7 +41,7 @@ public class SvgIconLoader {
             // Extract path data from SVG
             String pathData = extractPathData(svgContent);
             if (pathData == null || pathData.isEmpty()) {
-                System.err.println("Could not extract path data from: " + resourcePath);
+                logger.warn("Could not extract path data from: {}", resourcePath);
                 return null;
             }
             
@@ -69,7 +73,7 @@ public class SvgIconLoader {
             return container;
             
         } catch (Exception e) {
-            System.err.println("Error loading SVG icon: " + resourcePath + " - " + e.getMessage());
+            logger.warn("Error loading SVG icon: {} - {}", resourcePath, e.getMessage(), e);
             return null;
         }
     }

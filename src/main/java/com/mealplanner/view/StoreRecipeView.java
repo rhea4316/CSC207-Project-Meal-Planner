@@ -8,6 +8,7 @@ import com.mealplanner.interface_adapter.view_model.RecipeStoreViewModel;
 import com.mealplanner.repository.RecipeRepository;
 import com.mealplanner.util.NumberUtil;
 import com.mealplanner.util.StringUtil;
+import com.mealplanner.util.ValidationUtil;
 import com.mealplanner.view.component.*;
 import com.mealplanner.view.util.SvgIconLoader;
 
@@ -16,6 +17,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.scene.control.ProgressIndicator;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
@@ -38,7 +40,9 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
 
     // Editor Form Components
     private Input nameField;
+    private Label nameErrorLabel;
     private TextArea descField;
+    private Label descErrorLabel;
     private Input imgUrlField;
     private ComboBox<String> categoryCombo;
     private ComboBox<String> difficultyCombo;
@@ -46,6 +50,7 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
     private Input timeField;
     private Input caloriesField;
     private Input servingSizeField;
+    private Label servingSizeErrorLabel;
     
     private Input proteinField;
     private Input carbsField;
@@ -65,6 +70,10 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
     private Recipe editingRecipe;
     
     private Sonner sonner;
+    
+    // Loading state
+    private Button saveBtn;
+    private ProgressIndicator savingIndicator;
 
     public StoreRecipeView(StoreRecipeController controller, RecipeStoreViewModel viewModel, ViewManagerModel viewManagerModel, RecipeRepository recipeRepository) {
         if (controller == null) throw new IllegalArgumentException("Controller cannot be null");
@@ -136,9 +145,10 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         cookbookGrid.setVgap(16);
         cookbookGrid.setPadding(new Insets(10));
 
-        cookbookEmptyLabel = new Label("You haven’t saved any recipes yet. Create your first one!");
+        cookbookEmptyLabel = new Label("You haven't saved any recipes yet.\nCreate your first recipe to get started!");
         cookbookEmptyLabel.getStyleClass().add("text-gray-500");
-        cookbookEmptyLabel.setStyle("-fx-font-size: 14px;");
+        cookbookEmptyLabel.setStyle("-fx-font-size: 14px; -fx-text-alignment: center; -fx-alignment: center;");
+        cookbookEmptyLabel.setAlignment(Pos.CENTER);
 
         StackPane listPane = new StackPane();
         listPane.getChildren().addAll(cookbookGrid, cookbookEmptyLabel);
@@ -203,11 +213,22 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         cancelBtn.getStyleClass().add("secondary-button");
         cancelBtn.setOnAction(e -> toggleView(true));
         
-        Button saveBtn = new Button("Save Changes");
+        saveBtn = new Button("Save Changes");
         saveBtn.getStyleClass().add("primary-button");
         saveBtn.setOnAction(e -> saveRecipe()); // Bind save action
         
-        HBox actionBtns = new HBox(10, cancelBtn, saveBtn);
+        // Loading indicator for save button
+        savingIndicator = new ProgressIndicator();
+        savingIndicator.setPrefSize(16, 16);
+        savingIndicator.setVisible(false);
+        savingIndicator.setManaged(false);
+        savingIndicator.setStyle("-fx-progress-color: white;");
+        
+        // Stack the indicator on top of the button
+        StackPane saveBtnContainer = new StackPane();
+        saveBtnContainer.getChildren().addAll(saveBtn, savingIndicator);
+        
+        HBox actionBtns = new HBox(10, cancelBtn, saveBtnContainer);
         
         header.getChildren().addAll(backBtn, titleBox, headerSpacer, actionBtns);
         
@@ -249,7 +270,13 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         // Basic Information
         VBox basicCard = createCardPanel("Basic Information");
         nameField = new Input(); nameField.setPromptText("Avocado Toast");
+        nameErrorLabel = createErrorLabel();
+        setupNameValidation();
+        
         descField = new TextArea(); descField.setPromptText("Short description..."); descField.setPrefRowCount(3); descField.getStyleClass().add("text-area");
+        descErrorLabel = createErrorLabel();
+        setupDescriptionValidation();
+        
         imgUrlField = new Input(); imgUrlField.setPromptText("https://image.url...");
         
         categoryCombo = new ComboBox<>();
@@ -265,8 +292,8 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         difficultyCombo.getStyleClass().add("text-field");
 
         basicCard.getChildren().addAll(
-            createLabel("Recipe Name *"), nameField,
-            createLabel("Description"), descField,
+            createLabel("Recipe Name *"), nameField, nameErrorLabel,
+            createLabel("Description"), descField, descErrorLabel,
             createLabel("Image URL"), imgUrlField,
             createLabel("Category *"), categoryCombo,
             createLabel("Difficulty"), difficultyCombo
@@ -276,10 +303,16 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         VBox detailCard = createCardPanel("Recipe Details");
         timeField = new Input(); timeField.setPromptText("e.g. 10 min");
         servingSizeField = new Input("1");
+        servingSizeField.setPromptText("1-100");
+        servingSizeErrorLabel = createErrorLabel();
+        setupServingSizeValidation();
+        
+        Label servingSizeHelpLabel = new Label("Enter a number between 1 and 100");
+        servingSizeHelpLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #6b7280; -fx-padding: 2 0 0 0;");
         
         detailCard.getChildren().addAll(
             createLabel("Time"), timeField,
-            createLabel("Servings"), servingSizeField
+            createLabel("Servings"), servingSizeField, servingSizeHelpLabel, servingSizeErrorLabel
         );
         
         // Nutrition (Manual Entry)
@@ -500,6 +533,69 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         return l;
     }
     
+    private Label createErrorLabel() {
+        Label errorLabel = new Label();
+        errorLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #ef4444; -fx-padding: 2 0 0 0;");
+        errorLabel.setVisible(false);
+        errorLabel.setManaged(false);
+        return errorLabel;
+    }
+    
+    private void setupNameValidation() {
+        nameField.textProperty().addListener((obs, oldVal, newVal) -> {
+            String name = StringUtil.safeTrim(newVal);
+            if (StringUtil.isNullOrEmpty(name)) {
+                showFieldError(nameErrorLabel, "Recipe name is required");
+            } else if (!ValidationUtil.validateRecipeName(name)) {
+                showFieldError(nameErrorLabel, "Recipe name must be between 1 and 100 characters");
+            } else {
+                hideFieldError(nameErrorLabel);
+            }
+        });
+    }
+    
+    private void setupDescriptionValidation() {
+        descField.textProperty().addListener((obs, oldVal, newVal) -> {
+            String desc = newVal != null ? newVal : "";
+            if (!ValidationUtil.validateRecipeDescription(desc)) {
+                int currentLength = desc.length();
+                showFieldError(descErrorLabel, String.format("Description is too long (%d/500 characters)", currentLength));
+            } else {
+                hideFieldError(descErrorLabel);
+            }
+        });
+    }
+    
+    private void setupServingSizeValidation() {
+        servingSizeField.textProperty().addListener((obs, oldVal, newVal) -> {
+            String text = StringUtil.safeTrim(newVal);
+            if (StringUtil.isNullOrEmpty(text)) {
+                hideFieldError(servingSizeErrorLabel);
+                return;
+            }
+            
+            int servingSize = NumberUtil.parseInt(text, -1);
+            if (servingSize < 0) {
+                showFieldError(servingSizeErrorLabel, "Please enter a valid number");
+            } else if (!ValidationUtil.validateServingSize(servingSize)) {
+                showFieldError(servingSizeErrorLabel, "Serving size must be between 1 and 100");
+            } else {
+                hideFieldError(servingSizeErrorLabel);
+            }
+        });
+    }
+    
+    private void showFieldError(Label errorLabel, String message) {
+        errorLabel.setText(message);
+        errorLabel.setVisible(true);
+        errorLabel.setManaged(true);
+    }
+    
+    private void hideFieldError(Label errorLabel) {
+        errorLabel.setVisible(false);
+        errorLabel.setManaged(false);
+    }
+    
     private HBox createDynamicInputRow(String placeholder, java.util.function.Consumer<String> onAdd) {
         HBox row = new HBox(10);
         
@@ -616,6 +712,12 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
             return;
         }
         
+        // Show loading state
+        saveBtn.setDisable(true);
+        savingIndicator.setVisible(true);
+        savingIndicator.setManaged(true);
+        saveBtn.setText("Saving...");
+        
         // Harvest Ingredients
         List<String> ingredients = harvestChips(ingredientsContainer);
         
@@ -638,6 +740,15 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         
         String recipeId = editingRecipe != null ? editingRecipe.getRecipeId() : null;
         controller.execute(recipeId, name, ingredients, steps, servingSize);
+    }
+    
+    private void resetSaveButton() {
+        Platform.runLater(() -> {
+            saveBtn.setDisable(false);
+            savingIndicator.setVisible(false);
+            savingIndicator.setManaged(false);
+            saveBtn.setText("Save Changes");
+        });
     }
     
     private List<String> harvestChips(FlowPane container) {
@@ -670,11 +781,13 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
     public void propertyChange(PropertyChangeEvent evt) {
         Platform.runLater(() -> {
             if (RecipeStoreViewModel.PROP_SUCCESS_MESSAGE.equals(evt.getPropertyName())) {
+                resetSaveButton();
                 sonner.show("Success", (String) evt.getNewValue(), Sonner.Type.SUCCESS);
                 clearForm();
                 refreshCookbook();
                 toggleView(true); // Return to list on success
             } else if (RecipeStoreViewModel.PROP_ERROR_MESSAGE.equals(evt.getPropertyName())) {
+                resetSaveButton();
                 sonner.show("Error", (String) evt.getNewValue(), Sonner.Type.ERROR);
             }
         });
