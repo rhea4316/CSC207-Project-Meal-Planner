@@ -2,16 +2,18 @@ package com.mealplanner.use_case.browse_recipe;
 
 // Main business logic for browsing recipe details and viewing ingredients.
 // Responsible: Regina
+import java.io.IOException;
+import java.util.List;
+import java.util.Objects;
 
 import com.mealplanner.config.ApiConfig;
 import com.mealplanner.entity.Recipe;
 import com.mealplanner.exception.RecipeNotFoundException;
 import com.mealplanner.util.StringUtil;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Objects;
-
+/**
+ * The Interactor class for the BrowseRecipe use case.
+ */
 public class BrowseRecipeInteractor implements BrowseRecipeInputBoundary {
     // get the recipe specifications from DataAccessInterface
     // instantiate the OutputData
@@ -26,6 +28,11 @@ public class BrowseRecipeInteractor implements BrowseRecipeInputBoundary {
                 "Presenter cannot be null");
     }
 
+    /**
+     * Executes the BrowseRecipe use case.
+     * @param browseRecipeInputData the input data carrying the search criteria
+     * @throws IOException if the API fails
+     */
     public void execute(BrowseRecipeInputData browseRecipeInputData) throws IOException {
         if (browseRecipeInputData == null) {
             browseRecipePresenter.presentError("Input data cannot be null");
@@ -45,23 +52,27 @@ public class BrowseRecipeInteractor implements BrowseRecipeInputBoundary {
 
         try {
             // Delegate API call to data access layer
-            List<Recipe> recipes = browseRecipeDataAccessObject.searchRecipes(browseRecipeInputData);
+            final List<Recipe> recipes = browseRecipeDataAccessObject.searchRecipes(browseRecipeInputData);
 
             if (recipes == null || recipes.isEmpty()) {
-                browseRecipePresenter.presentError("No recipes found, please try different wording " +
-                        "in your search query" +
-                        (browseRecipeInputData.getIncludedIngredients() != null ?
-                                " or input different ingredients." : "."));
-            } else {
-                BrowseRecipeOutputData browseRecipeOutputData = new BrowseRecipeOutputData(recipes);
+                browseRecipePresenter.presentError("No recipes found, please try different wording "
+                        + "in your search query"
+                        + (browseRecipeInputData.getIncludedIngredients() != null
+                        ? " or input different ingredients." : "."));
+            }
+            else {
+                final BrowseRecipeOutputData browseRecipeOutputData = new BrowseRecipeOutputData(recipes);
                 browseRecipePresenter.presentRecipeDetails(browseRecipeOutputData);
             }
-        } catch (RecipeNotFoundException e) {
+        }
+        catch (RecipeNotFoundException exception) {
             browseRecipePresenter.presentError("Recipe not found");
-        } catch (IOException e) {
-            browseRecipePresenter.presentError("Network error: " + e.getMessage());
-        } catch (IllegalArgumentException e) {
-            browseRecipePresenter.presentError("Invalid input: " + e.getMessage());
+        }
+        catch (IOException exception) {
+            browseRecipePresenter.presentError("Network error: " + exception.getMessage());
+        }
+        catch (IllegalArgumentException exception) {
+            browseRecipePresenter.presentError("Invalid input: " + exception.getMessage());
         }
     }
 }

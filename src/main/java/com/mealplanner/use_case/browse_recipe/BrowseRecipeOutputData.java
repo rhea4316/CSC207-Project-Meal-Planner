@@ -2,9 +2,9 @@ package com.mealplanner.use_case.browse_recipe;
 
 // Data transfer object carrying recipe details including ingredient list.
 // Responsible: Regina
+import java.util.List;
 
 import com.mealplanner.entity.Recipe;
-import java.util.List;
 
 public class BrowseRecipeOutputData {
     // should output a list of relevant recipes based on the user's specifications
@@ -14,6 +14,8 @@ public class BrowseRecipeOutputData {
         this.recipes = recipes;
     }
 
-    //Getter:
-    public List<Recipe> getRecipes() {return recipes;}
+    // Getter:
+    public List<Recipe> getRecipes() {
+        return recipes;
+    }
 }

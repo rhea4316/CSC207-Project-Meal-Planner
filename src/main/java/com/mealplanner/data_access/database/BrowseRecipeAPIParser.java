@@ -1,5 +1,13 @@
 package com.mealplanner.data_access.database;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import com.mealplanner.data_access.api.SpoonacularApiClient;
 import com.mealplanner.entity.Recipe;
 import com.mealplanner.exception.RecipeNotFoundException;
@@ -26,7 +34,6 @@ public class BrowseRecipeAPIParser implements BrowseRecipeDataAccessInterface {
         this.apiClient = Objects.requireNonNull(apiClient, "SpoonacularApiClient cannot be null");
     }
 
-
     @Override
     public List<Recipe> searchRecipes(BrowseRecipeInputData inputData) throws IOException, RecipeNotFoundException {
         if (inputData == null) {
@@ -46,9 +53,9 @@ public class BrowseRecipeAPIParser implements BrowseRecipeDataAccessInterface {
         String apiResponse = apiClient.complexSearch(query, numberOfRecipes, includedIngredients);
 
         // Parse the response
-        List<Recipe> recipes = new ArrayList<>();
-        JSONObject jsonBody = new JSONObject(apiResponse);
-        JSONArray jsonArray = jsonBody.getJSONArray("results");
+        final List<Recipe> recipes = new ArrayList<>();
+        final JSONObject jsonBody = new JSONObject(apiResponse);
+        final JSONArray jsonArray = jsonBody.getJSONArray("results");
 
         if (jsonArray.isEmpty()) {
             throw new RecipeNotFoundException("Recipes not found with given query and ingredients", null);
@@ -72,6 +79,4 @@ public class BrowseRecipeAPIParser implements BrowseRecipeDataAccessInterface {
         }
         return recipes;
     }
-
-
 }
