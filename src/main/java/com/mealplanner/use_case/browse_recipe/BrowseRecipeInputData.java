@@ -3,7 +3,9 @@ package com.mealplanner.use_case.browse_recipe;
 // Data transfer object carrying the recipe ID to browse.
 // Responsible: Regina
 
-
+/**
+ * The input data for the BrowseRecipe use case.
+ */
 public class BrowseRecipeInputData {
     private final String query;
     // natural-word query for searching recipes, e.g. "pasta"
@@ -24,11 +26,22 @@ public class BrowseRecipeInputData {
         this.includedIngredients = includedIngredients;
     }
 
-    //Getters:
-    public String getQuery() {return query;}
-    public String getIncludedIngredients() {return includedIngredients;}
-    public String getNumberOfRecipes() {return String.valueOf(numberOfRecipes);}
-    public int getNumberOfRecipesInt() {return numberOfRecipes;}
+    // Getters:
+    public String getQuery() {
+        return query;
+    }
+
+    public String getIncludedIngredients() {
+        return includedIngredients;
+    }
+
+    public String getNumberOfRecipes() {
+        return String.valueOf(numberOfRecipes);
+    }
+
+    public int getNumberOfRecipesInt() {
+        return numberOfRecipes;
+    }
 
 }
 
