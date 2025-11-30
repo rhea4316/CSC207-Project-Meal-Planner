@@ -20,6 +20,9 @@ import javafx.scene.control.*;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.CycleMethod;
+import javafx.scene.paint.LinearGradient;
+import javafx.scene.paint.Stop;
 
 // ControlsFX imports
 import org.controlsfx.control.SearchableComboBox;
@@ -148,7 +151,11 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
         Button createBtn = new Button("Create Recipe");
-        createBtn.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: 600; -fx-background-radius: 8px; -fx-padding: 10 20; -fx-cursor: hand;");
+        // Apply gradient background matching sidebar active buttons
+        Stop[] gradientStops = new Stop[] { new Stop(0, Color.web("#8be200")), new Stop(1, Color.web("#14cd49")) };
+        LinearGradient gradient = new LinearGradient(0, 0, 1, 1, true, CycleMethod.NO_CYCLE, gradientStops);
+        createBtn.setStyle("-fx-text-fill: white; -fx-font-weight: 600; -fx-background-radius: 8px; -fx-padding: 10 20; -fx-cursor: hand; -fx-background-color: null;");
+        createBtn.setBackground(new Background(new BackgroundFill(gradient, new CornerRadii(8), Insets.EMPTY)));
         createBtn.setOnAction(e -> {
             clearForm();
             toggleView(false);
@@ -237,6 +244,11 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         
         saveBtn = new Button("Save Changes");
         saveBtn.getStyleClass().add("primary-button");
+        // Apply gradient background matching sidebar active buttons
+        Stop[] gradientStops = new Stop[] { new Stop(0, Color.web("#8be200")), new Stop(1, Color.web("#14cd49")) };
+        LinearGradient gradient = new LinearGradient(0, 0, 1, 1, true, CycleMethod.NO_CYCLE, gradientStops);
+        saveBtn.setStyle("-fx-text-fill: white; -fx-font-weight: 600; -fx-background-radius: 8px; -fx-cursor: hand; -fx-background-color: null;");
+        saveBtn.setBackground(new Background(new BackgroundFill(gradient, new CornerRadii(8), Insets.EMPTY)));
         saveBtn.setOnAction(e -> saveRecipe()); // Bind save action
         
         // Loading indicator for save button
@@ -867,5 +879,15 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
                 sonner.show("Error", (String) evt.getNewValue(), Sonner.Type.ERROR);
             }
         });
+    }
+    
+    /**
+     * Clean up resources and remove property change listeners to prevent memory leaks.
+     * Should be called when this view is no longer needed.
+     */
+    public void dispose() {
+        if (viewModel != null) {
+            viewModel.removePropertyChangeListener(this);
+        }
     }
 }

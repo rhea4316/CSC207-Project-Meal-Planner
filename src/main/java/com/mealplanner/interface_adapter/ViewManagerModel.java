@@ -50,6 +50,10 @@ public class ViewManagerModel {
         support.addPropertyChangeListener(listener);
     }
 
+    public void removePropertyChangeListener(PropertyChangeListener listener) {
+        support.removePropertyChangeListener(listener);
+    }
+
     public String getPreviousView() {
         return previousView;
     }

@@ -7,7 +7,10 @@ import com.mealplanner.util.StringUtil;
 import com.mealplanner.view.component.AlertBanner;
 import com.mealplanner.view.component.Form;
 import com.mealplanner.view.component.Input;
+import com.mealplanner.view.util.SvgIconLoader;
 import javafx.application.Platform;
+import javafx.scene.Node;
+import javafx.scene.paint.Color;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -53,10 +56,20 @@ public class LoginView extends BorderPane implements PropertyChangeListener {
         centerBox.getStyleClass().add("card-panel");
         centerBox.setPadding(new Insets(30));
 
+        // Logo
+        VBox logoBox = new VBox(12);
+        logoBox.setAlignment(Pos.CENTER);
+        Node logoIcon = SvgIconLoader.loadIcon("/svg/PlanEat.svg", 64, Color.web("#231815"));
+        if (logoIcon != null) {
+            logoBox.getChildren().add(logoIcon);
+        }
+        
         // Title
         Label titleLabel = new Label("Login");
         titleLabel.getStyleClass().add("section-title");
         titleLabel.setStyle("-fx-font-size: 24px; -fx-alignment: center;");
+        
+        logoBox.getChildren().add(titleLabel);
         
         // Error Banner (Hidden by default)
         errorBanner = new AlertBanner("Error", "", AlertBanner.Type.DESTRUCTIVE);
@@ -100,7 +113,7 @@ public class LoginView extends BorderPane implements PropertyChangeListener {
 
         buttonBox.getChildren().addAll(loginButton, signupButton);
 
-        centerBox.getChildren().addAll(titleLabel, errorBanner, form, buttonBox);
+        centerBox.getChildren().addAll(logoBox, errorBanner, form, buttonBox);
         setCenter(centerBox);
     }
 
@@ -182,5 +195,15 @@ public class LoginView extends BorderPane implements PropertyChangeListener {
                 }
             }
         });
+    }
+    
+    /**
+     * Clean up resources and remove property change listeners to prevent memory leaks.
+     * Should be called when this view is no longer needed.
+     */
+    public void dispose() {
+        if (loginViewModel != null) {
+            loginViewModel.removePropertyChangeListener(this);
+        }
     }
 }

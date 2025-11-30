@@ -12,6 +12,8 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -21,6 +23,8 @@ import java.util.function.Consumer;
  * Used when adding meals to schedule from dashboard.
  */
 public class SelectRecipeDialog {
+    
+    private static final Logger logger = LoggerFactory.getLogger(SelectRecipeDialog.class);
     
     private final Dialog dialog;
     private final RecipeRepository recipeRepository;
@@ -62,24 +66,47 @@ public class SelectRecipeDialog {
         // Load recipes in background
         new Thread(() -> {
             try {
+                if (recipeRepository == null) {
+                    throw new IllegalStateException("Recipe repository is not initialized");
+                }
                 List<Recipe> recipes = recipeRepository.findAll();
                 Platform.runLater(() -> {
-                    if (recipes == null || recipes.isEmpty()) {
-                        Label emptyLabel = new Label("No recipes available. Create a recipe first!");
-                        emptyLabel.getStyleClass().add("text-gray-500");
-                        emptyLabel.setAlignment(Pos.CENTER);
-                        emptyLabel.setPadding(new Insets(40));
-                        container.getChildren().set(0, emptyLabel);
-                    } else {
-                        for (Recipe recipe : recipes) {
-                            VBox card = createRecipeCard(recipe);
-                            recipeGrid.getChildren().add(card);
+                    try {
+                        if (recipes == null || recipes.isEmpty()) {
+                            Label emptyLabel = new Label("No recipes available. Create a recipe first!");
+                            emptyLabel.getStyleClass().add("text-gray-500");
+                            emptyLabel.setAlignment(Pos.CENTER);
+                            emptyLabel.setPadding(new Insets(40));
+                            container.getChildren().set(0, emptyLabel);
+                        } else {
+                            for (Recipe recipe : recipes) {
+                                if (recipe != null) {
+                                    VBox card = createRecipeCard(recipe);
+                                    recipeGrid.getChildren().add(card);
+                                }
+                            }
                         }
+                    } catch (Exception e) {
+                        logger.error("Error updating UI with recipes", e);
+                        Label errorLabel = new Label("Failed to display recipes: " + e.getMessage());
+                        errorLabel.getStyleClass().add("text-gray-500");
+                        errorLabel.setAlignment(Pos.CENTER);
+                        errorLabel.setPadding(new Insets(40));
+                        container.getChildren().set(0, errorLabel);
                     }
+                });
+            } catch (IllegalStateException e) {
+                Platform.runLater(() -> {
+                    Label errorLabel = new Label("Failed to load recipes: " + e.getMessage());
+                    errorLabel.getStyleClass().add("text-gray-500");
+                    errorLabel.setAlignment(Pos.CENTER);
+                    errorLabel.setPadding(new Insets(40));
+                    container.getChildren().set(0, errorLabel);
                 });
             } catch (Exception e) {
                 Platform.runLater(() -> {
-                    Label errorLabel = new Label("Failed to load recipes: " + e.getMessage());
+                    String errorMessage = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+                    Label errorLabel = new Label("Failed to load recipes: " + errorMessage);
                     errorLabel.getStyleClass().add("text-gray-500");
                     errorLabel.setAlignment(Pos.CENTER);
                     errorLabel.setPadding(new Insets(40));

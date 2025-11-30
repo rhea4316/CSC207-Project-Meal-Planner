@@ -209,4 +209,14 @@ public class SignupView extends BorderPane implements PropertyChangeListener {
             }
         });
     }
+    
+    /**
+     * Clean up resources and remove property change listeners to prevent memory leaks.
+     * Should be called when this view is no longer needed.
+     */
+    public void dispose() {
+        if (signupViewModel != null) {
+            signupViewModel.removePropertyChangeListener(this);
+        }
+    }
 }

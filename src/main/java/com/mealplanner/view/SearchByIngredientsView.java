@@ -19,6 +19,9 @@ import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.CycleMethod;
+import javafx.scene.paint.LinearGradient;
+import javafx.scene.paint.Stop;
 import javafx.scene.shape.Circle;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -189,7 +192,11 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
 
         searchButton = new Button("Search");
         searchButton.getStyleClass().add("primary-button"); // Green button
-        searchButton.setStyle("-fx-background-color: #4ade80; -fx-text-fill: white; -fx-font-weight: 600; -fx-background-radius: 8px; -fx-padding: 10 24; -fx-font-size: 14px;");
+        // Apply gradient background matching sidebar active buttons
+        Stop[] gradientStops = new Stop[] { new Stop(0, Color.web("#8be200")), new Stop(1, Color.web("#14cd49")) };
+        LinearGradient gradient = new LinearGradient(0, 0, 1, 1, true, CycleMethod.NO_CYCLE, gradientStops);
+        searchButton.setStyle("-fx-text-fill: white; -fx-background-radius: 8px; -fx-font-weight: 600; -fx-padding: 10 24; -fx-font-size: 14px; -fx-background-color: null;");
+        searchButton.setBackground(new Background(new BackgroundFill(gradient, new CornerRadii(8), Insets.EMPTY)));
         Node btnIcon = SvgIconLoader.loadIcon("/svg/search.svg", 16, Color.WHITE);
         if (btnIcon != null) {
             searchButton.setGraphic(btnIcon);
@@ -205,7 +212,7 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         
         HBox popularHeader = new HBox(6);
         popularHeader.setAlignment(Pos.CENTER_LEFT);
-        Node sparkIcon = SvgIconLoader.loadIcon("/svg/star.svg", 14, Color.web("#6b7280"));
+        Node sparkIcon = SvgIconLoader.loadIcon("/svg/sparkles.svg", 14, Color.web("#6b7280"));
         Label popularLabel = new Label("Popular ingredients");
         popularLabel.getStyleClass().add("text-gray-500");
         popularLabel.setStyle("-fx-font-size: 13px;");
@@ -254,7 +261,7 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
         addFilterButton("Lunch", "/svg/brightness.svg");
         addFilterButton("Dinner", "/svg/moon.svg");
         addFilterButton("Vegetarian", "/svg/leaf.svg");
-        addFilterButton("Quick (< 30min)", "/svg/time-fast.svg"); // Assumed icon
+        addFilterButton("Quick (< 30min)", "/svg/bolt.svg");
         
         filtersSection.getChildren().addAll(filtersLabel, quickFiltersContainer);
 
@@ -725,5 +732,15 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
                 }
             }
         });
+    }
+    
+    /**
+     * Clean up resources and remove property change listeners to prevent memory leaks.
+     * Should be called when this view is no longer needed.
+     */
+    public void dispose() {
+        if (viewModel != null) {
+            viewModel.removePropertyChangeListener(this);
+        }
     }
 }

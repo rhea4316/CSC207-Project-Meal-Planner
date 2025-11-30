@@ -1,6 +1,7 @@
 package com.mealplanner.view;
 
 import com.mealplanner.entity.MealType;
+import com.mealplanner.entity.NutritionInfo;
 import com.mealplanner.entity.Recipe;
 import com.mealplanner.entity.Schedule;
 import com.mealplanner.exception.DataAccessException;
@@ -32,7 +33,9 @@ import javafx.scene.control.Tooltip;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
+import javafx.scene.paint.CycleMethod;
+import javafx.scene.paint.LinearGradient;
+import javafx.scene.paint.Stop;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -50,6 +53,23 @@ import org.slf4j.LoggerFactory;
 
 public class ScheduleView extends BorderPane implements PropertyChangeListener {
     private static final Logger logger = LoggerFactory.getLogger(ScheduleView.class);
+    
+    /**
+     * Clean up resources and remove property change listeners to prevent memory leaks.
+     * Should be called when this view is no longer needed.
+     */
+    public void dispose() {
+        if (scheduleViewModel != null) {
+            scheduleViewModel.removePropertyChangeListener(this);
+        }
+        if (viewManagerModel != null) {
+            viewManagerModel.removePropertyChangeListener(this);
+        }
+        if (recommendationsViewModel != null) {
+            recommendationsViewModel.removePropertyChangeListener(this);
+        }
+        logger.debug("ScheduleView disposed - listeners removed");
+    }
 
     private final ScheduleViewModel scheduleViewModel;
     private final ViewScheduleController controller;
@@ -81,14 +101,13 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
     private MealSlotPanel[][] mealSlots; // [row][col] -> row=meal, col=day
     private ProgressBar mealsPlannedProgress;
     private Label mealsPlannedLabel;
+    private Label calValueLabel;
+    private Label calAvgLabel;
     private Button copyBtn;
     private ProgressIndicator copyingIndicator;
 
     // State
     private LocalDate currentWeekStart;
-    
-    // Empty state
-    private VBox emptyStatePanel;
 
     /**
      * Constructor for ScheduleView.
@@ -136,9 +155,6 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
         mainContainer.getChildren().add(createHeader());
         mainContainer.getChildren().add(createStatsSection());
         
-        // Empty state panel
-        emptyStatePanel = createEmptyStatePanel();
-        
         // Calendar Grid wrapped in ScrollPane if needed, but usually fits
         ScrollPane scrollPane = new ScrollPane(createGrid());
         scrollPane.setFitToWidth(true);
@@ -146,10 +162,6 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
         scrollPane.setStyle("-fx-background-color: transparent; -fx-background: transparent; -fx-padding: 0;");
         scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-        
-        // Stack empty state and grid
-        StackPane contentStack = new StackPane();
-        contentStack.getChildren().addAll(scrollPane, emptyStatePanel);
         
         // Increase scroll speed
         scrollPane.addEventFilter(ScrollEvent.SCROLL, event -> {
@@ -171,7 +183,7 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
             }
         });
 
-        mainContainer.getChildren().add(contentStack);
+        mainContainer.getChildren().add(scrollPane);
         setCenter(mainContainer);
         
         updateView(); 
@@ -199,24 +211,31 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
         Region spacer1 = new Region();
         HBox.setHgrow(spacer1, Priority.ALWAYS);
         
-        // Navigation Center
-        HBox navBox = new HBox(8);
+        // Navigation Center - Segmented Control Style
+        HBox navBox = new HBox(0);
         navBox.setAlignment(Pos.CENTER);
+        navBox.setStyle("-fx-background-color: white; -fx-border-color: #e5e7eb; -fx-border-width: 1px; -fx-border-radius: 8px; -fx-background-radius: 8px;");
         
-        Button prevBtn = createIconButton("/svg/angle-left.svg");
+        Button prevBtn = new Button();
+        prevBtn.setStyle("-fx-background-color: transparent; -fx-border-color: transparent; -fx-border-radius: 8px 0 0 8px; -fx-background-radius: 8px 0 0 8px; -fx-cursor: hand; -fx-padding: 8;");
+        Node prevIcon = SvgIconLoader.loadIcon("/svg/angle-left.svg", 16, Color.web("#374151"));
+        prevBtn.setGraphic(prevIcon);
         prevBtn.setOnAction(e -> {
             currentWeekStart = currentWeekStart.minusWeeks(1);
             updateView();
         });
         
         Button thisWeekBtn = new Button("This Week");
-        thisWeekBtn.setStyle("-fx-background-color: white; -fx-text-fill: -fx-theme-primary; -fx-border-color: -fx-theme-primary; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-cursor: hand; -fx-font-weight: 600;");
+        thisWeekBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #374151; -fx-border-color: #e5e7eb; -fx-border-width: 0 1px 0 0; -fx-border-radius: 0; -fx-cursor: hand; -fx-font-weight: 600; -fx-padding: 8 16;");
         thisWeekBtn.setOnAction(e -> {
             currentWeekStart = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
             updateView();
         });
         
-        Button nextBtn = createIconButton("/svg/angle-right.svg");
+        Button nextBtn = new Button();
+        nextBtn.setStyle("-fx-background-color: transparent; -fx-border-color: transparent; -fx-border-radius: 0 8px 8px 0; -fx-background-radius: 0 8px 8px 0; -fx-cursor: hand; -fx-padding: 8;");
+        Node nextIcon = SvgIconLoader.loadIcon("/svg/angle-right.svg", 16, Color.web("#374151"));
+        nextBtn.setGraphic(nextIcon);
         nextBtn.setOnAction(e -> {
             currentWeekStart = currentWeekStart.plusWeeks(1);
             updateView();
@@ -231,7 +250,7 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
         HBox actionBox = new HBox(12);
         actionBox.setAlignment(Pos.CENTER_RIGHT);
         
-        copyBtn = createActionButton("Copy Last Week", "/svg/calendar.svg"); // Fallback icon
+        copyBtn = createActionButton("Copy Last Week", "/svg/copy-alt.svg");
         copyBtn.setOnAction(e -> handleCopyLastWeek());  // PHASE 6: Copy Last Week functionality
         
         // Loading indicator for copy button
@@ -239,11 +258,15 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
         copyingIndicator.setPrefSize(14, 14);
         copyingIndicator.setVisible(false);
         copyingIndicator.setManaged(false);
-        Button autoFillBtn = createActionButton("Auto-fill", "/svg/star.svg");
+        Button autoFillBtn = createActionButton("Auto-fill", "/svg/sparkles.svg");
         autoFillBtn.setOnAction(e -> handleAutoFill());  // Phase 5: Auto-fill functionality
         
         Button newPlanBtn = new Button("New Plan");
-        newPlanBtn.setStyle("-fx-background-color: -fx-theme-primary; -fx-text-fill: white; -fx-background-radius: 8px; -fx-font-weight: 600; -fx-cursor: hand; -fx-padding: 8 16;");
+        // Apply gradient background: #8be200 -> #14cd49 (top-left to bottom-right)
+        Stop[] gradientStops = new Stop[] { new Stop(0, javafx.scene.paint.Color.web("#8be200")), new Stop(1, javafx.scene.paint.Color.web("#14cd49")) };
+        LinearGradient gradient = new LinearGradient(0, 0, 1, 1, true, CycleMethod.NO_CYCLE, gradientStops);
+        newPlanBtn.setStyle("-fx-text-fill: white; -fx-background-radius: 8px; -fx-font-weight: 600; -fx-cursor: hand; -fx-padding: 8 16; -fx-background-color: null;");
+        newPlanBtn.setBackground(new Background(new BackgroundFill(gradient, new CornerRadii(8), Insets.EMPTY)));
         newPlanBtn.setOnAction(e -> viewManagerModel.setActiveView(ViewManager.BROWSE_RECIPE_VIEW));
         
         HBox copyBtnContainer = new HBox(8);
@@ -255,14 +278,6 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
         container.getChildren().add(topRow);
         
         return container;
-    }
-
-    private Button createIconButton(String iconPath) {
-        Button btn = new Button();
-        btn.setStyle("-fx-background-color: white; -fx-border-color: -fx-color-gray-200; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-cursor: hand; -fx-padding: 8;");
-        Node icon = SvgIconLoader.loadIcon(iconPath, 16, Color.web("#374151"));
-        btn.setGraphic(icon);
-        return btn;
     }
 
     private Button createActionButton(String text, String iconPath) {
@@ -312,20 +327,20 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
         
         HBox calValueBox = new HBox(4);
         calValueBox.setAlignment(Pos.BASELINE_LEFT);
-        Label calValue = new Label("2770");
-        calValue.getStyleClass().add("text-gray-900");
-        calValue.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
+        calValueLabel = new Label("0");
+        calValueLabel.getStyleClass().add("text-gray-900");
+        calValueLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
         
         Label calUnit = new Label("cal");
         calUnit.getStyleClass().add("text-gray-500");
         calUnit.setStyle("-fx-font-size: 16px;");
-        calValueBox.getChildren().addAll(calValue, calUnit);
+        calValueBox.getChildren().addAll(calValueLabel, calUnit);
         
-        Label calAvg = new Label("Average: 396 cal/day");
-        calAvg.getStyleClass().add("text-gray-400");
-        calAvg.setStyle("-fx-font-size: 13px;");
+        calAvgLabel = new Label("Average: 0 cal/day");
+        calAvgLabel.getStyleClass().add("text-gray-400");
+        calAvgLabel.setStyle("-fx-font-size: 13px;");
         
-        calCard.getChildren().addAll(calTitle, calValueBox, calAvg);
+        calCard.getChildren().addAll(calTitle, calValueBox, calAvgLabel);
         
         container.getChildren().addAll(plannedCard, calCard);
         return container;
@@ -397,12 +412,14 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
             bgHex = "#fff1f2"; textHex = "#e11d48"; // rose-50, rose-600
         }
         
-        panel.setStyle("-fx-background-color: " + bgHex + "; -fx-background-radius: 12px;");
+        // Fill entire cell with background color, connect with grid visually
+        panel.setStyle("-fx-background-color: " + bgHex + "; -fx-background-radius: 12px 0 0 12px;");
         panel.setPrefHeight(160);
+        panel.setMinHeight(160);
         
         Node icon = SvgIconLoader.loadIcon(iconPath, 24, Color.web(textHex));
         Label label = new Label(text);
-        label.setStyle("-fx-text-fill: " + textHex + "; -fx-font-weight: 500; -fx-font-size: 14px;");
+        label.setStyle("-fx-text-fill: " + textHex + "; -fx-font-weight: 600; -fx-font-size: 14px;");
         
         if (icon != null) panel.getChildren().add(icon);
         panel.getChildren().add(label);
@@ -494,18 +511,18 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
      * PHASE 2: Load a recipe by ID from the repository.
      *
      * @param recipeId Recipe ID to load
-     * @return Recipe object or null if not found or error occurs
+     * @return Optional containing Recipe object if found, empty otherwise
      */
-    private Recipe loadRecipe(String recipeId) {
+    private java.util.Optional<Recipe> loadRecipe(String recipeId) {
         if (recipeId == null || recipeId.isBlank()) {
-            return null;
+            return java.util.Optional.empty();
         }
 
         try {
-            return recipeRepository.findById(recipeId).orElse(null);
+            return recipeRepository.findById(recipeId);
         } catch (DataAccessException e) {
             logger.error("Error loading recipe {}: {}", recipeId, e.getMessage(), e);
-            return null;
+            return java.util.Optional.empty();
         }
     }
 
@@ -521,16 +538,16 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
             return 0;
         }
 
-        int totalCalories = 0;
+        int[] totalCalories = {0}; // Use array to allow modification in lambda
 
         for (String recipeId : mealsForDate.values()) {
-            Recipe recipe = loadRecipe(recipeId);
-            if (recipe != null && recipe.getNutritionInfo() != null) {
-                totalCalories += (int) recipe.getNutritionInfo().getCalories();
-            }
+            loadRecipe(recipeId)
+                .map(Recipe::getNutritionInfo)
+                .map(NutritionInfo::getCalories)
+                .ifPresent(calories -> totalCalories[0] += (int) calories);
         }
 
-        return totalCalories;
+        return totalCalories[0];
     }
 
     private void updateDayHeaders() {
@@ -545,50 +562,6 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
             boolean isActive = date.equals(today);
             gridPane.add(createDayHeader(dayNames[i], date, isActive), i + 1, 0);
         }
-    }
-
-    private VBox createEmptyStatePanel() {
-        VBox container = new VBox(20);
-        container.setAlignment(Pos.CENTER);
-        container.setPadding(new Insets(60, 40, 60, 40));
-        container.setStyle("-fx-background-color: transparent;");
-        
-        // Icon
-        StackPane iconCircle = new StackPane();
-        Circle bg = new Circle(48);
-        bg.setFill(Color.web("#e5e7eb"));
-        Node calendarIcon = SvgIconLoader.loadIcon("/svg/calendar.svg", 32, Color.web("#9ca3af"));
-        if (calendarIcon != null) {
-            iconCircle.getChildren().addAll(bg, calendarIcon);
-        } else {
-            iconCircle.getChildren().add(bg);
-        }
-        
-        // Title
-        Label titleLabel = new Label("이번 주 일정이 비어있습니다");
-        titleLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: 600; -fx-text-fill: #1f2937;");
-        
-        // Subtitle
-        Label subLabel = new Label("레시피를 추가하여 주간 식사 계획을 시작하세요");
-        subLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #6b7280;");
-        
-        // Action buttons
-        HBox actionButtons = new HBox(12);
-        actionButtons.setAlignment(Pos.CENTER);
-        
-        Button browseBtn = new Button("레시피 찾기");
-        browseBtn.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: 600; -fx-background-radius: 8px; -fx-padding: 10 20; -fx-cursor: hand;");
-        browseBtn.setOnAction(e -> viewManagerModel.setActiveView(ViewManager.BROWSE_RECIPE_VIEW));
-        
-        Button autoFillBtn = new Button("자동 채우기");
-        autoFillBtn.setStyle("-fx-background-color: white; -fx-text-fill: #4CAF50; -fx-border-color: #4CAF50; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 10 20; -fx-cursor: hand; -fx-font-weight: 600;");
-        autoFillBtn.setOnAction(e -> handleAutoFill());
-        
-        actionButtons.getChildren().addAll(browseBtn, autoFillBtn);
-        
-        container.getChildren().addAll(iconCircle, titleLabel, subLabel, actionButtons);
-        
-        return container;
     }
 
     private void updateView() {
@@ -606,7 +579,7 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
         }
 
         int filledCount = 0;
-        boolean hasAnyMeals = false;
+        int totalWeeklyCalories = 0;
         Schedule schedule = scheduleViewModel.getSchedule();
         if (schedule != null) {
             Map<LocalDate, Map<MealType, String>> allMeals = schedule.getAllMeals();
@@ -615,52 +588,49 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
                 LocalDate date = currentWeekStart.plusDays(i);
                 Map<MealType, String> mealsForDate = allMeals.get(date);
 
+                // Calculate daily calories
+                int dailyCalories = calculateDailyCalories(date, mealsForDate);
+                totalWeeklyCalories += dailyCalories;
+
                 if (mealsForDate != null && !mealsForDate.isEmpty()) {
-                    hasAnyMeals = true;
                     // PHASE 2: Load actual Recipe objects and pass them to MealSlotPanel
+                    final int dayIndex = i; // Make effectively final for lambda
                     if (mealsForDate.containsKey(MealType.BREAKFAST)) {
                         String recipeId = mealsForDate.get(MealType.BREAKFAST);
-                        Recipe recipe = loadRecipe(recipeId);
-                        if (recipe != null) {
-                            mealSlots[0][i].setMeal(recipe);
-                        } else {
-                            mealSlots[0][i].setMeal(recipeId, "-- cal");
-                        }
+                        loadRecipe(recipeId).ifPresentOrElse(
+                            recipe -> mealSlots[0][dayIndex].setMeal(recipe),
+                            () -> mealSlots[0][dayIndex].setMeal(recipeId, "-- cal")
+                        );
                         filledCount++;
                     }
                     if (mealsForDate.containsKey(MealType.LUNCH)) {
                         String recipeId = mealsForDate.get(MealType.LUNCH);
-                        Recipe recipe = loadRecipe(recipeId);
-                        if (recipe != null) {
-                            mealSlots[1][i].setMeal(recipe);
-                        } else {
-                            mealSlots[1][i].setMeal(recipeId, "-- cal");
-                        }
+                        loadRecipe(recipeId).ifPresentOrElse(
+                            recipe -> mealSlots[1][dayIndex].setMeal(recipe),
+                            () -> mealSlots[1][dayIndex].setMeal(recipeId, "-- cal")
+                        );
                         filledCount++;
                     }
                     if (mealsForDate.containsKey(MealType.DINNER)) {
                         String recipeId = mealsForDate.get(MealType.DINNER);
-                        Recipe recipe = loadRecipe(recipeId);
-                        if (recipe != null) {
-                            mealSlots[2][i].setMeal(recipe);
-                        } else {
-                            mealSlots[2][i].setMeal(recipeId, "-- cal");
-                        }
+                        loadRecipe(recipeId).ifPresentOrElse(
+                            recipe -> mealSlots[2][dayIndex].setMeal(recipe),
+                            () -> mealSlots[2][dayIndex].setMeal(recipeId, "-- cal")
+                        );
                         filledCount++;
                     }
                 }
             }
         }
         
-        // Show/hide empty state
-        if (emptyStatePanel != null) {
-            emptyStatePanel.setVisible(!hasAnyMeals);
-            emptyStatePanel.setManaged(!hasAnyMeals);
-        }
-        
         // Update Stats
         mealsPlannedLabel.setText(filledCount + "/21");
         mealsPlannedProgress.setProgress(filledCount / 21.0);
+        
+        // Update Weekly Calories
+        calValueLabel.setText(String.valueOf(totalWeeklyCalories));
+        int avgCalories = filledCount > 0 ? totalWeeklyCalories / 7 : 0;
+        calAvgLabel.setText("Average: " + avgCalories + " cal/day");
     }
 
     private class MealSlotPanel extends VBox {
@@ -689,19 +659,27 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
         private void setupEmptyState() {
             getChildren().clear();
             
-            // Dashed Border Style
-            setStyle("-fx-background-color: transparent; -fx-border-color: #e5e7eb; -fx-border-width: 2px; -fx-border-style: dashed; -fx-border-radius: 12px;");
+            // Very subtle border - almost invisible, only appears on hover
+            setStyle("-fx-background-color: transparent; -fx-border-color: #f3f4f6; -fx-border-width: 1px; -fx-border-style: dashed; -fx-border-radius: 12px;");
+            
+            // Add hover effect to show border more clearly
+            setOnMouseEntered(e -> {
+                setStyle("-fx-background-color: #fafafa; -fx-border-color: #e0e0e0; -fx-border-width: 1px; -fx-border-style: dashed; -fx-border-radius: 12px;");
+            });
+            setOnMouseExited(e -> {
+                setStyle("-fx-background-color: transparent; -fx-border-color: #f3f4f6; -fx-border-width: 1px; -fx-border-style: dashed; -fx-border-radius: 12px;");
+            });
             
             if (currentTooltip != null) {
                 Tooltip.uninstall(this, currentTooltip);
                 currentTooltip = null;
             }
             
-            // Dashed Circle with Plus
+            // Subtle Circle with Plus
             StackPane circle = new StackPane();
             circle.setPrefSize(40, 40);
             circle.setMaxSize(40, 40);
-            circle.setStyle("-fx-border-color: #e5e7eb; -fx-border-width: 2px; -fx-border-style: dashed; -fx-border-radius: 50%; -fx-background-color: transparent;");
+            circle.setStyle("-fx-border-color: #e0e0e0; -fx-border-width: 1px; -fx-border-style: dashed; -fx-border-radius: 50%; -fx-background-color: transparent;");
             
             Node plusIcon = SvgIconLoader.loadIcon("/svg/plus.svg", 16, Color.web("#9ca3af"));
             if (plusIcon != null) circle.getChildren().add(plusIcon);
@@ -751,9 +729,13 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
         public void setMeal(String recipeName, String calories, String imageUrl) {
             this.isFilled = true;
             getChildren().clear();
+            
+            // Remove hover effects when filled
+            setOnMouseEntered(null);
+            setOnMouseExited(null);
 
-            // Filled Card Style
-            setStyle("-fx-background-color: white; -fx-background-radius: 12px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 4, 0, 0, 2); -fx-border-width: 0;");
+            // Filled Card Style - Modern card design with rounded corners
+            setStyle("-fx-background-color: white; -fx-background-radius: 8px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.08), 6, 0, 0, 2); -fx-border-width: 0;");
 
             // Tooltip
             if (currentTooltip != null) {
@@ -763,43 +745,69 @@ public class ScheduleView extends BorderPane implements PropertyChangeListener {
             Tooltip.install(this, currentTooltip);
 
             // Image section - load actual image if available, otherwise use placeholder
+            // Image takes up most of the card (4:3 or 16:9 ratio)
             Node imageNode;
             if (imageUrl != null && !imageUrl.trim().isEmpty()) {
                 Image image = imageCache.getImage(imageUrl);
                 ImageView imageView = new ImageView(image);
                 imageView.setFitWidth(200);
-                imageView.setFitHeight(80);
-                imageView.setPreserveRatio(true);
+                imageView.setFitHeight(100); // Increased height for better image prominence
+                imageView.setPreserveRatio(false); // Fill the entire area without preserving ratio
                 imageView.setSmooth(true);
                 imageView.setCache(true);
-                imageView.setStyle("-fx-background-color: #e5e7eb; -fx-background-radius: 12px 12px 0 0;");
+                imageView.setStyle("-fx-background-color: #e5e7eb;");
+                // Clip image to rounded top corners only
+                javafx.scene.shape.Rectangle clip = new javafx.scene.shape.Rectangle(200, 100);
+                clip.setArcWidth(8);
+                clip.setArcHeight(8);
+                imageView.setClip(clip);
                 imageNode = imageView;
             } else {
                 // Placeholder when no image available
                 Region imagePlaceholder = new Region();
-                imagePlaceholder.setPrefHeight(80);
-                imagePlaceholder.setMinHeight(80);
-                imagePlaceholder.setStyle("-fx-background-color: #e5e7eb; -fx-background-radius: 12px 12px 0 0;");
+                imagePlaceholder.setPrefHeight(100);
+                imagePlaceholder.setMinHeight(100);
+                imagePlaceholder.setStyle("-fx-background-color: #e5e7eb;");
+                // Clip placeholder to rounded top corners only
+                javafx.scene.shape.Rectangle clip = new javafx.scene.shape.Rectangle(200, 100);
+                clip.setArcWidth(8);
+                clip.setArcHeight(8);
+                imagePlaceholder.setClip(clip);
                 imageNode = imagePlaceholder;
             }
 
-            // Content section
+            // Content section - Compact text at bottom
             VBox filledContent = new VBox(4);
-            filledContent.setPadding(new Insets(10));
+            filledContent.setPadding(new Insets(8, 10, 10, 10));
             filledContent.setAlignment(Pos.CENTER_LEFT);
+            filledContent.setMaxWidth(Double.MAX_VALUE);
 
             Label contentLabel = new Label(recipeName);
             contentLabel.getStyleClass().add("text-gray-900");
-            contentLabel.setStyle("-fx-font-weight: 600; -fx-font-size: 13px;");
+            contentLabel.setStyle("-fx-font-weight: 700; -fx-font-size: 13px;");
             contentLabel.setWrapText(true);
+            contentLabel.setMaxWidth(Double.MAX_VALUE);
 
             Label calLabel = new Label(calories);
             calLabel.getStyleClass().add("text-gray-500");
-            calLabel.setStyle("-fx-font-size: 11px;");
+            calLabel.setStyle("-fx-font-size: 11px; -fx-font-weight: 400;");
 
             filledContent.getChildren().addAll(contentLabel, calLabel);
 
-            getChildren().addAll(imageNode, filledContent);
+            // Main container - clip to rounded corners for overflow
+            VBox cardContainer = new VBox(0);
+            cardContainer.getChildren().addAll(imageNode, filledContent);
+            cardContainer.setStyle("-fx-background-color: white; -fx-background-radius: 8px;");
+            
+            // Clip entire card to rounded corners to prevent overflow
+            javafx.scene.shape.Rectangle cardClip = new javafx.scene.shape.Rectangle();
+            cardClip.widthProperty().bind(widthProperty());
+            cardClip.heightProperty().bind(heightProperty());
+            cardClip.setArcWidth(8);
+            cardClip.setArcHeight(8);
+            cardContainer.setClip(cardClip);
+
+            getChildren().add(cardContainer);
         }
 
         public void clear() {

@@ -114,16 +114,14 @@ public class RecipeDetailView extends ScrollPane implements PropertyChangeListen
         heroSection.setMinHeight(350);
         heroSection.setAlignment(Pos.BOTTOM_LEFT);
 
-        // 1. Background Image
+        // 1. Background Image - Fill entire hero section
         heroImageView = new ImageView();
-        heroImageView.setFitWidth(1200); // Will be bound to heroSection width
-        heroImageView.setFitHeight(350);
-        heroImageView.setPreserveRatio(true);
+        heroImageView.fitWidthProperty().bind(heroSection.widthProperty());
+        heroImageView.fitHeightProperty().bind(heroSection.heightProperty());
+        heroImageView.setPreserveRatio(false); // Fill the entire area without preserving ratio
         heroImageView.setSmooth(true);
         heroImageView.setCache(true);
         heroImageView.setStyle("-fx-background-color: #ddd;"); // Fallback color
-        heroImageView.fitWidthProperty().bind(heroSection.widthProperty());
-        heroImageView.fitHeightProperty().bind(heroSection.heightProperty());
         
         // 2. Gradient Overlay (Transparent -> Black 70%)
         Rectangle overlay = new Rectangle();
@@ -575,5 +573,18 @@ public class RecipeDetailView extends ScrollPane implements PropertyChangeListen
             target = ViewManager.BROWSE_RECIPE_VIEW;
         }
         viewManagerModel.setActiveView(target);
+    }
+    
+    /**
+     * Clean up resources and remove property change listeners to prevent memory leaks.
+     * Should be called when this view is no longer needed.
+     */
+    public void dispose() {
+        if (viewModel != null) {
+            viewModel.removePropertyChangeListener(this);
+        }
+        if (viewManagerModel != null) {
+            viewManagerModel.removePropertyChangeListener(this);
+        }
     }
 }

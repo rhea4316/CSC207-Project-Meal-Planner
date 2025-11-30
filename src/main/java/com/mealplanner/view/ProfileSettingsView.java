@@ -235,7 +235,7 @@ public class ProfileSettingsView extends BorderPane implements PropertyChangeLis
         header.setAlignment(Pos.CENTER_LEFT);
         StackPane iconBg = new StackPane();
         Circle bgCircle = new Circle(16, Color.web("#64DD17"));
-        Node targetIcon = SvgIconLoader.loadIcon("/svg/cross-small.svg", 20, Color.WHITE); // Target/Crosshair fallback
+        Node targetIcon = SvgIconLoader.loadIcon("/svg/flag.svg", 20, Color.WHITE);
         iconBg.getChildren().addAll(bgCircle, targetIcon != null ? targetIcon : new Label());
         
         VBox titleBox = new VBox(2);
@@ -289,7 +289,7 @@ public class ProfileSettingsView extends BorderPane implements PropertyChangeLis
         // Save Button
         Button saveBtn = new Button("Save Nutrition Goals");
         saveBtn.setStyle("-fx-background-color: #00C853; -fx-text-fill: white; -fx-font-weight: 600; -fx-background-radius: 8px; -fx-padding: 10 20; -fx-cursor: hand;");
-        Node saveIcon = SvgIconLoader.loadIcon("/svg/book-fill.svg", 16, Color.WHITE);
+        Node saveIcon = SvgIconLoader.loadIcon("/svg/disk.svg", 16, Color.WHITE);
         if (saveIcon != null) {
             saveBtn.setGraphic(saveIcon);
             saveBtn.setGraphicTextGap(8);
@@ -723,5 +723,18 @@ public class ProfileSettingsView extends BorderPane implements PropertyChangeLis
                 }
             }
         });
+    }
+    
+    /**
+     * Clean up resources and remove property change listeners to prevent memory leaks.
+     * Should be called when this view is no longer needed.
+     */
+    public void dispose() {
+        if (profileSettingsViewModel != null) {
+            profileSettingsViewModel.removePropertyChangeListener(this);
+        }
+        if (viewManagerModel != null) {
+            viewManagerModel.removePropertyChangeListener(this);
+        }
     }
 }

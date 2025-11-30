@@ -24,7 +24,6 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.CycleMethod;
@@ -45,6 +44,10 @@ import org.slf4j.LoggerFactory;
 
 public class DashboardView extends BorderPane implements PropertyChangeListener {
     private static final Logger logger = LoggerFactory.getLogger(DashboardView.class);
+    
+    // Layout constants for consistent grid spacing
+    private static final double GRID_GAP = 24.0;
+    private static final double CARD_PADDING = 20.0;
     
     public final String viewName = "DashboardView";
     private final ViewManagerModel viewManagerModel;
@@ -87,14 +90,16 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
     // Default nutrition goals are now retrieved from user or NutritionGoals.createDefault()
 
     // Dynamic UI Components
-    private HBox mealsContainer;
+    private HBox mealsContainer; // Legacy reference, kept for backward compatibility
+    private GridPane mealsGrid; // 3-column grid for meal cards
     private Label calorieValueLabel; // e.g. "1,200 of 2,000 cal"
     private StackPane circularProgressPane;
     private Label remainingCaloriesLabel;
     private Progress proteinBar, carbsBar, fatBar;
     private Label proteinValLabel, carbsValLabel, fatValLabel; // Value labels for nutrient bars
     private Label welcomeLabel; // Welcome message label (dynamically updated based on logged-in user)
-    private HBox recommendedRecipeList; // Phase 3: Container for recommended recipe cards
+    private HBox recommendedRecipeList; // Legacy reference, kept for backward compatibility
+    private GridPane recommendedRecipeGrid; // 3-column grid for recommended recipe cards
     private final Sonner sonner;
 
     /**
@@ -255,7 +260,8 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
     private VBox createTodayMenuSection() {
         VBox container = new VBox();
         container.getStyleClass().add("card-panel");
-        container.setSpacing(20);
+        container.setSpacing(CARD_PADDING);
+        container.setPadding(new Insets(CARD_PADDING));
 
         // Header Row (Title + Auto-generate)
         HBox headerRow = new HBox();
@@ -270,14 +276,14 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         
         Button autoGenBtn = new Button("Auto-generate");
         autoGenBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #2d5016; -fx-font-weight: 600; -fx-cursor: hand;");
-        Node sparkIcon = SvgIconLoader.loadIcon("/svg/star.svg", 16, Color.web("#4CAF50"));
+        Node sparkIcon = SvgIconLoader.loadIcon("/svg/sparkles.svg", 16, Color.web("#4CAF50"));
         if (sparkIcon != null) autoGenBtn.setGraphic(sparkIcon);
         // Phase 4: Add click handler for auto-generate functionality
         autoGenBtn.setOnAction(e -> handleAutoGenerate());
         
-        // Hover effect: change to star-fill and darker text
+        // Hover effect: change to sparkles-fill and darker text
         autoGenBtn.setOnMouseEntered(e -> {
-            Node fillIcon = SvgIconLoader.loadIcon("/svg/star-fill.svg", 16, Color.web("#4CAF50"));
+            Node fillIcon = SvgIconLoader.loadIcon("/svg/sparkles-fill.svg", 16, Color.web("#4CAF50"));
             if (fillIcon != null) {
                 autoGenBtn.setGraphic(fillIcon);
             }
@@ -296,13 +302,28 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         VBox headerBox = new VBox(5); // Reduced spacing
         headerBox.getChildren().addAll(headerRow, subTitle);
 
-        // Meals Container (Horizontal Grid)
-        mealsContainer = new HBox(20);
-        mealsContainer.setAlignment(Pos.CENTER_LEFT);
-        // Ensure HBox fills width
-        mealsContainer.setMaxWidth(Double.MAX_VALUE);
+        // Meals Container (3-column Grid)
+        this.mealsGrid = new GridPane();
+        this.mealsGrid.setHgap(GRID_GAP);
+        this.mealsGrid.setVgap(GRID_GAP);
+        this.mealsGrid.setMaxWidth(Double.MAX_VALUE);
+        
+        // Store reference for updating meals
+        mealsContainer = new HBox(); // Keep for backward compatibility, but use grid for layout
+        
+        // Column constraints for 3 equal columns
+        ColumnConstraints col1 = new ColumnConstraints();
+        col1.setHgrow(Priority.ALWAYS);
+        col1.setPercentWidth(33.33);
+        ColumnConstraints col2 = new ColumnConstraints();
+        col2.setHgrow(Priority.ALWAYS);
+        col2.setPercentWidth(33.33);
+        ColumnConstraints col3 = new ColumnConstraints();
+        col3.setHgrow(Priority.ALWAYS);
+        col3.setPercentWidth(33.33);
+        this.mealsGrid.getColumnConstraints().addAll(col1, col2, col3);
 
-        container.getChildren().addAll(headerBox, mealsContainer);
+        container.getChildren().addAll(headerBox, mealsGrid);
         return container;
     }
 
@@ -418,7 +439,8 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
     private VBox createRecommendedSection() {
         VBox container = new VBox();
         container.getStyleClass().add("card-panel");
-        container.setSpacing(20);
+        container.setSpacing(CARD_PADDING);
+        container.setPadding(new Insets(CARD_PADDING));
 
         HBox headerRow = new HBox();
         headerRow.setAlignment(Pos.CENTER_LEFT);
@@ -440,25 +462,28 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         
         headerRow.getChildren().addAll(title, spacer, viewAll);
 
-        ScrollPane scrollPane = new ScrollPane();
-        scrollPane.setFitToHeight(true);
-        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        scrollPane.setStyle("-fx-background-color: transparent; -fx-background: transparent;");
-        scrollPane.setPannable(true);
-
-        // Phase 3: Use dynamic recipe list instead of hardcoded recipes
-        recommendedRecipeList = new HBox(16);
-        recommendedRecipeList.setPadding(new Insets(5));
+        // 3-column Grid for recipe cards (matching Today's Menu layout)
+        this.recommendedRecipeGrid = new GridPane();
+        this.recommendedRecipeGrid.setHgap(GRID_GAP);
+        this.recommendedRecipeGrid.setVgap(GRID_GAP);
+        this.recommendedRecipeGrid.setMaxWidth(Double.MAX_VALUE);
         
-        // Initial loading state
-        Label loadingLabel = new Label("Loading recommendations...");
-        loadingLabel.getStyleClass().add("text-gray-500");
-        recommendedRecipeList.getChildren().add(loadingLabel);
+        // Column constraints for 3 equal columns (matching Today's Menu)
+        ColumnConstraints col1 = new ColumnConstraints();
+        col1.setHgrow(Priority.ALWAYS);
+        col1.setPercentWidth(33.33);
+        ColumnConstraints col2 = new ColumnConstraints();
+        col2.setHgrow(Priority.ALWAYS);
+        col2.setPercentWidth(33.33);
+        ColumnConstraints col3 = new ColumnConstraints();
+        col3.setHgrow(Priority.ALWAYS);
+        col3.setPercentWidth(33.33);
+        this.recommendedRecipeGrid.getColumnConstraints().addAll(col1, col2, col3);
 
-        scrollPane.setContent(recommendedRecipeList);
+        // Phase 3: Use dynamic recipe list - now using GridPane
+        recommendedRecipeList = new HBox(); // Keep for backward compatibility, but use grid for layout
 
-        container.getChildren().addAll(headerRow, scrollPane);
+        container.getChildren().addAll(headerRow, this.recommendedRecipeGrid);
         
         // Phase 3: Load recommendations on initialization
         loadRecommendations();
@@ -472,32 +497,32 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
      */
     private void loadRecommendations() {
         if (recommendationsController == null) {
-            if (recommendedRecipeList != null) {
-                recommendedRecipeList.getChildren().clear();
+            if (recommendedRecipeGrid != null) {
+                recommendedRecipeGrid.getChildren().clear();
                 Label noRecommendationsLabel = new Label("No recommendations available");
                 noRecommendationsLabel.getStyleClass().add("text-gray-500");
-                recommendedRecipeList.getChildren().add(noRecommendationsLabel);
+                recommendedRecipeGrid.add(noRecommendationsLabel, 0, 0, 3, 1);
             }
             return;
         }
         
         String userId = SessionManager.getInstance().getCurrentUserId();
         if (userId == null || userId.trim().isEmpty()) {
-            if (recommendedRecipeList != null) {
-                recommendedRecipeList.getChildren().clear();
+            if (recommendedRecipeGrid != null) {
+                recommendedRecipeGrid.getChildren().clear();
                 Label loginPromptLabel = new Label("Please log in to see recommendations");
                 loginPromptLabel.getStyleClass().add("text-gray-500");
-                recommendedRecipeList.getChildren().add(loginPromptLabel);
+                recommendedRecipeGrid.add(loginPromptLabel, 0, 0, 3, 1);
             }
             return;
         }
         
         // Show loading state
-        if (recommendedRecipeList != null) {
-            recommendedRecipeList.getChildren().clear();
+        if (recommendedRecipeGrid != null) {
+            recommendedRecipeGrid.getChildren().clear();
             Label loadingLabel = new Label("Loading recommendations...");
             loadingLabel.getStyleClass().add("text-gray-500");
-            recommendedRecipeList.getChildren().add(loadingLabel);
+            recommendedRecipeGrid.add(loadingLabel, 0, 0, 3, 1);
         }
         
         // Request recommendations
@@ -505,11 +530,11 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
             recommendationsController.execute(userId);
         } catch (Exception e) {
             logger.error("Failed to load recommendations", e);
-            if (recommendedRecipeList != null) {
-                recommendedRecipeList.getChildren().clear();
+            if (recommendedRecipeGrid != null) {
+                recommendedRecipeGrid.getChildren().clear();
                 Label errorLabel = new Label("Error loading recommendations");
                 errorLabel.getStyleClass().add("text-gray-500");
-                recommendedRecipeList.getChildren().add(errorLabel);
+                recommendedRecipeGrid.add(errorLabel, 0, 0, 3, 1);
             }
         }
     }
@@ -519,7 +544,7 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
      * Called when RecipeBrowseViewModel fires "recommendations" property change.
      */
     private void updateRecommendedRecipes() {
-        if (recommendedRecipeList == null || recommendationsViewModel == null) {
+        if (recommendedRecipeGrid == null || recommendationsViewModel == null) {
             return;
         }
         
@@ -529,22 +554,30 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         }
         
         List<Recipe> recommendations = recommendationsViewModel.getRecommendations();
-        recommendedRecipeList.getChildren().clear();
+        if (recommendedRecipeGrid != null) {
+            recommendedRecipeGrid.getChildren().clear();
+        }
+        if (recommendedRecipeList != null) {
+            recommendedRecipeList.getChildren().clear();
+        }
         
         if (recommendations == null || recommendations.isEmpty()) {
             Label noRecommendationsLabel = new Label("No recommendations available");
             noRecommendationsLabel.getStyleClass().add("text-gray-500");
-            recommendedRecipeList.getChildren().add(noRecommendationsLabel);
+            if (recommendedRecipeGrid != null) {
+                recommendedRecipeGrid.add(noRecommendationsLabel, 0, 0, 3, 1);
+            }
             return;
         }
         
-        // Display up to 3 recommendations
+        // Display up to 3 recommendations in 3-column grid (matching Today's Menu layout)
         int count = Math.min(3, recommendations.size());
         for (int i = 0; i < count; i++) {
             Recipe recipe = recommendations.get(i);
-            if (recipe != null) {
+            if (recipe != null && recommendedRecipeGrid != null) {
                 VBox card = createRecipeCard(recipe);
-                recommendedRecipeList.getChildren().add(card);
+                recommendedRecipeGrid.add(card, i, 0);
+                GridPane.setHgrow(card, Priority.ALWAYS);
             }
         }
     }
@@ -563,11 +596,11 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         String hoverStyle = "-fx-background-color: #ffffff; -fx-background-radius: 12px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.08), 12, 0, 0, 2); -fx-border-color: #e5e7eb; -fx-border-width: 1px; -fx-border-radius: 12px;";
         
         card.setStyle(defaultStyle);
-        card.setPrefWidth(200);
-        card.setMinWidth(200);
-        card.setPrefHeight(180);
-        card.setMinHeight(180);
-        card.setMaxHeight(180);
+        // Remove fixed width to allow grid to control card width (matching meal cards)
+        card.setMaxWidth(Double.MAX_VALUE);
+        card.setPrefHeight(240);
+        card.setMinHeight(240);
+        card.setMaxHeight(240);
         card.setCursor(javafx.scene.Cursor.HAND);
         
         // 개선된 호버 효과
@@ -593,20 +626,34 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         });
         
         Region imagePlaceholder = new Region();
-        imagePlaceholder.setPrefHeight(120);
+        imagePlaceholder.setPrefHeight(140);
+        imagePlaceholder.setMinHeight(140);
+        imagePlaceholder.setMaxHeight(140);
         imagePlaceholder.setStyle("-fx-background-color: #E5E7EB; -fx-background-radius: 12px 12px 0 0;");
         
-        VBox content = new VBox(8);
-        content.setPadding(new Insets(12));
-        content.setPrefHeight(60); // Fixed height for content area
-        content.setMinHeight(60);
+        VBox content = new VBox(0);
+        content.setPadding(new Insets(14, 14, 14, 14));
+        content.setPrefHeight(100);
+        content.setMinHeight(100);
+        content.setMaxHeight(100);
         
-        Label nameLabel = new Label(recipe.getName());
+        // Title container with fixed height for 2 lines max
+        VBox titleContainer = new VBox();
+        titleContainer.setPrefHeight(48);
+        titleContainer.setMinHeight(48);
+        titleContainer.setMaxHeight(48);
+        
+        String recipeName = recipe.getName();
+        // Truncate to approximately 2 lines (roughly 40-45 characters for 14px font)
+        String displayName = truncateTextToTwoLines(recipeName, 40);
+        
+        Label nameLabel = new Label(displayName);
         nameLabel.getStyleClass().add("text-gray-900");
-        nameLabel.setStyle("-fx-font-weight: 600; -fx-font-size: 14px;");
+        nameLabel.setStyle("-fx-font-weight: 600; -fx-font-size: 14px; -fx-line-spacing: 2px;");
         nameLabel.setWrapText(true);
-        nameLabel.setMaxHeight(Double.MAX_VALUE);
-        VBox.setVgrow(nameLabel, Priority.ALWAYS);
+        nameLabel.setMaxWidth(192); // 220 - 14*2 (padding)
+        nameLabel.setMaxHeight(44); // Allow 2 lines: 22px per line
+        titleContainer.getChildren().add(nameLabel);
         
         HBox meta = new HBox(10);
         meta.setAlignment(Pos.CENTER_LEFT);
@@ -641,24 +688,19 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         
         meta.getChildren().addAll(calBox, timeBox);
         
-        // Use StackPane to position meta at bottom
-        StackPane contentStack = new StackPane();
-        contentStack.setPrefHeight(60);
-        contentStack.setMinHeight(60);
+        // Spacer to push metadata to bottom
+        Region spacer = new Region();
+        VBox.setVgrow(spacer, Priority.ALWAYS);
         
-        VBox nameContainer = new VBox();
-        nameContainer.getChildren().add(nameLabel);
-        VBox.setVgrow(nameContainer, Priority.ALWAYS);
-        
-        // Meta positioned at bottom
-        VBox metaContainer = new VBox();
-        VBox.setVgrow(metaContainer, Priority.ALWAYS);
+        // Metadata container pinned to bottom
+        HBox metaContainer = new HBox();
         metaContainer.setAlignment(Pos.BOTTOM_LEFT);
+        metaContainer.setPadding(new Insets(0, 0, 0, 0));
         metaContainer.getChildren().add(meta);
         
-        contentStack.getChildren().addAll(nameContainer, metaContainer);
+        content.getChildren().addAll(titleContainer, spacer, metaContainer);
         
-        card.getChildren().addAll(imagePlaceholder, contentStack);
+        card.getChildren().addAll(imagePlaceholder, content);
         
         // Phase 3: Add click handler to navigate to recipe detail - 개선된 클릭 피드백
         card.setOnMouseClicked(e -> {
@@ -678,12 +720,30 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
     }
     
     /**
+     * Truncates text to approximately 2 lines.
+     * @param text The text to truncate
+     * @param maxChars Maximum characters for 2 lines (approximately 40-45 for 14px font)
+     * @return Truncated text with ellipsis if needed
+     */
+    private String truncateTextToTwoLines(String text, int maxChars) {
+        if (text == null || text.length() <= maxChars) {
+            return text;
+        }
+        // Find the last space before maxChars to avoid cutting words
+        int lastSpace = text.lastIndexOf(' ', maxChars - 3);
+        if (lastSpace > maxChars / 2) {
+            return text.substring(0, lastSpace) + "...";
+        }
+        return text.substring(0, maxChars - 3) + "...";
+    }
+    
+    /**
      * Creates an empty recipe card placeholder.
      */
     private VBox createEmptyRecipeCard() {
         VBox card = new VBox(0);
-        card.setPrefWidth(200);
-        card.setMinWidth(200);
+        // Remove fixed width to allow grid to control card width
+        card.setMaxWidth(Double.MAX_VALUE);
         card.setStyle("-fx-background-color: #f9fafb; -fx-background-radius: 12px;");
         return card;
     }
@@ -741,23 +801,36 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         GridPane grid = new GridPane();
         grid.setHgap(12); // Spacing 12px
         grid.setVgap(12);
+        grid.setMaxWidth(Double.MAX_VALUE); // Use full width
         
         // Add Snack: Lime (#84cc16) -> Green (#22c55e)
-        grid.add(createQuickActionButton("Add Snack", "/svg/plus.svg", "#84cc16", "#22c55e"), 0, 0);
+        VBox btn1 = createQuickActionButton("Add Snack", "/svg/plus.svg", "#84cc16", "#22c55e");
+        grid.add(btn1, 0, 0);
+        GridPane.setHgrow(btn1, Priority.ALWAYS);
         
         // Log Water: Blue (#3b82f6) -> Cyan (#06b6d4)
-        grid.add(createQuickActionButton("Log Water", "/svg/raindrops.svg", "#3b82f6", "#06b6d4"), 1, 0);
+        VBox btn2 = createQuickActionButton("Log Water", "/svg/raindrops.svg", "#3b82f6", "#06b6d4");
+        grid.add(btn2, 1, 0);
+        GridPane.setHgrow(btn2, Priority.ALWAYS);
         
         // New Recipe: Purple (#a855f7) -> Pink (#ec4899)
-        grid.add(createQuickActionButton("New Recipe", "/svg/add-book.svg", "#a855f7", "#ec4899"), 0, 1);
+        VBox btn3 = createQuickActionButton("New Recipe", "/svg/add-book.svg", "#a855f7", "#ec4899");
+        grid.add(btn3, 0, 1);
+        GridPane.setHgrow(btn3, Priority.ALWAYS);
         
         // Weekly Plan: Orange (#f97316) -> Amber (#f59e0b)
-        grid.add(createQuickActionButton("Weekly Plan", "/svg/calendar.svg", "#f97316", "#f59e0b"), 1, 1);
+        VBox btn4 = createQuickActionButton("Weekly Plan", "/svg/calendar.svg", "#f97316", "#f59e0b");
+        grid.add(btn4, 1, 1);
+        GridPane.setHgrow(btn4, Priority.ALWAYS);
 
         ColumnConstraints col1 = new ColumnConstraints();
         col1.setPercentWidth(50);
+        col1.setHgrow(Priority.ALWAYS);
+        col1.setMinWidth(120); // Set minimum width for cells
         ColumnConstraints col2 = new ColumnConstraints();
         col2.setPercentWidth(50);
+        col2.setHgrow(Priority.ALWAYS);
+        col2.setMinWidth(120); // Set minimum width for cells
         grid.getColumnConstraints().addAll(col1, col2);
         
         container.getChildren().addAll(title, grid);
@@ -770,7 +843,7 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         btn.setAlignment(Pos.CENTER);
         btn.setPrefHeight(100);
         btn.setMaxHeight(100);
-        btn.setMaxWidth(100);
+        btn.setMaxWidth(Double.MAX_VALUE); // Allow button to expand to fill grid cell
         
         // Default Style: bg #fbfbfc, no shadow, no outline
         String defaultBtnStyle = "-fx-background-color: #fbfbfc; -fx-background-radius: 12px; -fx-effect: null; -fx-border-width: 0;";
@@ -780,12 +853,12 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         btn.setStyle(defaultBtnStyle);
         
         StackPane iconBox = new StackPane();
-        iconBox.setPrefSize(48, 48);
-        iconBox.setMaxSize(48, 48);
+        iconBox.setPrefSize(44, 44); // Slightly reduced from 48 to make room for text
+        iconBox.setMaxSize(44, 44);
         
-        Rectangle iconBg = new Rectangle(48, 48);
-        iconBg.setArcWidth(16); // Increased radius from 12 to 16
-        iconBg.setArcHeight(16); // Increased radius from 12 to 16
+        Rectangle iconBg = new Rectangle(44, 44); // Reduced from 48 to 44
+        iconBg.setArcWidth(16);
+        iconBg.setArcHeight(16);
         
         // Gradient Fill
         Stop[] stops = new Stop[] { new Stop(0, Color.web(startColor)), new Stop(1, Color.web(endColor)) };
@@ -794,7 +867,7 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         // Update DropShadow to softer, spread out shadow if needed, or keep as is
         iconBg.setEffect(new javafx.scene.effect.DropShadow(2, 0, 1, Color.rgb(0,0,0,0.05)));
         
-        Node icon = SvgIconLoader.loadIcon(iconPath, 24, Color.WHITE);
+        Node icon = SvgIconLoader.loadIcon(iconPath, 22, Color.WHITE); // Reduced from 24 to 22
         if (icon != null) {
             icon.setStyle("-fx-stroke-width: 2px;"); // Ensure stroke width if supported or visually approximated
         } else {
@@ -805,7 +878,11 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         
         Label textLabel = new Label(text);
         textLabel.getStyleClass().add("text-gray-700");
-        textLabel.setStyle("-fx-font-size: 12px;"); // Font size 12px
+        textLabel.setStyle("-fx-font-size: 12px; -fx-alignment: center;"); // Font size 12px, center alignment
+        textLabel.setWrapText(true); // Allow text wrapping
+        textLabel.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
+        textLabel.setAlignment(Pos.CENTER); // Center alignment for label
+        textLabel.setMaxWidth(Double.MAX_VALUE); // Allow text to use available width
         
         btn.getChildren().addAll(iconBox, textLabel);
         
@@ -851,9 +928,8 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         card.getStyleClass().add("meal-card"); 
         card.setStyle(null);
         
-        // Fixed width
-        card.setPrefWidth(200);
-        card.setMinWidth(200);
+        // Remove fixed width to allow grid to control card width (matching recipe cards)
+        card.setMaxWidth(Double.MAX_VALUE);
         card.setPrefHeight(180);
         
         // Default style managed by CSS .meal-card, override for planned vs not planned
@@ -1126,7 +1202,12 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
     }
 
     private void updateView() {
-        mealsContainer.getChildren().clear();
+        if (mealsGrid != null) {
+            mealsGrid.getChildren().clear();
+        }
+        if (mealsContainer != null) {
+            mealsContainer.getChildren().clear();
+        }
 
         Schedule schedule = scheduleViewModel.getSchedule();
         LocalDate today = LocalDate.now();
@@ -1146,13 +1227,21 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         MealData lunch = fetchMealData(todaysMeals, MealType.LUNCH, recipeCache);
         MealData dinner = fetchMealData(todaysMeals, MealType.DINNER, recipeCache);
 
-        // Create meal cards
-        mealsContainer.getChildren().add(
-            createMealCard("Breakfast", breakfast.name, "/svg/mug-hot.svg", breakfast.calories, breakfast.time));
-        mealsContainer.getChildren().add(
-            createMealCard("Lunch", lunch.name, "/svg/brightness.svg", lunch.calories, lunch.time));
-        mealsContainer.getChildren().add(
-            createMealCard("Dinner", dinner.name, "/svg/moon.svg", dinner.calories, dinner.time));
+        // Create meal cards and add to grid (3-column layout)
+        if (mealsGrid != null) {
+            VBox breakfastCard = createMealCard("Breakfast", breakfast.name, "/svg/mug-hot.svg", breakfast.calories, breakfast.time);
+            VBox lunchCard = createMealCard("Lunch", lunch.name, "/svg/brightness.svg", lunch.calories, lunch.time);
+            VBox dinnerCard = createMealCard("Dinner", dinner.name, "/svg/moon.svg", dinner.calories, dinner.time);
+            
+            mealsGrid.add(breakfastCard, 0, 0);
+            mealsGrid.add(lunchCard, 1, 0);
+            mealsGrid.add(dinnerCard, 2, 0);
+            
+            // Set cards to fill grid cells
+            GridPane.setHgrow(breakfastCard, Priority.ALWAYS);
+            GridPane.setHgrow(lunchCard, Priority.ALWAYS);
+            GridPane.setHgrow(dinnerCard, Priority.ALWAYS);
+        }
 
         // Calculate today's nutrition using cached recipes
         NutritionInfo todayNutrition = calculateTodayNutrition(recipeCache);
@@ -1550,5 +1639,22 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
                     mealsFailed, failedMeals.toString().trim()), 
                 Sonner.Type.ERROR);
         }
+    }
+    
+    /**
+     * Clean up resources and remove property change listeners to prevent memory leaks.
+     * Should be called when this view is no longer needed.
+     */
+    public void dispose() {
+        if (scheduleViewModel != null) {
+            scheduleViewModel.removePropertyChangeListener(this);
+        }
+        if (viewManagerModel != null) {
+            viewManagerModel.removePropertyChangeListener(this);
+        }
+        if (recommendationsViewModel != null) {
+            recommendationsViewModel.removePropertyChangeListener(this);
+        }
+        logger.debug("DashboardView disposed - listeners removed");
     }
 }

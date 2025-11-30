@@ -71,10 +71,34 @@ public class ViewManager extends StackPane implements PropertyChangeListener {
         }
         
         try {
+            // Dispose current view if it implements disposable interface
+            Node currentView = getChildren().isEmpty() ? null : getChildren().get(0);
+            if (currentView != null && currentView != view) {
+                disposeView(currentView);
+            }
+            
             // Replace current view
             getChildren().setAll(view);
         } catch (Exception e) {
             System.err.println("ViewManager: Error switching to view '" + viewName + "': " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * Dispose a view by calling its dispose method if it exists.
+     * Uses reflection to check for dispose method to avoid coupling.
+     */
+    private void disposeView(Node view) {
+        try {
+            java.lang.reflect.Method disposeMethod = view.getClass().getMethod("dispose");
+            if (disposeMethod != null) {
+                disposeMethod.invoke(view);
+            }
+        } catch (NoSuchMethodException e) {
+            // View doesn't have dispose method - that's okay
+        } catch (Exception e) {
+            System.err.println("ViewManager: Error disposing view: " + e.getMessage());
             e.printStackTrace();
         }
     }

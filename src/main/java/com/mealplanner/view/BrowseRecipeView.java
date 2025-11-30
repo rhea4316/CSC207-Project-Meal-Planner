@@ -22,6 +22,9 @@ import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.CycleMethod;
+import javafx.scene.paint.LinearGradient;
+import javafx.scene.paint.Stop;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 
@@ -40,6 +43,16 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
     private final RecipeRepository recipeRepository;
     private final ImageCacheManager imageCache = ImageCacheManager.getInstance();
     private GetRecommendationsController recommendationsController;
+    
+    /**
+     * Clean up resources and remove property change listeners to prevent memory leaks.
+     * Should be called when this view is no longer needed.
+     */
+    public void dispose() {
+        if (viewModel != null) {
+            viewModel.removePropertyChangeListener(this);
+        }
+    }
 
     private TextField searchField;
     @SuppressWarnings("unused")
@@ -136,8 +149,12 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
 
         // Saved Button (Top Right) - Mockup
         Button savedBtn = new Button("3 Saved");
-        savedBtn.setStyle("-fx-background-color: #84cc16; -fx-text-fill: white; -fx-font-weight: 600; -fx-background-radius: 8px; -fx-padding: 8 16; -fx-cursor: hand;");
-        Node bookmarkIcon = SvgIconLoader.loadIcon("/svg/book-fill.svg", 14, Color.WHITE);
+        // Apply gradient background: #8be200 -> #14cd49 (top-left to bottom-right)
+        Stop[] gradientStops = new Stop[] { new Stop(0, Color.web("#8be200")), new Stop(1, Color.web("#14cd49")) };
+        LinearGradient gradient = new LinearGradient(0, 0, 1, 1, true, CycleMethod.NO_CYCLE, gradientStops);
+        savedBtn.setStyle("-fx-text-fill: white; -fx-font-weight: 600; -fx-background-radius: 8px; -fx-padding: 8 16; -fx-cursor: hand; -fx-background-color: null;");
+        savedBtn.setBackground(new Background(new BackgroundFill(gradient, new CornerRadii(8), Insets.EMPTY)));
+        Node bookmarkIcon = SvgIconLoader.loadIcon("/svg/bookmark.svg", 14, Color.WHITE);
         if (bookmarkIcon != null) {
             savedBtn.setGraphic(bookmarkIcon);
             savedBtn.setGraphicTextGap(8);
@@ -269,7 +286,7 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
         
         HBox filterHeader = new HBox(6);
         filterHeader.setAlignment(Pos.CENTER_LEFT);
-        Node filterIcon = SvgIconLoader.loadIcon("/svg/settings-sliders.svg", 14, Color.web("#6b7280")); // Funnel/filter icon fallback
+        Node filterIcon = SvgIconLoader.loadIcon("/svg/filter.svg", 14, Color.web("#6b7280"));
         Label filterLabel = new Label("Filter by category");
         filterLabel.getStyleClass().add("text-gray-500");
         filterLabel.setStyle("-fx-font-size: 13px;");
@@ -287,8 +304,8 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
         addCategoryFilter("Breakfast", false, "/svg/mug-hot.svg");
         addCategoryFilter("Lunch", false, "/svg/brightness.svg");
         addCategoryFilter("Dinner", false, "/svg/moon.svg");
-        addCategoryFilter("Snacks", false, "/svg/apple.svg");
-        addCategoryFilter("Desserts", false, "/svg/heart.svg");
+        addCategoryFilter("Snacks", false, "/svg/cookie.svg");
+        addCategoryFilter("Desserts", false, "/svg/cake-slice.svg");
         addCategoryFilter("Vegetarian", false, "/svg/leaf.svg");
         addCategoryFilter("Vegan", false, "/svg/leaf.svg");
 
@@ -305,10 +322,18 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
         
         // Default Style
         String defaultStyle = "-fx-background-color: white; -fx-text-fill: -fx-color-gray-600; -fx-border-color: -fx-color-gray-200; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 8 16; -fx-font-size: 13px; -fx-cursor: hand;";
-        // Selected Style (Green)
-        String selectedStyle = "-fx-background-color: #84cc16; -fx-text-fill: white; -fx-border-color: #84cc16; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 8 16; -fx-font-size: 13px; -fx-font-weight: 600; -fx-cursor: hand;";
+        // Selected Style (Gradient) - will be applied via Background
+        String selectedStyle = "-fx-text-fill: white; -fx-border-color: transparent; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 8 16; -fx-font-size: 13px; -fx-font-weight: 600; -fx-cursor: hand;";
         
-        btn.setStyle(isSelected ? selectedStyle : defaultStyle);
+        if (isSelected) {
+            // Apply gradient background matching sidebar active buttons
+            Stop[] gradientStops = new Stop[] { new Stop(0, Color.web("#8be200")), new Stop(1, Color.web("#14cd49")) };
+            LinearGradient gradient = new LinearGradient(0, 0, 1, 1, true, CycleMethod.NO_CYCLE, gradientStops);
+            btn.setStyle(selectedStyle + " -fx-background-color: null;");
+            btn.setBackground(new Background(new BackgroundFill(gradient, new CornerRadii(8), Insets.EMPTY)));
+        } else {
+            btn.setStyle(defaultStyle);
+        }
         
         if (iconPath != null) {
             Node icon = SvgIconLoader.loadIcon(iconPath, 16, isSelected ? Color.WHITE : Color.web("#6b7280"));
@@ -329,7 +354,11 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
 
         btn.selectedProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal) {
-                btn.setStyle(selectedStyle);
+                // Apply gradient background matching sidebar active buttons
+                Stop[] gradientStops = new Stop[] { new Stop(0, Color.web("#8be200")), new Stop(1, Color.web("#14cd49")) };
+                LinearGradient gradient = new LinearGradient(0, 0, 1, 1, true, CycleMethod.NO_CYCLE, gradientStops);
+                btn.setStyle(selectedStyle + " -fx-background-color: null;");
+                btn.setBackground(new Background(new BackgroundFill(gradient, new CornerRadii(8), Insets.EMPTY)));
                 selectedCategory = name;
                 // Update icon color to white
                 if (btn.getGraphic() != null) {
@@ -346,6 +375,7 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
                 // OPTIMIZATION: Apply client-side filtering instead of re-fetching from API
                 applyClientSideFilter();
             } else {
+                btn.setBackground(new Background(new BackgroundFill(Color.WHITE, new CornerRadii(8), Insets.EMPTY)));
                 btn.setStyle(defaultStyle);
                 // Update icon color to gray
                  if (btn.getGraphic() != null) {
@@ -805,7 +835,7 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
         HBox header = new HBox(8);
         header.setAlignment(Pos.CENTER_LEFT);
         
-        Node sparkIcon = SvgIconLoader.loadIcon("/svg/star.svg", 18, Color.web("#fbbf24"));
+        Node sparkIcon = SvgIconLoader.loadIcon("/svg/sparkles.svg", 18, Color.web("#fbbf24"));
         Label title = new Label("Recommended for You");
         title.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #111827;");
         
