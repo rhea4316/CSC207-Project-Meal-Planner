@@ -8,6 +8,7 @@ import com.mealplanner.interface_adapter.view_model.RecipeSearchViewModel;
 import com.mealplanner.use_case.search_by_ingredients.SearchByIngredientsOutputBoundary;
 import com.mealplanner.use_case.search_by_ingredients.SearchByIngredientsOutputData;
 import java.util.Objects;
+import javafx.application.Platform;
 
 public class SearchByIngredientsPresenter implements SearchByIngredientsOutputBoundary {
     private final RecipeSearchViewModel viewModel;
@@ -20,23 +21,53 @@ public class SearchByIngredientsPresenter implements SearchByIngredientsOutputBo
 
     @Override
     public void presentRecipes(SearchByIngredientsOutputData outputData) {
-        if (outputData == null || outputData.getRecipes() == null || outputData.isEmpty()) {
-            viewModel.setErrorMessage("No recipes found matching the provided ingredients");
-            viewModel.setLoading(false);
-            return;
-        }
+        // Runnable to update ViewModel
+        Runnable updateViewModel = () -> {
+            if (outputData == null || outputData.getRecipes() == null || outputData.isEmpty()) {
+                viewModel.setErrorMessage("No recipes found matching the provided ingredients");
+                viewModel.setLoading(false);
+                return;
+            }
 
-        viewModel.setRecipes(outputData.getRecipes());
-        viewModel.setErrorMessage("");
-        viewModel.setLoading(false);
+            viewModel.setRecipes(outputData.getRecipes());
+            viewModel.setErrorMessage("");
+            viewModel.setLoading(false);
+            
+            // Switch to SearchByIngredientsView to show results
+            viewManagerModel.setActiveView("SearchByIngredientsView");
+        };
         
-        // Switch to SearchByIngredientsView to show results
-        viewManagerModel.setActiveView("SearchByIngredientsView");
+        // Ensure ViewModel updates happen on JavaFX Application Thread (if available)
+        if (Platform.isFxApplicationThread()) {
+            updateViewModel.run();
+        } else {
+            try {
+                Platform.runLater(updateViewModel);
+            } catch (IllegalStateException e) {
+                // JavaFX Toolkit not initialized (e.g., in tests) - run directly
+                updateViewModel.run();
+            }
+        }
     }
 
     @Override
     public void presentError(String errorMessage) {
-        viewModel.setErrorMessage(errorMessage != null ? errorMessage : "An error occurred");
-        viewModel.setLoading(false);
+        // Runnable to update ViewModel
+        Runnable updateViewModel = () -> {
+            viewModel.setErrorMessage(errorMessage != null ? errorMessage : "An error occurred");
+            viewModel.setLoading(false);
+        };
+        
+        // Ensure ViewModel updates happen on JavaFX Application Thread (if available)
+        if (Platform.isFxApplicationThread()) {
+            updateViewModel.run();
+        } else {
+            try {
+                Platform.runLater(updateViewModel);
+            } catch (IllegalStateException e) {
+                // JavaFX Toolkit not initialized (e.g., in tests) - run directly
+                updateViewModel.run();
+            }
+        }
     }
 }

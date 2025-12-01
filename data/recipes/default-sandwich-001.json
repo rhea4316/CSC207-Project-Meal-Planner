@@ -1,24 +1,26 @@
 {
-  "name": "Turkey Club Sandwich",
+  "name": "Classic Turkey Club Sandwich",
   "ingredients": [
-    "6 slices bread",
-    "8 oz sliced turkey",
-    "4 slices bacon",
-    "2 tomatoes",
-    "lettuce leaves",
-    "mayonnaise to taste",
+    "6 slices thick-cut white or sourdough bread",
+    "8 oz sliced roasted turkey breast",
+    "6 slices thick-cut bacon",
+    "2 large Roma tomatoes, sliced",
+    "4-6 large lettuce leaves (iceberg or romaine)",
+    "1/4 cup mayonnaise",
+    "2 tablespoons Dijon mustard",
     "salt to taste",
-    "black pepper to taste"
+    "black pepper to taste",
+    "toothpicks for securing"
   ],
-  "steps": "Cook bacon until crispy and set aside.\nToast bread slices.\nSpread mayonnaise on one side of each slice.\nLayer turkey, bacon, tomato, and lettuce on bread.\nSeason with salt and pepper.\nTop with remaining bread slices.\nCut diagonally and serve with chips or pickles.",
+  "steps": "Cook bacon in a large skillet over medium heat until crispy, about 6-8 minutes. Drain on paper towels and set aside.\nToast all 6 slices of bread until golden brown.\nIn a small bowl, mix mayonnaise and Dijon mustard.\nSpread the mayonnaise-mustard mixture on one side of each bread slice.\nTo assemble the first layer: Place one slice of bread (mayo side up) on a cutting board.\nLayer with 1/3 of the turkey slices, then top with a second bread slice.\nAdd 2-3 slices of bacon, tomato slices, and lettuce leaves on the second bread slice.\nTop with the third bread slice (mayo side down).\nSecure the sandwich with toothpicks inserted diagonally through all layers.\nCut the sandwich diagonally into 4 triangles.\nRepeat with remaining ingredients to make a second sandwich.\nServe immediately with chips, pickles, or a side salad.",
   "servingSize": 2,
   "nutritionInfo": {
-    "calories": 480,
-    "protein": 32.0,
-    "carbs": 42.0,
-    "fat": 18.0
+    "calories": 520,
+    "protein": 36.0,
+    "carbs": 46.0,
+    "fat": 22.0
   },
-  "cookTimeMinutes": 15,
+  "cookTimeMinutes": 20,
   "dietaryRestrictions": [],
   "recipeId": "default-sandwich-001"
 }

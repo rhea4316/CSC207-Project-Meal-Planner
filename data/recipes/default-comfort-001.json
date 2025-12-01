@@ -1,23 +1,29 @@
 {
-  "name": "Mac and Cheese",
+  "name": "Creamy Homemade Mac and Cheese",
   "ingredients": [
-    "8 oz macaroni",
-    "2 cups cheddar cheese",
-    "2 tablespoons butter",
-    "2 tablespoons flour",
-    "2 cups milk",
+    "12 oz elbow macaroni",
+    "3 cups sharp cheddar cheese, shredded",
+    "1 cup Gruyère cheese, shredded",
+    "4 tablespoons butter",
+    "1/4 cup all-purpose flour",
+    "3 cups whole milk, warmed",
     "1/2 teaspoon salt",
-    "black pepper to taste"
+    "1/4 teaspoon black pepper",
+    "1/4 teaspoon paprika",
+    "1/4 teaspoon dry mustard",
+    "1/2 cup panko breadcrumbs",
+    "2 tablespoons butter, melted",
+    "1/4 cup parmesan cheese, grated"
   ],
-  "steps": "Cook macaroni according to package directions.\nMelt butter in a saucepan over medium heat.\nWhisk in flour and cook for 1 minute.\nGradually add milk, whisking constantly.\nCook until thickened, about 5 minutes.\nRemove from heat and stir in cheese until melted.\nSeason with salt and pepper.\nMix with cooked macaroni and serve hot.",
-  "servingSize": 4,
+  "steps": "Preheat oven to 375°F.\nBring a large pot of salted water to a boil. Add macaroni and cook according to package directions until al dente. Drain and set aside.\nWhile pasta cooks, melt 4 tablespoons butter in a large saucepan over medium heat.\nWhisk in flour and cook for 1-2 minutes until golden, creating a roux.\nGradually add warm milk, whisking constantly to prevent lumps.\nContinue cooking and whisking for 5-7 minutes until sauce thickens and coats the back of a spoon.\nRemove from heat and stir in 2 cups of cheddar cheese and all of the Gruyère cheese until smooth and melted.\nSeason with salt, pepper, paprika, and dry mustard.\nAdd cooked macaroni to the cheese sauce and stir until well coated.\nTransfer to a greased 9x13 inch baking dish.\nIn a small bowl, mix panko breadcrumbs with melted butter and parmesan cheese.\nSprinkle remaining 1 cup of cheddar cheese over the macaroni, then top with breadcrumb mixture.\nBake for 20-25 minutes until golden brown and bubbly.\nLet cool for 5 minutes before serving.",
+  "servingSize": 6,
   "nutritionInfo": {
-    "calories": 480,
-    "protein": 20.0,
-    "carbs": 52.0,
-    "fat": 20.0
+    "calories": 520,
+    "protein": 24.0,
+    "carbs": 48.0,
+    "fat": 24.0
   },
-  "cookTimeMinutes": 25,
+  "cookTimeMinutes": 40,
   "dietaryRestrictions": [
     "VEGETARIAN"
   ],

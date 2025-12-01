@@ -18,7 +18,10 @@ import com.mealplanner.view.component.Sonner;
 import com.mealplanner.view.component.SelectRecipeDialog;
 import com.mealplanner.view.component.AddToMealPlanDialog;
 import com.mealplanner.view.util.SvgIconLoader;
+import com.mealplanner.util.ImageCacheManager;
 import javafx.application.Platform;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -98,6 +101,7 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
     private Progress proteinBar, carbsBar, fatBar;
     private Label proteinValLabel, carbsValLabel, fatValLabel; // Value labels for nutrient bars
     private Label welcomeLabel; // Welcome message label (dynamically updated based on logged-in user)
+    private final ImageCacheManager imageCache = ImageCacheManager.getInstance();
     private HBox recommendedRecipeList; // Legacy reference, kept for backward compatibility
     private GridPane recommendedRecipeGrid; // 3-column grid for recommended recipe cards
     private final Sonner sonner;
@@ -462,22 +466,28 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         
         headerRow.getChildren().addAll(title, spacer, viewAll);
 
-        // 3-column Grid for recipe cards (matching Today's Menu layout)
-        this.recommendedRecipeGrid = new GridPane();
+        // Fixed-size GridPane for recipe cards (non-responsive)
+        this.recommendedRecipeGrid = new GridPane(); // Keep GridPane for backward compatibility
         this.recommendedRecipeGrid.setHgap(GRID_GAP);
         this.recommendedRecipeGrid.setVgap(GRID_GAP);
-        this.recommendedRecipeGrid.setMaxWidth(Double.MAX_VALUE);
+        // 고정 너비 설정 (220px * 3 + 24px gap * 2 = 708px)
+        this.recommendedRecipeGrid.setPrefWidth(708);
+        this.recommendedRecipeGrid.setMinWidth(708);
+        this.recommendedRecipeGrid.setMaxWidth(708);
         
-        // Column constraints for 3 equal columns (matching Today's Menu)
+        // Fixed column widths (220px per card + 24px gap = 220px fixed width per column)
         ColumnConstraints col1 = new ColumnConstraints();
-        col1.setHgrow(Priority.ALWAYS);
-        col1.setPercentWidth(33.33);
+        col1.setPrefWidth(220);
+        col1.setMinWidth(220);
+        col1.setMaxWidth(220);
         ColumnConstraints col2 = new ColumnConstraints();
-        col2.setHgrow(Priority.ALWAYS);
-        col2.setPercentWidth(33.33);
+        col2.setPrefWidth(220);
+        col2.setMinWidth(220);
+        col2.setMaxWidth(220);
         ColumnConstraints col3 = new ColumnConstraints();
-        col3.setHgrow(Priority.ALWAYS);
-        col3.setPercentWidth(33.33);
+        col3.setPrefWidth(220);
+        col3.setMinWidth(220);
+        col3.setMaxWidth(220);
         this.recommendedRecipeGrid.getColumnConstraints().addAll(col1, col2, col3);
 
         // Phase 3: Use dynamic recipe list - now using GridPane
@@ -577,7 +587,7 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
             if (recipe != null && recommendedRecipeGrid != null) {
                 VBox card = createRecipeCard(recipe);
                 recommendedRecipeGrid.add(card, i, 0);
-                GridPane.setHgrow(card, Priority.ALWAYS);
+                // 고정 크기이므로 grow 설정 불필요
             }
         }
     }
@@ -596,21 +606,23 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         String hoverStyle = "-fx-background-color: #ffffff; -fx-background-radius: 12px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.08), 12, 0, 0, 2); -fx-border-color: #e5e7eb; -fx-border-width: 1px; -fx-border-radius: 12px;";
         
         card.setStyle(defaultStyle);
-        // Remove fixed width to allow grid to control card width (matching meal cards)
-        card.setMaxWidth(Double.MAX_VALUE);
+        // 고정 크기 설정 (반응형 아님)
+        card.setPrefWidth(220);
+        card.setMinWidth(220);
+        card.setMaxWidth(220);
         card.setPrefHeight(240);
         card.setMinHeight(240);
         card.setMaxHeight(240);
         card.setCursor(javafx.scene.Cursor.HAND);
         
-        // 개선된 호버 효과
+        // 개선된 호버 효과 (크기 변경 없이 스타일만 변경)
         card.setOnMouseEntered(e -> {
+            // 스타일만 변경하고 크기는 변경하지 않음
             card.setStyle(hoverStyle);
-            card.setScaleX(1.03);
-            card.setScaleY(1.03);
         });
         card.setOnMouseExited(e -> {
             card.setStyle(defaultStyle);
+            // 스케일을 항상 1.0으로 리셋 (누적 방지)
             card.setScaleX(1.0);
             card.setScaleY(1.0);
         });
@@ -621,27 +633,96 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
             card.setScaleY(0.98);
         });
         card.setOnMouseReleased(e -> {
-            card.setScaleX(1.03);
-            card.setScaleY(1.03);
+            // 마우스가 카드 위에 있는지 확인하여 호버 상태로 복귀
+            if (card.isHover()) {
+                // 호버 상태이지만 스케일은 1.0으로 유지
+                card.setScaleX(1.0);
+                card.setScaleY(1.0);
+            } else {
+                // 마우스가 카드 밖에 있으면 1.0으로 리셋
+                card.setScaleX(1.0);
+                card.setScaleY(1.0);
+            }
         });
         
+        // Image container with placeholder and clipping
+        StackPane imageContainer = new StackPane();
+        imageContainer.setPrefHeight(140);
+        imageContainer.setMinHeight(140);
+        imageContainer.setMaxHeight(140);
+        // 고정 너비 설정
+        imageContainer.setPrefWidth(220);
+        imageContainer.setMinWidth(220);
+        imageContainer.setMaxWidth(220);
+        imageContainer.setStyle("-fx-background-color: #E5E7EB; -fx-background-radius: 12px 12px 0 0;");
+        
+        // Apply clipping mask to keep image inside card
+        Rectangle clip = new Rectangle(220, 140); // 고정 크기
+        clip.setArcWidth(24); // 12px radius on top corners
+        clip.setArcHeight(24);
+        imageContainer.setClip(clip);
+        
+        // Placeholder background
         Region imagePlaceholder = new Region();
         imagePlaceholder.setPrefHeight(140);
         imagePlaceholder.setMinHeight(140);
         imagePlaceholder.setMaxHeight(140);
+        imagePlaceholder.setPrefWidth(220);
+        imagePlaceholder.setMinWidth(220);
+        imagePlaceholder.setMaxWidth(220);
         imagePlaceholder.setStyle("-fx-background-color: #E5E7EB; -fx-background-radius: 12px 12px 0 0;");
+        imageContainer.getChildren().add(imagePlaceholder);
+        
+        // Load recipe image if available
+        String imageUrl = recipe.getImageUrl();
+        if (imageUrl != null && !imageUrl.trim().isEmpty()) {
+            try {
+                ImageView imageView = new ImageView();
+                // 고정 크기 설정
+                imageView.setFitWidth(220);
+                imageView.setFitHeight(140);
+                imageView.setPreserveRatio(false); // Fill entire container without preserving ratio
+                imageView.setSmooth(true);
+                imageView.setCache(true);
+                
+                // Load image asynchronously
+                new Thread(() -> {
+                    try {
+                        Image image = imageCache.getImage(imageUrl);
+                        Platform.runLater(() -> {
+                            imageView.setImage(image);
+                            imageContainer.getChildren().set(0, imageView); // Replace placeholder with image
+                        });
+                    } catch (Exception e) {
+                        // If image loading fails, keep placeholder
+                        logger.debug("Failed to load recipe image: {}", imageUrl);
+                    }
+                }).start();
+            } catch (Exception e) {
+                // If image loading fails, keep placeholder
+                logger.debug("Failed to initialize image view for recipe: {}", recipe.getName());
+            }
+        }
         
         VBox content = new VBox(0);
         content.setPadding(new Insets(14, 14, 14, 14));
         content.setPrefHeight(100);
         content.setMinHeight(100);
         content.setMaxHeight(100);
+        // 고정 너비 설정 (카드 너비 220px - padding 없음, content는 카드 내부이므로)
+        content.setPrefWidth(220);
+        content.setMinWidth(220);
+        content.setMaxWidth(220);
         
         // Title container with fixed height for 2 lines max
         VBox titleContainer = new VBox();
         titleContainer.setPrefHeight(48);
         titleContainer.setMinHeight(48);
         titleContainer.setMaxHeight(48);
+        // 고정 너비 설정 (220px - padding 14*2 = 192px)
+        titleContainer.setPrefWidth(192);
+        titleContainer.setMinWidth(192);
+        titleContainer.setMaxWidth(192);
         
         String recipeName = recipe.getName();
         // Truncate to approximately 2 lines (roughly 40-45 characters for 14px font)
@@ -651,7 +732,10 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         nameLabel.getStyleClass().add("text-gray-900");
         nameLabel.setStyle("-fx-font-weight: 600; -fx-font-size: 14px; -fx-line-spacing: 2px;");
         nameLabel.setWrapText(true);
-        nameLabel.setMaxWidth(192); // 220 - 14*2 (padding)
+        // 고정 너비 설정 (192px)
+        nameLabel.setPrefWidth(192);
+        nameLabel.setMinWidth(192);
+        nameLabel.setMaxWidth(192);
         nameLabel.setMaxHeight(44); // Allow 2 lines: 22px per line
         titleContainer.getChildren().add(nameLabel);
         
@@ -700,9 +784,11 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         
         content.getChildren().addAll(titleContainer, spacer, metaContainer);
         
-        card.getChildren().addAll(imagePlaceholder, content);
+        card.getChildren().addAll(imageContainer, content);
         
         // Phase 3: Add click handler to navigate to recipe detail - 개선된 클릭 피드백
+        // Store recipe reference in final variable to avoid closure issues
+        final Recipe cardRecipe = recipe;
         card.setOnMouseClicked(e -> {
             // 클릭 후 약간의 딜레이를 두고 레시피 상세로 이동 (시각적 피드백)
             javafx.animation.FadeTransition fadeOut = new javafx.animation.FadeTransition(
@@ -710,7 +796,7 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
             fadeOut.setFromValue(1.0);
             fadeOut.setToValue(0.8);
             fadeOut.setOnFinished(event -> {
-                openRecipeDetail(recipe);
+                openRecipeDetail(cardRecipe);
                 card.setOpacity(1.0);
             });
             fadeOut.play();

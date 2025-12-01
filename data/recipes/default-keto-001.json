@@ -1,23 +1,30 @@
 {
   "name": "Keto Cauliflower Fried Rice",
   "ingredients": [
-    "1 head cauliflower",
-    "2 eggs",
-    "1/2 cup diced chicken",
-    "1/2 cup mixed vegetables",
-    "2 tablespoons soy sauce",
+    "1 large head cauliflower (about 6 cups riced)",
+    "2 large eggs, beaten",
+    "8 oz boneless chicken breast, diced",
+    "1/2 cup frozen peas",
+    "1/2 cup carrots, diced",
+    "1/4 cup green onions, chopped",
+    "3 cloves garlic, minced",
+    "1 tablespoon fresh ginger, minced",
+    "3 tablespoons coconut oil or avocado oil",
+    "2 tablespoons coconut aminos (or soy sauce)",
     "1 tablespoon sesame oil",
-    "2 cloves garlic"
+    "1/2 teaspoon white pepper",
+    "salt to taste",
+    "1 tablespoon sesame seeds for garnish"
   ],
-  "steps": "Grate cauliflower into rice-like pieces.\nScramble eggs in a pan and set aside.\nCook chicken in sesame oil until done.\nAdd garlic and vegetables, stir-fry for 2 minutes.\nAdd cauliflower rice and cook for 3-4 minutes.\nAdd eggs, soy sauce, and mix everything together.\nServe hot.",
+  "steps": "Cut cauliflower into florets and pulse in a food processor until it resembles rice grains. Alternatively, use a box grater.\nPat cauliflower rice dry with paper towels to remove excess moisture.\nHeat 1 tablespoon of oil in a large wok or skillet over high heat.\nAdd beaten eggs and scramble until just set. Remove and set aside.\nAdd another tablespoon of oil to the pan. Add diced chicken and cook for 4-5 minutes until fully cooked and golden. Remove and set aside.\nAdd remaining oil to the pan. Add minced garlic and ginger, stir for 30 seconds until fragrant.\nAdd carrots and peas, stir-fry for 2-3 minutes until vegetables are tender.\nAdd cauliflower rice to the pan, breaking up any clumps. Stir-fry for 4-5 minutes until cauliflower is tender but not mushy.\nReturn chicken and scrambled eggs to the pan.\nAdd coconut aminos (or soy sauce), sesame oil, and white pepper. Toss everything together.\nAdd green onions and stir for another minute.\nSeason with salt if needed.\nServe hot, garnished with sesame seeds.",
   "servingSize": 2,
   "nutritionInfo": {
-    "calories": 280,
-    "protein": 22.0,
-    "carbs": 12.0,
-    "fat": 16.0
+    "calories": 320,
+    "protein": 28.0,
+    "carbs": 14.0,
+    "fat": 18.0
   },
-  "cookTimeMinutes": 20,
+  "cookTimeMinutes": 25,
   "dietaryRestrictions": [
     "GLUTEN_FREE",
     "KETO"

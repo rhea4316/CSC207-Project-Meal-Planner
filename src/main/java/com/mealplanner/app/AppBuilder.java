@@ -3,6 +3,7 @@ package com.mealplanner.app;
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.AdjustServingSizeController;
 import com.mealplanner.interface_adapter.controller.BrowseRecipeController;
+import com.mealplanner.interface_adapter.controller.DeleteMealController;
 import com.mealplanner.interface_adapter.controller.GetRecommendationsController;
 import com.mealplanner.interface_adapter.controller.LoginController;
 import com.mealplanner.interface_adapter.controller.SearchByIngredientsController;
@@ -72,6 +73,10 @@ public class AppBuilder {
         com.mealplanner.interface_adapter.presenter.MealPlanPresenter mealPlanPresenter = new com.mealplanner.interface_adapter.presenter.MealPlanPresenter(mealPlanViewModel, viewManagerModel);
         var addMealInteractor = UseCaseFactory.createAddMealInteractor(mealPlanPresenter, viewManagerModel);
         com.mealplanner.interface_adapter.controller.AddMealController addMealController = new com.mealplanner.interface_adapter.controller.AddMealController(addMealInteractor);
+        
+        // Delete Meal Flow (Shared Controller and Presenter)
+        var deleteMealInteractor = UseCaseFactory.createDeleteMealInteractor(mealPlanPresenter, viewManagerModel);
+        DeleteMealController deleteMealController = new DeleteMealController(deleteMealInteractor);
 
         // Build other flows
         buildStoreRecipeFlow();
@@ -81,13 +86,10 @@ public class AppBuilder {
         buildSignupFlow(scheduleController);
         buildLoginFlow(scheduleController); // Ensure login is built
 
-        // PHASE 2: Create shared RecipeRepository for Schedule and Dashboard
+        // Create shared RecipeRepository for Schedule and Dashboard
         FileRecipeRepository recipeRepository = new FileRecipeRepository();
 
-        // Build Schedule View - PHASE 2: Inject RecipeRepository for real data
-        // PHASE 5: Inject GetRecommendationsController and RecipeBrowseViewModel for Auto-fill functionality
-        // PHASE 6: Inject AddMealController for Copy Last Week functionality
-        // Create a separate RecipeBrowseViewModel for ScheduleView's auto-fill feature
+        // Build Schedule View - Create a separate RecipeBrowseViewModel for ScheduleView's auto-fill feature
         RecipeBrowseViewModel scheduleRecommendationsViewModel = new RecipeBrowseViewModel();
         GetRecommendationsPresenter scheduleRecommendationsPresenter = new GetRecommendationsPresenter(scheduleRecommendationsViewModel);
         var scheduleRecommendationsInteractor = UseCaseFactory.createGetRecommendationsInteractor(scheduleRecommendationsPresenter);
@@ -100,7 +102,8 @@ public class AppBuilder {
             recipeRepository, 
             scheduleRecommendationsController,  // Phase 5: Added for auto-fill
             scheduleRecommendationsViewModel,   // Phase 5: Added for auto-fill
-            addMealController                   // Phase 6: Added for Copy Last Week
+            addMealController,                  // Phase 6: Added for Copy Last Week
+            deleteMealController                // Added for delete meal functionality
         );
         viewManager.addView(ViewManager.SCHEDULE_VIEW, scheduleView);
 
@@ -159,10 +162,17 @@ public class AppBuilder {
         var recommendationsInteractor = UseCaseFactory.createGetRecommendationsInteractor(recommendationsPresenter);
         GetRecommendationsController recommendationsController = new GetRecommendationsController(recommendationsInteractor);
         
+        // Phase 1: StoreRecipeController for bookmark functionality
+        RecipeStoreViewModel storeViewModel = new RecipeStoreViewModel();
+        StoreRecipePresenter storePresenter = new StoreRecipePresenter(storeViewModel);
+        FileRecipeRepository storeRepository = new FileRecipeRepository();
+        var storeInteractor = UseCaseFactory.createStoreRecipeInteractor(storePresenter, storeRepository);
+        StoreRecipeController storeRecipeController = new StoreRecipeController(storeInteractor);
+        
         // Create RecipeRepository for local database recipes
         FileRecipeRepository recipeRepository = new FileRecipeRepository();
         
-        BrowseRecipeView view = new BrowseRecipeView(viewModel, controller, viewManagerModel, recipeDetailViewModel, recipeRepository, recommendationsController);
+        BrowseRecipeView view = new BrowseRecipeView(viewModel, controller, viewManagerModel, recipeDetailViewModel, recipeRepository, recommendationsController, storeRecipeController);
         viewManager.addView(ViewManager.BROWSE_RECIPE_VIEW, view);
     }
 
@@ -183,7 +193,16 @@ public class AppBuilder {
         AdjustServingSizePresenter presenter = new AdjustServingSizePresenter(recipeDetailViewModel);
         var interactor = UseCaseFactory.createAdjustServingSizeInteractor(presenter);
         AdjustServingSizeController controller = new AdjustServingSizeController(interactor);
-        RecipeDetailView view = new RecipeDetailView(recipeDetailViewModel, controller, addMealController, viewManagerModel);
+        
+        // Phase 2: StoreRecipeController for save to cookbook functionality
+        RecipeStoreViewModel storeViewModel = new RecipeStoreViewModel();
+        StoreRecipePresenter storePresenter = new StoreRecipePresenter(storeViewModel);
+        FileRecipeRepository storeRepository = new FileRecipeRepository();
+        var storeInteractor = UseCaseFactory.createStoreRecipeInteractor(storePresenter, storeRepository);
+        StoreRecipeController storeRecipeController = new StoreRecipeController(storeInteractor);
+        
+        // Phase 2: RecipeRepository for duplicate checking (reuse storeRepository)
+        RecipeDetailView view = new RecipeDetailView(recipeDetailViewModel, controller, addMealController, viewManagerModel, storeRecipeController, storeRepository);
         viewManager.addView(ViewManager.RECIPE_DETAIL_VIEW, view);
     }
 

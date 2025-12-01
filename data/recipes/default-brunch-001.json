@@ -1,23 +1,28 @@
 {
-  "name": "Eggs Benedict",
+  "name": "Classic Eggs Benedict",
   "ingredients": [
-    "4 eggs",
-    "2 English muffins",
-    "4 slices ham",
-    "1/2 cup butter",
-    "2 egg yolks",
-    "1 tablespoon lemon juice",
-    "pinch of cayenne pepper"
+    "4 large eggs, room temperature",
+    "2 English muffins, split",
+    "4 slices Canadian bacon or ham",
+    "1/2 cup (1 stick) unsalted butter, clarified",
+    "3 egg yolks",
+    "1 tablespoon fresh lemon juice",
+    "1/4 teaspoon cayenne pepper",
+    "1/4 teaspoon salt",
+    "1 tablespoon white vinegar",
+    "2 tablespoons butter for toasting",
+    "fresh chives, chopped for garnish",
+    "paprika for garnish"
   ],
-  "steps": "Split and toast English muffins.\nWarm ham slices in a pan.\nPoach eggs in simmering water for 3-4 minutes.\nMelt butter in a double boiler.\nWhisk egg yolks with lemon juice over heat.\nSlowly add melted butter while whisking to make hollandaise.\nSeason with cayenne and salt.\nAssemble: muffin, ham, poached egg, hollandaise sauce.",
+  "steps": "Fill a large, wide pot with 3 inches of water. Add white vinegar and bring to a gentle simmer (not boiling).\nWhile water heats, split English muffins and toast until golden brown. Keep warm.\nHeat a skillet over medium heat and warm Canadian bacon or ham slices for 2-3 minutes per side until lightly browned. Keep warm.\nTo make hollandaise sauce: Melt butter in a small saucepan and clarify by skimming off the white foam. Keep warm but not hot.\nIn a double boiler or heatproof bowl set over simmering water, whisk egg yolks with lemon juice until pale and thickened, about 3-4 minutes.\nRemove from heat and slowly drizzle in warm clarified butter while whisking constantly until sauce is smooth and emulsified.\nSeason hollandaise with cayenne pepper and salt. Keep warm in a bowl set over warm (not hot) water.\nTo poach eggs: Crack one egg into a small bowl. Create a gentle whirlpool in the simmering water with a spoon.\nSlide the egg into the center of the whirlpool. Poach for 3-4 minutes until white is set but yolk is still runny.\nRemove with a slotted spoon and drain on paper towels. Repeat with remaining eggs.\nTo assemble: Place toasted English muffin halves on plates. Top each with a slice of Canadian bacon, then a poached egg.\nSpoon hollandaise sauce over each egg, garnish with chives and a sprinkle of paprika.\nServe immediately while hot.",
   "servingSize": 2,
   "nutritionInfo": {
-    "calories": 520,
-    "protein": 24.0,
-    "carbs": 28.0,
-    "fat": 34.0
+    "calories": 580,
+    "protein": 28.0,
+    "carbs": 32.0,
+    "fat": 38.0
   },
-  "cookTimeMinutes": 25,
+  "cookTimeMinutes": 30,
   "dietaryRestrictions": [],
   "recipeId": "default-brunch-001"
 }

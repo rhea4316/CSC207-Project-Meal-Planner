@@ -65,4 +65,14 @@ public class Avatar extends StackPane {
         shape.setFill(Color.web("#ececf0")); // Restore muted color
         fallbackLabel.setVisible(true);
     }
+    
+    /**
+     * Sets the background color of the avatar circle.
+     * @param color The color to set (e.g., "#68CA2A")
+     */
+    public void setBackgroundColor(String color) {
+        if (color != null && !color.isEmpty()) {
+            shape.setFill(Color.web(color));
+        }
+    }
 }

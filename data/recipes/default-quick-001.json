@@ -1,21 +1,28 @@
 {
-  "name": "Quick Quesadilla",
+  "name": "Quick Black Bean Quesadilla",
   "ingredients": [
-    "4 flour tortillas",
-    "1 cup shredded cheese",
-    "1/2 cup black beans",
+    "4 large flour tortillas (10-inch)",
+    "2 cups shredded Mexican blend cheese",
+    "1 can (15 oz) black beans, drained and rinsed",
+    "1/2 cup corn kernels",
+    "1/4 cup diced red bell pepper",
+    "2 tablespoons chopped fresh cilantro",
+    "1 teaspoon ground cumin",
+    "1/2 teaspoon chili powder",
     "1/4 cup salsa",
-    "2 tablespoons sour cream"
+    "2 tablespoons sour cream",
+    "1 tablespoon vegetable oil",
+    "1 lime, cut into wedges"
   ],
-  "steps": "Heat a large pan over medium heat.\nPlace one tortilla in the pan, add cheese and beans on one half.\nFold tortilla in half and cook for 2-3 minutes per side until golden.\nRepeat with remaining tortillas.\nServe with salsa and sour cream.",
+  "steps": "In a small bowl, mix black beans, corn, red bell pepper, cilantro, cumin, and chili powder.\nHeat a large non-stick skillet or griddle over medium heat.\nPlace one tortilla in the pan and sprinkle half with 1/2 cup of cheese.\nSpoon bean mixture over the cheese, then top with another 1/2 cup of cheese.\nFold the empty half of the tortilla over the filling.\nCook for 2-3 minutes until the bottom is golden brown and crispy.\nCarefully flip the quesadilla and cook for another 2-3 minutes until the other side is golden and cheese is melted.\nRemove from pan and let cool for 1 minute before cutting.\nRepeat with remaining tortillas and filling.\nCut each quesadilla into 3-4 wedges and serve hot with salsa, sour cream, and lime wedges on the side.",
   "servingSize": 2,
   "nutritionInfo": {
-    "calories": 420,
-    "protein": 18.0,
-    "carbs": 48.0,
-    "fat": 16.0
+    "calories": 480,
+    "protein": 22.0,
+    "carbs": 52.0,
+    "fat": 20.0
   },
-  "cookTimeMinutes": 10,
+  "cookTimeMinutes": 15,
   "dietaryRestrictions": [
     "VEGETARIAN"
   ],

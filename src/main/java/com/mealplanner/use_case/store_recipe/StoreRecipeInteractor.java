@@ -58,10 +58,15 @@ public class StoreRecipeInteractor implements StoreRecipeInputBoundary {
 			return;
 		}
 
-		// Check for duplicate recipe name (case-insensitive)
-		// Only check if this is a new recipe (no recipeId provided)
-		String recipeId = inputData.getRecipeId();
-		if (StringUtil.isNullOrEmpty(recipeId)) {
+		// Phase 3: Check for duplicate recipe name (case-insensitive)
+		// For new recipes (no recipeId), check for duplicates
+		// For updates (recipeId provided), exclude the current recipe from duplicate check
+		String inputRecipeId = inputData.getRecipeId();
+		boolean isUpdate = !StringUtil.isNullOrEmpty(inputRecipeId);
+		final String recipeId; // Final variable for use in lambda
+		
+		if (!isUpdate) {
+			// New recipe: check for duplicates
 			try {
 				List<Recipe> existingRecipes = recipeRepository.findByName(inputData.getName());
 				if (existingRecipes != null && !existingRecipes.isEmpty()) {
@@ -82,7 +87,32 @@ public class StoreRecipeInteractor implements StoreRecipeInputBoundary {
 				logger.warn("Failed to check for duplicate recipe name '{}': {}", inputData.getName(), e.getMessage(), e);
 			}
 			
+			// Generate new recipeId for new recipe
 			recipeId = "recipe-" + UUID.randomUUID().toString();
+		} else {
+			// Update mode: check for duplicates but exclude current recipe
+			final String currentRecipeId = inputRecipeId; // Final for lambda
+			try {
+				List<Recipe> existingRecipes = recipeRepository.findByName(inputData.getName());
+				if (existingRecipes != null && !existingRecipes.isEmpty()) {
+					// Check for exact match (case-insensitive) excluding current recipe
+					boolean exactMatch = existingRecipes.stream()
+							.filter(r -> !r.getRecipeId().equals(currentRecipeId)) // Exclude current recipe
+							.anyMatch(r -> r.getName().equalsIgnoreCase(inputData.getName()));
+					
+					if (exactMatch) {
+						logger.info("Duplicate recipe name detected during update: '{}'", inputData.getName());
+						presenter.presentError("A recipe with the name '" + inputData.getName() + 
+								"' already exists. Please choose a different name.");
+						return;
+					}
+				}
+			} catch (DataAccessException e) {
+				// If we can't check for duplicates, log but continue (don't block recipe update)
+				logger.warn("Failed to check for duplicate recipe name during update '{}': {}", inputData.getName(), e.getMessage(), e);
+			}
+			// Keep existing recipeId for update
+			recipeId = currentRecipeId;
 		}
 
 		// Convert steps list to string (join with newlines)

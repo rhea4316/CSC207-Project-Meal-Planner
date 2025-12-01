@@ -1,24 +1,26 @@
 {
-  "name": "Chocolate Chip Cookies",
+  "name": "Classic Chocolate Chip Cookies",
   "ingredients": [
-    "2 cups flour",
-    "1 cup butter",
-    "3/4 cup brown sugar",
-    "3/4 cup white sugar",
-    "2 eggs",
-    "2 cups chocolate chips",
-    "1 teaspoon vanilla extract",
-    "1 teaspoon baking soda"
+    "2.25 cups all-purpose flour",
+    "1 cup (2 sticks) unsalted butter, softened",
+    "3/4 cup packed brown sugar",
+    "3/4 cup granulated white sugar",
+    "2 large eggs, room temperature",
+    "2 teaspoons vanilla extract",
+    "1 teaspoon baking soda",
+    "1 teaspoon salt",
+    "2 cups semi-sweet chocolate chips",
+    "1 cup chopped walnuts or pecans (optional)"
   ],
-  "steps": "Preheat oven to 375°F.\nCream butter and sugars until fluffy.\nBeat in eggs and vanilla.\nMix in flour and baking soda.\nStir in chocolate chips.\nDrop rounded tablespoons onto baking sheet.\nBake for 9-11 minutes until golden.\nCool on wire rack.",
-  "servingSize": 24,
+  "steps": "Preheat oven to 375°F. Line baking sheets with parchment paper.\nIn a medium bowl, whisk together flour, baking soda, and salt. Set aside.\nIn a large mixing bowl, cream softened butter with brown sugar and granulated sugar using an electric mixer on medium speed for 3-4 minutes until light and fluffy.\nBeat in eggs one at a time, then add vanilla extract. Mix until well combined.\nGradually add the flour mixture to the wet ingredients, mixing on low speed until just combined. Do not overmix.\nStir in chocolate chips and nuts (if using) with a wooden spoon or spatula.\nCover dough and refrigerate for at least 30 minutes (or up to 24 hours) for best results.\nDrop rounded tablespoons of dough onto prepared baking sheets, spacing them about 2 inches apart.\nBake for 9-11 minutes until edges are golden brown but centers still look slightly underbaked.\nRemove from oven and let cookies cool on the baking sheet for 5 minutes before transferring to a wire rack to cool completely.\nStore in an airtight container at room temperature for up to 5 days.",
+  "servingSize": 36,
   "nutritionInfo": {
-    "calories": 180,
+    "calories": 165,
     "protein": 2.0,
-    "carbs": 22.0,
+    "carbs": 20.0,
     "fat": 9.0
   },
-  "cookTimeMinutes": 25,
+  "cookTimeMinutes": 35,
   "dietaryRestrictions": [
     "VEGETARIAN"
   ],

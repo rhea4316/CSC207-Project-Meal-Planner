@@ -234,9 +234,11 @@ public class ProfileSettingsView extends BorderPane implements PropertyChangeLis
         HBox header = new HBox(12);
         header.setAlignment(Pos.CENTER_LEFT);
         StackPane iconBg = new StackPane();
-        Circle bgCircle = new Circle(16, Color.web("#64DD17"));
-        Node targetIcon = SvgIconLoader.loadIcon("/svg/flag.svg", 20, Color.WHITE);
-        iconBg.getChildren().addAll(bgCircle, targetIcon != null ? targetIcon : new Label());
+        Rectangle bgRect = new Rectangle(32, 32);
+        bgRect.setArcWidth(12); bgRect.setArcHeight(12);
+        bgRect.setFill(Color.web("#68CA2A"));
+        Node targetIcon = SvgIconLoader.loadIcon("/svg/flag.svg", 18, Color.WHITE);
+        iconBg.getChildren().addAll(bgRect, targetIcon != null ? targetIcon : new Label());
         
         VBox titleBox = new VBox(2);
         Label title = new Label("Nutrition Goals");
@@ -288,12 +290,14 @@ public class ProfileSettingsView extends BorderPane implements PropertyChangeLis
         
         // Save Button
         Button saveBtn = new Button("Save Nutrition Goals");
-        saveBtn.setStyle("-fx-background-color: #00C853; -fx-text-fill: white; -fx-font-weight: 600; -fx-background-radius: 8px; -fx-padding: 10 20; -fx-cursor: hand;");
+        saveBtn.setStyle("-fx-background-color: #68CA2A; -fx-text-fill: white; -fx-font-weight: 600; -fx-background-radius: 8px; -fx-padding: 10 20; -fx-cursor: hand;");
         Node saveIcon = SvgIconLoader.loadIcon("/svg/disk.svg", 16, Color.WHITE);
         if (saveIcon != null) {
             saveBtn.setGraphic(saveIcon);
             saveBtn.setGraphicTextGap(8);
         }
+        saveBtn.setOnMouseEntered(e -> saveBtn.setStyle("-fx-background-color: #1fb005; -fx-text-fill: white; -fx-font-weight: 600; -fx-background-radius: 8px; -fx-padding: 10 20; -fx-cursor: hand;"));
+        saveBtn.setOnMouseExited(e -> saveBtn.setStyle("-fx-background-color: #68CA2A; -fx-text-fill: white; -fx-font-weight: 600; -fx-background-radius: 8px; -fx-padding: 10 20; -fx-cursor: hand;"));
         saveBtn.setOnAction(e -> saveNutritionGoals());
         
         VBox.setMargin(saveBtn, new Insets(20, 0, 0, 0));
@@ -554,6 +558,24 @@ public class ProfileSettingsView extends BorderPane implements PropertyChangeLis
             btn.setGraphic(icon);
             btn.setGraphicTextGap(6);
         }
+        btn.setOnMouseEntered(e -> {
+            btn.setStyle("-fx-background-color: #1AD32F2F; -fx-text-fill: #D32F2F; -fx-border-color: #D32F2F; -fx-border-width: 1px; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-padding: 6 12; -fx-font-size: 13px; -fx-cursor: hand;");
+            if (icon != null) {
+                Node hoverIcon = SvgIconLoader.loadIcon(iconPath, 14, Color.web("#D32F2F"));
+                if (hoverIcon != null) {
+                    btn.setGraphic(hoverIcon);
+                }
+            }
+        });
+        btn.setOnMouseExited(e -> {
+            btn.setStyle("-fx-background-color: white; -fx-text-fill: #444444; -fx-border-color: #E0E0E0; -fx-border-radius: 6px; -fx-background-radius: 6px; -fx-padding: 6 12; -fx-font-size: 13px; -fx-cursor: hand;");
+            if (icon != null) {
+                Node normalIcon = SvgIconLoader.loadIcon(iconPath, 14, Color.web("#444444"));
+                if (normalIcon != null) {
+                    btn.setGraphic(normalIcon);
+                }
+            }
+        });
         
         btn.setOnAction(e -> handleDataAction(title));
 

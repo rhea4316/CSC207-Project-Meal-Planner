@@ -13,15 +13,8 @@ import com.mealplanner.entity.Recipe;
 import com.mealplanner.exception.RecipeNotFoundException;
 import com.mealplanner.use_case.browse_recipe.BrowseRecipeDataAccessInterface;
 import com.mealplanner.use_case.browse_recipe.BrowseRecipeInputData;
-import org.json.JSONArray;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
 
 public class BrowseRecipeAPIParser implements BrowseRecipeDataAccessInterface {
     
@@ -62,17 +55,31 @@ public class BrowseRecipeAPIParser implements BrowseRecipeDataAccessInterface {
         }
 
         // OPTIMIZATION: Parse recipes directly from complexSearch response instead of making N additional API calls
+        logger.debug("Parsing {} recipes from API response", jsonArray.length());
+        int successCount = 0;
+        int failCount = 0;
+        
         for (int i = 0; i < jsonArray.length(); i++) {
             JSONObject currentRecipe = jsonArray.getJSONObject(i);
             try {
                 // Parse recipe directly from the search result which now includes full information
                 Recipe recipe = com.mealplanner.data_access.api.ApiResponseParser.parseRecipe(currentRecipe);
-                recipes.add(recipe);
+                if (recipe != null) {
+                    recipes.add(recipe);
+                    successCount++;
+                    logger.debug("Successfully parsed recipe: {}", recipe.getName());
+                } else {
+                    failCount++;
+                    logger.warn("parseRecipe returned null for recipe at index {}", i);
+                }
             } catch (Exception e) {
                 // Skip recipes that fail to parse - continue with others
-                logger.warn("Failed to parse recipe from API response: {}", e.getMessage(), e);
+                failCount++;
+                logger.warn("Failed to parse recipe from API response at index {}: {}", i, e.getMessage(), e);
             }
         }
+
+        logger.debug("Recipe parsing complete: {} successful, {} failed, {} total", successCount, failCount, recipes.size());
 
         if (recipes.isEmpty()) {
             throw new RecipeNotFoundException("Found recipes but failed to receive details for all of them", null);

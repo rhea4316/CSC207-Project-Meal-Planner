@@ -7,7 +7,12 @@ import com.mealplanner.entity.Recipe;
 import com.mealplanner.entity.User;
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.AdjustServingSizeController;
+import com.mealplanner.interface_adapter.controller.StoreRecipeController;
 import com.mealplanner.interface_adapter.view_model.RecipeDetailViewModel;
+import com.mealplanner.repository.RecipeRepository;
+import com.mealplanner.exception.DataAccessException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.mealplanner.view.component.*;
 import com.mealplanner.view.util.SvgIconLoader;
 import com.mealplanner.util.ImageCacheManager;
@@ -24,6 +29,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.paint.CycleMethod;
 import javafx.scene.paint.LinearGradient;
 import javafx.scene.paint.Stop;
+import org.controlsfx.control.Notifications;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.image.Image;
@@ -31,14 +37,18 @@ import javafx.scene.image.ImageView;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.util.ArrayList;
+import java.util.List;
 
 public class RecipeDetailView extends ScrollPane implements PropertyChangeListener {
     private final RecipeDetailViewModel viewModel;
-    @SuppressWarnings("unused")
     private final AdjustServingSizeController controller;
     private final com.mealplanner.interface_adapter.controller.AddMealController addMealController;
     private final ViewManagerModel viewManagerModel;
+    private final StoreRecipeController storeRecipeController;
+    private final RecipeRepository recipeRepository;
     private final ImageCacheManager imageCache = ImageCacheManager.getInstance();
+    private static final Logger logger = LoggerFactory.getLogger(RecipeDetailView.class);
 
     // UI Components
     private StackPane heroSection;
@@ -54,19 +64,23 @@ public class RecipeDetailView extends ScrollPane implements PropertyChangeListen
     private Label caloriesValueLabel;
     private Progress proteinBar, carbsBar, fatBar;
     private Label proteinVal, carbsVal, fatVal;
-    
-    @SuppressWarnings("unused")
-    private Label errorLabel;
+    private Label servingValueLabel; // Modern serving size display
+    private Label servingNote;
+    private boolean isUpdatingFromViewModel = false; // Flag to prevent infinite loop
 
-    public RecipeDetailView(RecipeDetailViewModel viewModel, AdjustServingSizeController controller, com.mealplanner.interface_adapter.controller.AddMealController addMealController, ViewManagerModel viewManagerModel) {
+    public RecipeDetailView(RecipeDetailViewModel viewModel, AdjustServingSizeController controller, com.mealplanner.interface_adapter.controller.AddMealController addMealController, ViewManagerModel viewManagerModel, StoreRecipeController storeRecipeController, RecipeRepository recipeRepository) {
         if (viewModel == null) throw new IllegalArgumentException("ViewModel cannot be null");
         if (controller == null) throw new IllegalArgumentException("Controller cannot be null");
         if (addMealController == null) throw new IllegalArgumentException("AddMealController cannot be null");
+        if (storeRecipeController == null) throw new IllegalArgumentException("StoreRecipeController cannot be null");
+        if (recipeRepository == null) throw new IllegalArgumentException("RecipeRepository cannot be null");
         
         this.viewModel = viewModel;
         this.controller = controller;
         this.addMealController = addMealController;
         this.viewManagerModel = viewManagerModel;
+        this.storeRecipeController = storeRecipeController;
+        this.recipeRepository = recipeRepository;
 
         viewModel.addPropertyChangeListener(this);
 
@@ -210,6 +224,12 @@ public class RecipeDetailView extends ScrollPane implements PropertyChangeListen
         });
         
         Button saveBookBtn = createActionButton("Save to Cookbook", "secondary", "/svg/book.svg");
+        saveBookBtn.setOnAction(e -> {
+            Recipe recipe = viewModel.getRecipe();
+            if (recipe != null) {
+                saveRecipeToCookbook(recipe);
+            }
+        });
         Button shareBtn = createActionButton("Share Recipe", "default", "/svg/paper-plane.svg"); // Share icon fallback
         Button deleteBtn = createActionButton("Delete Recipe", "danger", "/svg/trash.svg");
         
@@ -259,11 +279,99 @@ public class RecipeDetailView extends ScrollPane implements PropertyChangeListen
         
         barsContainer.getChildren().addAll(pBox, cBox, fBox);
         
-        Label servingNote = new Label("Nutrition values per serving (2 servings total)");
+        // Serving Size Adjustment Control - Modern Design
+        VBox servingSizeControl = new VBox(8);
+        servingSizeControl.setPadding(new Insets(15, 0, 10, 0));
+        
+        Label servingLabel = new Label("Servings");
+        servingLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #6b7280; -fx-font-weight: 500;");
+        
+        // Modern counter control with +/- buttons
+        HBox counterBox = new HBox(0);
+        counterBox.setAlignment(Pos.CENTER);
+        counterBox.setStyle("-fx-background-color: #f9fafb; -fx-background-radius: 8px; -fx-border-color: #e5e7eb; -fx-border-width: 1px; -fx-border-radius: 8px;");
+        
+        // Initialize serving size
+        int initialServingSize = viewModel.getRecipe() != null ? viewModel.getRecipe().getServingSize() : 2;
+        Label servingValueLabel = new Label(String.valueOf(initialServingSize));
+        servingValueLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: #111827; -fx-font-weight: 600; -fx-min-width: 60px; -fx-alignment: center;");
+        servingValueLabel.setPadding(new Insets(12, 16, 12, 16));
+        
+        // Minus button
+        Button minusBtn = new Button();
+        minusBtn.setStyle("-fx-background-color: transparent; -fx-background-radius: 8px 0 0 8px; -fx-border-width: 0; -fx-cursor: hand; -fx-padding: 12 16;");
+        minusBtn.setPrefHeight(44);
+        minusBtn.setMinWidth(44);
+        Label minusLabel = new Label("−");
+        minusLabel.setStyle("-fx-font-size: 20px; -fx-text-fill: #6b7280; -fx-font-weight: 600;");
+        minusBtn.setGraphic(minusLabel);
+        minusBtn.setOnMouseEntered(e -> {
+            minusBtn.setStyle("-fx-background-color: #f3f4f6; -fx-background-radius: 8px 0 0 8px; -fx-border-width: 0; -fx-cursor: hand; -fx-padding: 12 16;");
+            minusLabel.setStyle("-fx-font-size: 20px; -fx-text-fill: #111827; -fx-font-weight: 600;");
+        });
+        minusBtn.setOnMouseExited(e -> {
+            minusBtn.setStyle("-fx-background-color: transparent; -fx-background-radius: 8px 0 0 8px; -fx-border-width: 0; -fx-cursor: hand; -fx-padding: 12 16;");
+            minusLabel.setStyle("-fx-font-size: 20px; -fx-text-fill: #6b7280; -fx-font-weight: 600;");
+        });
+        minusBtn.setOnAction(e -> {
+            int current = Integer.parseInt(servingValueLabel.getText());
+            if (current > 1) {
+                int newValue = current - 1;
+                updateServingSize(newValue);
+            }
+        });
+        
+        // Plus button
+        Button plusBtn = new Button();
+        plusBtn.setStyle("-fx-background-color: transparent; -fx-background-radius: 0 8px 8px 0; -fx-border-width: 0; -fx-cursor: hand; -fx-padding: 12 16;");
+        plusBtn.setPrefHeight(44);
+        plusBtn.setMinWidth(44);
+        Node plusIcon = SvgIconLoader.loadIcon("/svg/plus-small.svg", 16, Color.web("#6b7280"));
+        if (plusIcon == null) {
+            Label plusLabel = new Label("+");
+            plusLabel.setStyle("-fx-font-size: 20px; -fx-text-fill: #6b7280; -fx-font-weight: 600;");
+            plusBtn.setGraphic(plusLabel);
+        } else {
+            plusBtn.setGraphic(plusIcon);
+        }
+        plusBtn.setOnMouseEntered(e -> {
+            plusBtn.setStyle("-fx-background-color: #f3f4f6; -fx-background-radius: 0 8px 8px 0; -fx-border-width: 0; -fx-cursor: hand; -fx-padding: 12 16;");
+            if (plusBtn.getGraphic() instanceof Label) {
+                ((Label) plusBtn.getGraphic()).setStyle("-fx-font-size: 20px; -fx-text-fill: #111827; -fx-font-weight: 600;");
+            } else if (plusBtn.getGraphic() != null) {
+                Node hoverIcon = SvgIconLoader.loadIcon("/svg/plus-small.svg", 16, Color.web("#111827"));
+                if (hoverIcon != null) plusBtn.setGraphic(hoverIcon);
+            }
+        });
+        plusBtn.setOnMouseExited(e -> {
+            plusBtn.setStyle("-fx-background-color: transparent; -fx-background-radius: 0 8px 8px 0; -fx-border-width: 0; -fx-cursor: hand; -fx-padding: 12 16;");
+            if (plusBtn.getGraphic() instanceof Label) {
+                ((Label) plusBtn.getGraphic()).setStyle("-fx-font-size: 20px; -fx-text-fill: #6b7280; -fx-font-weight: 600;");
+            } else if (plusBtn.getGraphic() != null) {
+                Node normalIcon = SvgIconLoader.loadIcon("/svg/plus-small.svg", 16, Color.web("#6b7280"));
+                if (normalIcon != null) plusBtn.setGraphic(normalIcon);
+            }
+        });
+        plusBtn.setOnAction(e -> {
+            int current = Integer.parseInt(servingValueLabel.getText());
+            if (current < 50) {
+                int newValue = current + 1;
+                updateServingSize(newValue);
+            }
+        });
+        
+        counterBox.getChildren().addAll(minusBtn, servingValueLabel, plusBtn);
+        
+        // Store reference to label for updates
+        this.servingValueLabel = servingValueLabel;
+        
+        servingSizeControl.getChildren().addAll(servingLabel, counterBox);
+        
+        servingNote = new Label("Nutrition values per serving");
         servingNote.setWrapText(true);
         servingNote.setStyle("-fx-font-size: 12px; -fx-text-fill: #9ca3af; -fx-padding: 10 0 0 0;");
         
-        nutritionCard.getChildren().addAll(nutTitle, calsBox, barsContainer, servingNote);
+        nutritionCard.getChildren().addAll(nutTitle, calsBox, barsContainer, servingSizeControl, servingNote);
 
         rightCol.getChildren().addAll(actionsPanel, nutritionCard);
         grid.add(rightCol, 1, 0);
@@ -421,6 +529,22 @@ public class RecipeDetailView extends ScrollPane implements PropertyChangeListen
             
             int servingSize = recipe.getServingSize();
             addMetaChip(servingSize + " Servings", "/svg/users.svg");
+            
+            // Update serving size label if it exists (set flag to prevent infinite loop)
+            if (servingValueLabel != null) {
+                isUpdatingFromViewModel = true;
+                try {
+                    servingValueLabel.setText(String.valueOf(servingSize));
+                } finally {
+                    isUpdatingFromViewModel = false;
+                }
+            }
+            
+            // Update serving note
+            if (servingNote != null) {
+                servingNote.setText("Nutrition values per serving (" + servingSize + " servings total)");
+            }
+            
             addMetaChip("Breakfast", "/svg/mug-hot.svg");
             
             // Ingredients
@@ -555,6 +679,25 @@ public class RecipeDetailView extends ScrollPane implements PropertyChangeListen
         }
     }
 
+    /**
+     * Helper method to update serving size and trigger controller
+     */
+    private void updateServingSize(int newValue) {
+        if (isUpdatingFromViewModel) {
+            return; // Prevent infinite loop
+        }
+        
+        if (servingValueLabel != null) {
+            servingValueLabel.setText(String.valueOf(newValue));
+        }
+        
+        Recipe recipe = viewModel.getRecipe();
+        if (recipe != null) {
+            String recipeId = String.valueOf(recipe.getRecipeId());
+            controller.execute(recipeId, newValue);
+        }
+    }
+    
     @Override
     public void propertyChange(PropertyChangeEvent evt) {
         Platform.runLater(() -> {
@@ -573,6 +716,94 @@ public class RecipeDetailView extends ScrollPane implements PropertyChangeListen
             target = ViewManager.BROWSE_RECIPE_VIEW;
         }
         viewManagerModel.setActiveView(target);
+    }
+    
+    /**
+     * Phase 2: 레시피를 My Cookbook에 저장하는 기능
+     */
+    private void saveRecipeToCookbook(Recipe recipe) {
+        if (storeRecipeController == null || recipe == null) {
+            logger.error("Cannot save recipe: storeRecipeController or recipe is null");
+            return;
+        }
+        
+        try {
+            // Recipe를 StoreRecipeInputData로 변환
+            String recipeName = recipe.getName();
+            if (recipeName == null || recipeName.trim().isEmpty()) {
+                logger.warn("Recipe name is missing, cannot save");
+                return;
+            }
+            
+            List<String> ingredients = recipe.getIngredients() != null 
+                ? new ArrayList<>(recipe.getIngredients())
+                : new ArrayList<>();
+            
+            // steps는 String이므로 List<String>으로 변환
+            List<String> steps = new ArrayList<>();
+            if (recipe.getSteps() != null && !recipe.getSteps().trim().isEmpty()) {
+                String[] stepArray = recipe.getSteps().split("\\r?\\n");
+                for (String step : stepArray) {
+                    String trimmed = step.trim();
+                    if (!trimmed.isEmpty()) {
+                        steps.add(trimmed);
+                    }
+                }
+            }
+            
+            int servingSize = recipe.getServingSize();
+            if (servingSize <= 0) {
+                servingSize = 1; // 기본값
+            }
+            
+            // 중복 체크
+            try {
+                List<Recipe> existingRecipes = recipeRepository.findByName(recipeName);
+                if (existingRecipes != null && !existingRecipes.isEmpty()) {
+                    boolean exactMatch = existingRecipes.stream()
+                        .anyMatch(r -> r != null && r.getName() != null && r.getName().equalsIgnoreCase(recipeName));
+                    
+                    if (exactMatch) {
+                        // 이미 저장된 경우 - Phase 3 완료: 업데이트 기능은 My Cookbook에서 사용 가능
+                        logger.info("Recipe '{}' already exists in cookbook", recipeName);
+                        // 사용자에게 알림
+                        Platform.runLater(() -> {
+                            Notifications.create()
+                                .title("Already Saved")
+                                .text("This recipe is already in your cookbook. You can edit it from My Cookbook.")
+                                .showInformation();
+                        });
+                        return;
+                    }
+                }
+            } catch (DataAccessException e) {
+                // 중복 체크 실패해도 계속 진행
+                logger.debug("Failed to check duplicate: {}", e.getMessage());
+            }
+            
+            // StoreRecipeController 호출 (recipeId는 null로 새 레시피로 저장)
+            storeRecipeController.execute(
+                null,  // recipeId (null = 새 레시피)
+                recipeName,
+                ingredients,
+                steps,
+                servingSize
+            );
+            
+            // 성공 메시지는 StoreRecipePresenter에서 처리됨
+            logger.info("Recipe '{}' saved to cookbook successfully", recipeName);
+            
+            // Phase 2: 사용자에게 성공 피드백 제공
+            Platform.runLater(() -> {
+                Notifications.create()
+                    .title("Saved!")
+                    .text("Recipe saved to your cookbook successfully.")
+                    .showInformation();
+            });
+            
+        } catch (Exception e) {
+            logger.error("Failed to save recipe to cookbook: {}", e.getMessage(), e);
+        }
     }
     
     /**
