@@ -16,7 +16,7 @@ import com.mealplanner.view.ViewManager;
 import javafx.application.Platform;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
-import org.scenicview.ScenicView;
+// import org.scenicview.ScenicView; // Commented out - library not available
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -137,17 +137,20 @@ public class Main extends Application {
             
             primaryStage.setTitle("PlanEat");
             primaryStage.setScene(scene);
-            
+
             // Scenic View 디버깅 도구 활성화 (개발 모드에서만)
             // 환경 변수 또는 시스템 프로퍼티로 제어 가능
             // 참고: Scenic View는 독립 실행형 애플리케이션으로도 사용 가능합니다
             // https://github.com/JonathanGiles/scenic-view 에서 다운로드
+            // Commented out because ScenicView library is not available
+            /*
             String enableScenicView = System.getProperty("scenicview.enable", System.getenv("SCENICVIEW_ENABLE"));
             if (enableScenicView != null && (enableScenicView.equalsIgnoreCase("true") || enableScenicView.equals("1"))) {
                 ScenicView.show(scene);
                 logger.info("Scenic View 디버깅 도구가 활성화되었습니다.");
             }
-            
+            */
+
             // 종료 시 캐시 정리
             primaryStage.setOnCloseRequest(event -> {
                 ImageCacheManager.getInstance().shutdown();
