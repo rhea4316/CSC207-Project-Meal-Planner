@@ -97,6 +97,7 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
     private Button saveBtn;
     private ProgressIndicator savingIndicator;
     private ProgressIndicator loadingIndicator;
+    private volatile boolean isRefreshingCookbook = false; // Flag to prevent concurrent refresh
 
     public StoreRecipeView(StoreRecipeController controller, RecipeStoreViewModel viewModel, ViewManagerModel viewManagerModel, RecipeRepository recipeRepository) {
         if (controller == null) throw new IllegalArgumentException("Controller cannot be null");
@@ -672,14 +673,38 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
      * @param onComplete Optional callback to execute after refresh completes
      */
     private void refreshCookbook(Runnable onComplete) {
+        // Prevent concurrent refresh operations
+        if (isRefreshingCookbook) {
+            logger.debug("Cookbook refresh already in progress, skipping duplicate request");
+            if (onComplete != null) {
+                // If refresh is already in progress, execute callback after a short delay
+                Platform.runLater(() -> {
+                    try {
+                        onComplete.run();
+                    } catch (Exception e) {
+                        logger.error("Error executing refreshCookbook callback", e);
+                    }
+                });
+            }
+            return;
+        }
+        
         if (recipeRepository == null) {
             logger.warn("RecipeRepository is null, cannot refresh cookbook");
             Platform.runLater(() -> {
                 sonner.show("Error", "Recipe repository is not available", Sonner.Type.ERROR);
-                if (onComplete != null) onComplete.run();
+                if (onComplete != null) {
+                    try {
+                        onComplete.run();
+                    } catch (Exception e) {
+                        logger.error("Error executing refreshCookbook callback", e);
+                    }
+                }
             });
             return;
         }
+        
+        isRefreshingCookbook = true;
         
         // Show loading indicator
         Platform.runLater(() -> {
@@ -694,34 +719,63 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
                 List<Recipe> recipes = recipeRepository.findAll();
                 recipes.sort(Comparator.comparing(Recipe::getName, String.CASE_INSENSITIVE_ORDER));
                 Platform.runLater(() -> {
-                    if (loadingIndicator != null) {
-                        loadingIndicator.setVisible(false);
-                        loadingIndicator.setManaged(false);
-                    }
-                    updateCookbook(recipes);
-                    if (onComplete != null) {
-                        onComplete.run();
+                    try {
+                        if (loadingIndicator != null) {
+                            loadingIndicator.setVisible(false);
+                            loadingIndicator.setManaged(false);
+                        }
+                        updateCookbook(recipes);
+                        if (onComplete != null) {
+                            onComplete.run();
+                        }
+                    } catch (Exception e) {
+                        logger.error("Error updating cookbook UI", e);
+                        if (onComplete != null) {
+                            try {
+                                onComplete.run();
+                            } catch (Exception ex) {
+                                logger.error("Error executing refreshCookbook callback", ex);
+                            }
+                        }
+                    } finally {
+                        isRefreshingCookbook = false;
                     }
                 });
             } catch (DataAccessException e) {
                 logger.error("Data access error while loading recipes", e);
                 Platform.runLater(() -> {
-                    if (loadingIndicator != null) {
-                        loadingIndicator.setVisible(false);
-                        loadingIndicator.setManaged(false);
+                    try {
+                        if (loadingIndicator != null) {
+                            loadingIndicator.setVisible(false);
+                            loadingIndicator.setManaged(false);
+                        }
+                        sonner.show("Error", "Failed to load recipes. Please try again.", Sonner.Type.ERROR);
+                        if (onComplete != null) {
+                            onComplete.run();
+                        }
+                    } catch (Exception ex) {
+                        logger.error("Error handling data access exception", ex);
+                    } finally {
+                        isRefreshingCookbook = false;
                     }
-                    sonner.show("Error", "Failed to load recipes. Please try again.", Sonner.Type.ERROR);
-                    if (onComplete != null) onComplete.run();
                 });
             } catch (Exception e) {
                 logger.error("Unexpected error while loading recipes", e);
                 Platform.runLater(() -> {
-                    if (loadingIndicator != null) {
-                        loadingIndicator.setVisible(false);
-                        loadingIndicator.setManaged(false);
+                    try {
+                        if (loadingIndicator != null) {
+                            loadingIndicator.setVisible(false);
+                            loadingIndicator.setManaged(false);
+                        }
+                        sonner.show("Error", "An unexpected error occurred while loading recipes.", Sonner.Type.ERROR);
+                        if (onComplete != null) {
+                            onComplete.run();
+                        }
+                    } catch (Exception ex) {
+                        logger.error("Error handling unexpected exception", ex);
+                    } finally {
+                        isRefreshingCookbook = false;
                     }
-                    sonner.show("Error", "An unexpected error occurred while loading recipes.", Sonner.Type.ERROR);
-                    if (onComplete != null) onComplete.run();
                 });
             }
         }).start();
@@ -1470,7 +1524,8 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
                 }
                 clearForm();
                 // Phase 3: clearForm() already clears editingRecipe, refresh cookbook and return to list
-                refreshCookbook(() -> toggleView(true)); // Return to list on success
+                // Use Platform.runLater to ensure toggleView is called after refreshCookbook completes
+                refreshCookbook(() -> Platform.runLater(() -> toggleView(true))); // Return to list on success
             } else if (RecipeStoreViewModel.PROP_ERROR_MESSAGE.equals(evt.getPropertyName())) {
                 resetSaveButton();
                 String message = (String) evt.getNewValue();

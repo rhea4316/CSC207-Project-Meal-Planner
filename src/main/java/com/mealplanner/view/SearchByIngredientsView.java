@@ -756,7 +756,9 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
 
         listPanel.getChildren().clear();
 
-        List<Recipe> filtered = applyQuickFilters(allRecipes);
+        // First filter by selected ingredients, then apply quick filters
+        List<Recipe> ingredientFiltered = applyIngredientFilter(allRecipes);
+        List<Recipe> filtered = applyQuickFilters(ingredientFiltered);
 
         if (filtered == null || filtered.isEmpty()) {
             showView("EMPTY");
@@ -828,236 +830,282 @@ public class SearchByIngredientsView extends BorderPane implements PropertyChang
             return new VBox(); // 빈 카드 반환
         }
         
-        VBox card = new VBox(0);
-        card.setStyle("-fx-background-color: white; -fx-border-color: #f3f4f6; -fx-border-width: 2px; -fx-border-radius: 16px; -fx-background-radius: 16px;");
-        card.setPrefWidth(220);
-        card.setMinWidth(220);
-        card.setMaxWidth(220);
-        card.setPrefHeight(Region.USE_COMPUTED_SIZE);
-        card.setMinHeight(Region.USE_COMPUTED_SIZE);
+        VBox card = new VBox();
+        card.getStyleClass().add("meal-card");
+        card.setPrefWidth(300); // BrowseRecipeView와 동일한 너비
+        card.setMinWidth(300);
+        card.setSpacing(0);
+        card.setPadding(new Insets(0));
         card.setCursor(Cursor.HAND);
-        
-        card.setOnMouseEntered(e -> card.setStyle("-fx-background-color: white; -fx-border-color: #d9f99d; -fx-border-width: 2px; -fx-border-radius: 16px; -fx-background-radius: 16px;"));
-        card.setOnMouseExited(e -> card.setStyle("-fx-background-color: white; -fx-border-color: #f3f4f6; -fx-border-width: 2px; -fx-border-radius: 16px; -fx-background-radius: 16px;"));
 
-        // 1. Image with Match Badge - 이미지를 카드 절반에 fill-in
-        StackPane thumbnail = new StackPane();
-        thumbnail.setPrefHeight(208);
-        thumbnail.setMinHeight(208);
-        thumbnail.setMaxHeight(208);
-        thumbnail.setStyle("-fx-background-color: linear-gradient(to bottom, #f3f4f6, #f9fafb); -fx-background-radius: 16px 16px 0 0;");
+        // 1. Image Area
+        StackPane imageContainer = new StackPane();
+        imageContainer.setPrefHeight(180);
+        imageContainer.setStyle("-fx-background-color: #e5e7eb; -fx-background-radius: 12px 12px 0 0;");
+        imageContainer.setClip(new javafx.scene.shape.Rectangle(0, 0, 300, 180));
+        ((javafx.scene.shape.Rectangle) imageContainer.getClip()).setArcWidth(12);
+        ((javafx.scene.shape.Rectangle) imageContainer.getClip()).setArcHeight(12);
         
-        // 클리핑 마스크로 카드 상단에 맞춤
-        javafx.scene.shape.Rectangle clip = new javafx.scene.shape.Rectangle(0, 0, 220, 208);
-        clip.setArcWidth(16);
-        clip.setArcHeight(16);
-        thumbnail.setClip(clip);
-        
-        // Load recipe image if available - fill-in으로 설정
+        // Load recipe image if available
         String imageUrl = recipe.getImageUrl();
-        if (imageUrl != null && !imageUrl.trim().isEmpty() && imageCache != null) {
+        if (imageUrl != null && !imageUrl.isEmpty() && imageCache != null) {
             try {
                 ImageView imageView = new ImageView();
-                imageView.setFitWidth(220);
-                imageView.setFitHeight(208);
-                imageView.setPreserveRatio(false); // fill-in을 위해 비율 유지 안 함
+                imageView.setFitWidth(300);
+                imageView.setFitHeight(180);
+                imageView.setPreserveRatio(false);
                 imageView.setSmooth(true);
                 imageView.setCache(true);
                 
                 Image image = imageCache.getImage(imageUrl);
                 if (image != null) {
                     imageView.setImage(image);
-                    thumbnail.getChildren().add(0, imageView); // 배경으로 추가
+                    
+                    // Apply clipping mask
+                    javafx.scene.shape.Rectangle clip = new javafx.scene.shape.Rectangle(0, 0, 300, 180);
+                    clip.setArcWidth(12);
+                    clip.setArcHeight(12);
+                    imageView.setClip(clip);
+                    
+                    imageContainer.getChildren().add(0, imageView);
                 }
             } catch (Exception e) {
                 // If image loading fails, fall back to placeholder background
-                // 이미지 로딩 실패는 조용히 처리 (플레이스홀더 배경 사용)
             }
         }
         
-        // 매칭 배지 계산
-        List<String> recipeIngredients = recipe.getIngredients() != null ? recipe.getIngredients() : new ArrayList<>();
-        List<String> matchedIngredients = new ArrayList<>();
-        List<String> missingIngredients = new ArrayList<>();
+        // Overlay Tag (Difficulty) - Random for demo
+        Label difficultyTag = new Label(new java.util.Random().nextBoolean() ? "Easy" : "Medium");
+        difficultyTag.setStyle("-fx-background-color: rgba(255,255,255,0.9); -fx-text-fill: #1f2937; -fx-font-size: 11px; -fx-font-weight: 600; -fx-padding: 4 8; -fx-background-radius: 4px;");
+        StackPane.setAlignment(difficultyTag, Pos.TOP_LEFT);
+        StackPane.setMargin(difficultyTag, new Insets(12));
         
-        if (ingredientList != null && !ingredientList.isEmpty()) {
-            for (String rIng : recipeIngredients) {
-                if (rIng == null || rIng.trim().isEmpty()) {
-                    continue;
-                }
-                String rIngLower = rIng.toLowerCase();
-                boolean found = ingredientList.stream()
-                    .filter(uIng -> uIng != null && !uIng.trim().isEmpty())
-                    .anyMatch(uIng -> {
-                        String uIngLower = uIng.toLowerCase();
-                        return rIngLower.contains(uIngLower) || uIngLower.contains(rIngLower);
-                    });
-                if (found) {
-                    matchedIngredients.add(rIng);
-                } else {
-                    missingIngredients.add(rIng);
-                }
-            }
-        } else {
-            // 재료가 없으면 모든 재료가 missing
-            missingIngredients.addAll(recipeIngredients);
-        }
+        imageContainer.getChildren().add(difficultyTag);
+        card.getChildren().add(imageContainer);
         
-        int missing = missingIngredients.size();
+        // Image hover effect
+        imageContainer.setOnMouseEntered(e -> {
+            Region overlay = new Region();
+            overlay.setStyle(
+                "-fx-background-color: linear-gradient(to bottom, rgba(0,0,0,0.2), transparent); " +
+                "-fx-background-radius: 12px 12px 0 0;"
+            );
+            overlay.setMouseTransparent(true);
+            overlay.setId("hover-overlay");
+            imageContainer.getChildren().add(overlay);
+        });
         
-        // 매칭 배지 생성
-        HBox matchBadge = new HBox(4);
-        matchBadge.setAlignment(Pos.CENTER);
-        matchBadge.setStyle("-fx-background-radius: 8px; -fx-padding: 4 8;");
-        StackPane.setAlignment(matchBadge, Pos.TOP_RIGHT);
-        StackPane.setMargin(matchBadge, new Insets(8, 8, 0, 0));
-        
-        Node badgeIcon;
-        String badgeText;
-        if (missing == 0) {
-            // Perfect Match
-            matchBadge.setStyle("-fx-background-color: linear-gradient(to right, #84cc16, #22c55e); -fx-background-radius: 8px; -fx-padding: 4 8;");
-            badgeIcon = SvgIconLoader.loadIcon("/svg/star-fill.svg", 10, Color.WHITE);
-            badgeText = "Perfect";
-        } else if (missing == 1) {
-            // Almost Perfect - AlertCircle 아이콘이 없으므로 circle-ellipsis 사용 (스펙에서는 AlertCircle 요구)
-            matchBadge.setStyle("-fx-background-color: linear-gradient(to right, #fbbf24, #fb923c); -fx-background-radius: 8px; -fx-padding: 4 8;");
-            badgeIcon = SvgIconLoader.loadIcon("/svg/circle-ellipsis.svg", 10, Color.WHITE);
-            badgeText = "Almost";
-        } else {
-            // Need X more - AlertCircle 아이콘이 없으므로 circle-ellipsis 사용 (스펙에서는 AlertCircle 요구)
-            matchBadge.setStyle("-fx-background-color: linear-gradient(to right, #fb7185, #ef4444); -fx-background-radius: 8px; -fx-padding: 4 8;");
-            badgeIcon = SvgIconLoader.loadIcon("/svg/circle-ellipsis.svg", 10, Color.WHITE);
-            badgeText = "Need " + missing + " more";
-        }
-        
-        if (badgeIcon != null) matchBadge.getChildren().add(badgeIcon);
-        Label badgeLabel = new Label(badgeText);
-        badgeLabel.setStyle("-fx-text-fill: white; -fx-font-size: 10px; -fx-font-weight: 500;");
-        matchBadge.getChildren().add(badgeLabel);
-        
-        thumbnail.getChildren().add(matchBadge);
-        card.getChildren().add(thumbnail);
+        imageContainer.setOnMouseExited(e -> {
+            imageContainer.getChildren().removeIf(node -> "hover-overlay".equals(node.getId()));
+        });
 
-        // 2. Content Area with padding - 최소 높이 설정하여 버튼 위치 고정
-        VBox contentArea = new VBox(12);
-        contentArea.setPadding(new Insets(12));
-        contentArea.setStyle("-fx-background-color: white;");
-        contentArea.setMinHeight(300); // 최소 높이 설정으로 버튼이 항상 하단에 위치
+        // 2. Content Area
+        VBox content = new VBox(12);
+        content.setPadding(new Insets(20));
         
-        // Title
-        Label title = new Label(recipe.getName());
-        title.setStyle("-fx-font-weight: 600; -fx-font-size: 18px; -fx-text-fill: #111827;");
+        // Title - 18px, Medium weight
+        String recipeName = recipe.getName() != null ? recipe.getName() : "Unnamed Recipe";
+        Label title = new Label(recipeName);
+        title.setStyle("-fx-font-weight: 500; -fx-font-size: 18px; -fx-text-fill: #111827;");
         title.setWrapText(true);
-        title.setMaxHeight(54); // 3줄 제한
-        contentArea.getChildren().add(title);
-
-        // 3. Meta Info Badges
-        HBox metaBox = new HBox(8);
-        metaBox.setAlignment(Pos.CENTER_LEFT);
+        title.setMaxHeight(27); // line-clamp-1
         
-        // 칼로리 배지
-        HBox calBadge = new HBox(6);
-        calBadge.setAlignment(Pos.CENTER);
-        calBadge.setStyle("-fx-background-color: #fff7ed; -fx-background-radius: 8px; -fx-padding: 6 10;");
-        Node flameIcon = SvgIconLoader.loadIcon("/svg/fire-flame.svg", 14, Color.web("#ea580c"));
-        if (flameIcon == null) {
-            flameIcon = new Label("🔥");
-            ((Label) flameIcon).setStyle("-fx-font-size: 14px;");
-        }
-        Label calValue = new Label(String.valueOf(recipe.getNutritionInfo() != null ? recipe.getNutritionInfo().getCalories() : "N/A"));
-        calValue.setStyle("-fx-text-fill: #ea580c; -fx-font-size: 12px;");
-        calBadge.getChildren().addAll(flameIcon, calValue);
+        // Meta Row (Time, Cals, Servings)
+        HBox metaRow = new HBox(8);
+        metaRow.setAlignment(Pos.CENTER_LEFT);
         
-        // 조리 시간 배지
-        HBox timeBadge = new HBox(6);
-        timeBadge.setAlignment(Pos.CENTER);
-        timeBadge.setStyle("-fx-background-color: #eff6ff; -fx-background-radius: 8px; -fx-padding: 6 10;");
-        Node clockIcon = SvgIconLoader.loadIcon("/svg/clock.svg", 14, Color.web("#2563eb"));
-        if (clockIcon == null) {
-            clockIcon = new Label("⏰");
-            ((Label) clockIcon).setStyle("-fx-font-size: 14px;");
-        }
+        // Time
         Integer cookTime = recipe.getCookTimeMinutes();
-        String timeText = cookTime != null ? cookTime + " min" : "N/A";
-        Label timeValue = new Label(timeText);
-        timeValue.setStyle("-fx-text-fill: #2563eb; -fx-font-size: 12px;");
-        timeBadge.getChildren().addAll(clockIcon, timeValue);
+        String timeText = (cookTime != null && cookTime > 0) 
+            ? cookTime + " min" 
+            : "-- min";
+        Label timeLabel = createMetaLabel(timeText, "/svg/clock.svg", "#1d4ed8", "#eff6ff");
         
-        // 인분 배지
-        HBox servingBadge = new HBox(6);
-        servingBadge.setAlignment(Pos.CENTER);
-        servingBadge.setStyle("-fx-background-color: #faf5ff; -fx-background-radius: 8px; -fx-padding: 6 10;");
-        Node usersIcon = SvgIconLoader.loadIcon("/svg/users.svg", 14, Color.web("#9333ea"));
-        if (usersIcon == null) {
-            usersIcon = new Label("👥");
-            ((Label) usersIcon).setStyle("-fx-font-size: 14px;");
+        // Calories
+        String cals;
+        if (recipe.getNutritionInfo() != null && recipe.getNutritionInfo().getCalories() > 0) {
+            cals = String.valueOf(recipe.getNutritionInfo().getCalories());
+        } else {
+            cals = "--";
         }
-        Label servingValue = new Label(String.valueOf(recipe.getServingSize()));
-        servingValue.setStyle("-fx-text-fill: #9333ea; -fx-font-size: 12px;");
-        servingBadge.getChildren().addAll(usersIcon, servingValue);
+        Label calLabel = createMetaLabel(cals, "/svg/fire-flame.svg", "#c2410c", "#fff7ed");
         
-        metaBox.getChildren().addAll(calBadge, timeBadge, servingBadge);
-        contentArea.getChildren().add(metaBox);
+        // Servings
+        Label servLabel = createMetaLabel(String.valueOf(recipe.getServingSize()), "/svg/users.svg", "#7e22ce", "#faf5ff");
         
-        // 4. 재료 매칭 정보
-        VBox ingredientsInfo = new VBox(8);
+        metaRow.getChildren().addAll(timeLabel, calLabel, servLabel);
         
-        // You have 섹션
-        if (!matchedIngredients.isEmpty()) {
-            HBox youHaveBox = new HBox(6);
-            youHaveBox.setAlignment(Pos.CENTER_LEFT);
-            // CheckCircle2 아이콘이 없으므로 star-fill 사용 (스펙에서는 CheckCircle2 요구)
-            Node checkIcon = SvgIconLoader.loadIcon("/svg/star-fill.svg", 16, Color.web("#84cc16"));
-            if (checkIcon == null) {
-                checkIcon = new Label("✅");
-                ((Label) checkIcon).setStyle("-fx-font-size: 16px;");
-            }
-            Label youHaveLabel = new Label("You have:");
-            youHaveLabel.setStyle("-fx-text-fill: #6b7280; -fx-font-size: 12px;");
-            youHaveBox.getChildren().addAll(checkIcon, youHaveLabel);
-            
-            FlowPane youHaveChips = new FlowPane();
-            youHaveChips.setHgap(4);
-            youHaveChips.setVgap(4);
-            for (String ing : matchedIngredients) {
-                if (ing == null || ing.trim().isEmpty()) {
-                    continue;
-                }
-                Label chip = new Label(ing);
-                chip.setStyle("-fx-background-color: #ecfccb; -fx-text-fill: #4d7c0f; -fx-background-radius: 6px; -fx-padding: 4 8; -fx-font-size: 12px;");
-                youHaveChips.getChildren().add(chip);
-            }
-            
-            ingredientsInfo.getChildren().addAll(youHaveBox, youHaveChips);
+        // Tags Row - Use actual dietary restrictions, limit to 2 tags
+        FlowPane tagsRow = new FlowPane();
+        tagsRow.setHgap(6);
+        tagsRow.setVgap(6);
+        
+        List<String> tagTexts = new ArrayList<>();
+        if (recipe.getDietaryRestrictions() != null && !recipe.getDietaryRestrictions().isEmpty()) {
+            recipe.getDietaryRestrictions().stream()
+                .limit(2)
+                .forEach(restriction -> tagTexts.add(restriction.getDisplayName()));
         }
         
-        
-        if (!ingredientsInfo.getChildren().isEmpty()) {
-            contentArea.getChildren().add(ingredientsInfo);
+        // Add tags (max 2)
+        for (int i = 0; i < Math.min(tagTexts.size(), 2); i++) {
+            tagsRow.getChildren().add(createTag(tagTexts.get(i), false));
         }
         
-        // Spacer to push View Details button to bottom
-        Region spacer = new Region();
-        VBox.setVgrow(spacer, Priority.ALWAYS);
-        contentArea.getChildren().add(spacer);
-        
-        // 5. View Details 버튼 - 하단 고정
+        // View Details Button
         Button viewDetailsBtn = new Button("View Details");
         viewDetailsBtn.setMaxWidth(Double.MAX_VALUE);
-        viewDetailsBtn.setPrefHeight(48);
-        viewDetailsBtn.setMinHeight(48);
-        viewDetailsBtn.setStyle("-fx-background-color: #111827; -fx-text-fill: white; -fx-background-radius: 12px; -fx-font-weight: 500; -fx-font-size: 14px; -fx-cursor: hand;");
-        viewDetailsBtn.setOnMouseEntered(e -> viewDetailsBtn.setStyle("-fx-background-color: #1f2937; -fx-text-fill: white; -fx-background-radius: 12px; -fx-font-weight: 500; -fx-font-size: 14px; -fx-cursor: hand;"));
-        viewDetailsBtn.setOnMouseExited(e -> viewDetailsBtn.setStyle("-fx-background-color: #111827; -fx-text-fill: white; -fx-background-radius: 12px; -fx-font-weight: 500; -fx-font-size: 14px; -fx-cursor: hand;"));
+        viewDetailsBtn.setStyle(
+            "-fx-background-color: #1A1A1A; " +
+            "-fx-text-fill: white; " +
+            "-fx-font-size: 14px; " +
+            "-fx-font-weight: 500; " +
+            "-fx-background-radius: 8px; " +
+            "-fx-cursor: hand; " +
+            "-fx-padding: 10;"
+        );
+        viewDetailsBtn.setOnMouseEntered(e -> viewDetailsBtn.setStyle(
+            "-fx-background-color: #1F2937; " +
+            "-fx-text-fill: white; " +
+            "-fx-font-size: 14px; " +
+            "-fx-font-weight: 500; " +
+            "-fx-background-radius: 8px; " +
+            "-fx-cursor: hand; " +
+            "-fx-padding: 10;"
+        ));
+        viewDetailsBtn.setOnMouseExited(e -> viewDetailsBtn.setStyle(
+            "-fx-background-color: #1A1A1A; " +
+            "-fx-text-fill: white; " +
+            "-fx-font-size: 14px; " +
+            "-fx-font-weight: 500; " +
+            "-fx-background-radius: 8px; " +
+            "-fx-cursor: hand; " +
+            "-fx-padding: 10;"
+        ));
         viewDetailsBtn.setOnAction(e -> openRecipeDetail(recipe));
+
+        content.getChildren().addAll(title, metaRow, tagsRow, viewDetailsBtn);
+        card.getChildren().add(content);
+
+        // Card default style
+        card.setStyle(
+            "-fx-background-color: white; " +
+            "-fx-background-radius: 16px; " +
+            "-fx-border-color: #f3f4f6; " +
+            "-fx-border-width: 2px; " +
+            "-fx-border-radius: 16px; " +
+            "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 4, 0, 0, 2);"
+        );
         
-        contentArea.getChildren().add(viewDetailsBtn);
-        
-        // Add content area to card
-        card.getChildren().add(contentArea);
+        // Hover Effect
+        card.setOnMouseEntered(e -> {
+            card.setStyle(
+                "-fx-background-color: white; " +
+                "-fx-background-radius: 16px; " +
+                "-fx-border-color: #d9f99d; " +
+                "-fx-border-width: 2px; " +
+                "-fx-border-radius: 16px; " +
+                "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.25), 25, 0, 0, 12);"
+            );
+        });
+        card.setOnMouseExited(e -> {
+            card.setStyle(
+                "-fx-background-color: white; " +
+                "-fx-background-radius: 16px; " +
+                "-fx-border-color: #f3f4f6; " +
+                "-fx-border-width: 2px; " +
+                "-fx-border-radius: 16px; " +
+                "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 4, 0, 0, 2);"
+            );
+        });
+
+        card.setOnMouseClicked(e -> openRecipeDetail(recipe));
 
         return card;
+    }
+    
+    private Label createMetaLabel(String text, String iconPath, String colorHex, String bgHex) {
+        Label label = new Label(text);
+        label.setStyle("-fx-text-fill: " + colorHex + "; -fx-background-color: " + bgHex + "; -fx-padding: 4 8; -fx-background-radius: 6px; -fx-font-size: 12px; -fx-font-weight: 600;");
+        Node icon = SvgIconLoader.loadIcon(iconPath, 12, Color.web(colorHex));
+        if (icon != null) {
+            label.setGraphic(icon);
+            label.setGraphicTextGap(4);
+        }
+        return label;
+    }
+    
+    private Label createTag(String text, boolean isOutline) {
+        Label label = new Label(text);
+        if (isOutline) {
+            label.setStyle("-fx-text-fill: #4b5563; -fx-border-color: #e5e7eb; -fx-border-radius: 12px; -fx-padding: 2 8; -fx-font-size: 11px;");
+        } else {
+            label.setStyle("-fx-text-fill: #166534; -fx-background-color: #dcfce7; -fx-background-radius: 12px; -fx-padding: 2 8; -fx-font-size: 11px; -fx-font-weight: 500;");
+        }
+        Node icon = SvgIconLoader.loadIcon("/svg/leaf.svg", 10, Color.web("#166534"));
+        if (icon != null && !isOutline) {
+            label.setGraphic(icon);
+            label.setGraphicTextGap(4);
+        }
+        return label;
+    }
+
+    /**
+     * Filters recipes to only include those that contain at least one of the selected ingredients.
+     * Case-insensitive matching is used.
+     */
+    private List<Recipe> applyIngredientFilter(List<Recipe> recipes) {
+        if (recipes == null || recipes.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        // If no ingredients are selected, return all recipes
+        if (ingredientList == null || ingredientList.isEmpty()) {
+            return new ArrayList<>(recipes);
+        }
+        
+        return recipes.stream()
+                .filter(r -> r != null)
+                .filter(this::containsSelectedIngredients)
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * Checks if a recipe contains at least one of the selected ingredients.
+     * Uses case-insensitive partial matching.
+     */
+    private boolean containsSelectedIngredients(Recipe recipe) {
+        if (recipe == null || ingredientList == null || ingredientList.isEmpty()) {
+            return false;
+        }
+        
+        List<String> recipeIngredients = recipe.getIngredients();
+        if (recipeIngredients == null || recipeIngredients.isEmpty()) {
+            return false;
+        }
+        
+        // Convert recipe ingredients to lowercase for comparison
+        List<String> recipeIngredientsLower = recipeIngredients.stream()
+                .map(ing -> ing != null ? ing.toLowerCase() : "")
+                .collect(Collectors.toList());
+        
+        // Check if any selected ingredient matches any recipe ingredient
+        for (String selectedIngredient : ingredientList) {
+            if (selectedIngredient == null || selectedIngredient.trim().isEmpty()) {
+                continue;
+            }
+            
+            String selectedLower = selectedIngredient.toLowerCase().trim();
+            
+            // Check if any recipe ingredient contains the selected ingredient (partial match)
+            for (String recipeIngredient : recipeIngredientsLower) {
+                if (recipeIngredient != null && recipeIngredient.contains(selectedLower)) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
     }
 
     private List<Recipe> applyQuickFilters(List<Recipe> recipes) {

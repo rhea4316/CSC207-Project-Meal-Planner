@@ -187,15 +187,15 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         contentGrid.add(leftColumn, 0, 0);
         contentGrid.add(rightColumn, 1, 0);
 
-        // Column Constraints
+        // Column Constraints - Fixed ratio layout (65% left, 35% right)
         ColumnConstraints col1 = new ColumnConstraints();
-        col1.setHgrow(Priority.NEVER); // Do not grow beyond content width
-        col1.setMinWidth(Region.USE_COMPUTED_SIZE);
-        col1.setPrefWidth(Region.USE_COMPUTED_SIZE);
-        col1.setMaxWidth(Region.USE_COMPUTED_SIZE);
+        col1.setHgrow(Priority.ALWAYS);
+        col1.setPercentWidth(65); // Left column takes 65% of width
+        col1.setMinWidth(400); // Minimum width to prevent too narrow
         
         ColumnConstraints col2 = new ColumnConstraints();
-        col2.setHgrow(Priority.ALWAYS); // Take remaining space
+        col2.setHgrow(Priority.ALWAYS);
+        col2.setPercentWidth(35); // Right column takes 35% of width
         col2.setMinWidth(250); 
         
         contentGrid.getColumnConstraints().addAll(col1, col2);
@@ -231,13 +231,15 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
                 contentGrid.add(leftColumn, 0, 0);
                 contentGrid.add(rightColumn, 1, 0);
                 
-                // Re-apply auto-width constraints
+                // Re-apply fixed ratio constraints (65% left, 35% right)
                 ColumnConstraints c1 = new ColumnConstraints();
-                c1.setHgrow(Priority.NEVER);
-                c1.setMinWidth(Region.USE_COMPUTED_SIZE);
+                c1.setHgrow(Priority.ALWAYS);
+                c1.setPercentWidth(65);
+                c1.setMinWidth(400);
                 
                 ColumnConstraints c2 = new ColumnConstraints();
                 c2.setHgrow(Priority.ALWAYS);
+                c2.setPercentWidth(35);
                 c2.setMinWidth(250);
                 
                 contentGrid.getColumnConstraints().addAll(c1, c2);
@@ -1009,7 +1011,7 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         }
     }
 
-    private VBox createMealCard(String mealType, String mealName, String iconPath, int calories, String time) {
+    private VBox createMealCard(String mealType, String mealName, String iconPath, int calories, String time, String imageUrl) {
         VBox card = new VBox(0);
         card.getStyleClass().add("meal-card"); 
         card.setStyle(null);
@@ -1023,9 +1025,42 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         boolean isPlanned = !mealName.equals("Not Planned") && mealName != null && !mealName.isEmpty();
         
         if (isPlanned) {
-            Region imagePart = new Region();
-            imagePart.setPrefHeight(100);
-            imagePart.setStyle("-fx-background-color: #E5E7EB; -fx-background-radius: 12px 12px 0 0;");
+            // Image section - load actual image if available, otherwise use placeholder
+            Node imageNode;
+            if (imageUrl != null && !imageUrl.trim().isEmpty()) {
+                Image image = imageCache.getImage(imageUrl);
+                ImageView imageView = new ImageView(image);
+                imageView.setFitWidth(Double.MAX_VALUE);
+                imageView.setFitHeight(100);
+                imageView.setPreserveRatio(false);
+                imageView.setSmooth(true);
+                imageView.setCache(true);
+                // Clip image to rounded top corners only
+                javafx.scene.shape.Rectangle clip = new javafx.scene.shape.Rectangle();
+                clip.widthProperty().bind(imageView.fitWidthProperty());
+                clip.setHeight(100);
+                clip.setArcWidth(12);
+                clip.setArcHeight(12);
+                imageView.setClip(clip);
+                imageNode = imageView;
+            } else {
+                // Placeholder when no image available
+                Region imagePlaceholder = new Region();
+                imagePlaceholder.setPrefHeight(100);
+                imagePlaceholder.setMinHeight(100);
+                imagePlaceholder.setMaxHeight(100);
+                LinearGradient placeholderGradient = new LinearGradient(0, 0, 0, 1, true, CycleMethod.NO_CYCLE,
+                    new Stop(0, Color.web("#f3f4f6")), new Stop(1, Color.web("#f9fafb")));
+                imagePlaceholder.setBackground(new Background(new BackgroundFill(placeholderGradient, CornerRadii.EMPTY, Insets.EMPTY)));
+                // Clip placeholder to rounded top corners only
+                javafx.scene.shape.Rectangle clip = new javafx.scene.shape.Rectangle();
+                clip.widthProperty().bind(imagePlaceholder.widthProperty());
+                clip.setHeight(100);
+                clip.setArcWidth(12);
+                clip.setArcHeight(12);
+                imagePlaceholder.setClip(clip);
+                imageNode = imagePlaceholder;
+            }
             
             Label badge = new Label(mealType);
             badge.getStyleClass().add("text-lime-700");
@@ -1033,7 +1068,7 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
             StackPane.setAlignment(badge, Pos.TOP_LEFT);
             StackPane.setMargin(badge, new Insets(10));
             
-            StackPane imageContainer = new StackPane(imagePart, badge);
+            StackPane imageContainer = new StackPane(imageNode, badge);
             
             VBox content = new VBox(6);
             content.setPadding(new Insets(12));
@@ -1315,9 +1350,9 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
 
         // Create meal cards and add to grid (3-column layout)
         if (mealsGrid != null) {
-            VBox breakfastCard = createMealCard("Breakfast", breakfast.name, "/svg/mug-hot.svg", breakfast.calories, breakfast.time);
-            VBox lunchCard = createMealCard("Lunch", lunch.name, "/svg/brightness.svg", lunch.calories, lunch.time);
-            VBox dinnerCard = createMealCard("Dinner", dinner.name, "/svg/moon.svg", dinner.calories, dinner.time);
+            VBox breakfastCard = createMealCard("Breakfast", breakfast.name, "/svg/mug-hot.svg", breakfast.calories, breakfast.time, breakfast.imageUrl);
+            VBox lunchCard = createMealCard("Lunch", lunch.name, "/svg/brightness.svg", lunch.calories, lunch.time, lunch.imageUrl);
+            VBox dinnerCard = createMealCard("Dinner", dinner.name, "/svg/moon.svg", dinner.calories, dinner.time, dinner.imageUrl);
             
             mealsGrid.add(breakfastCard, 0, 0);
             mealsGrid.add(lunchCard, 1, 0);
@@ -1396,8 +1431,9 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
             ? (int) recipe.getNutritionInfo().getCalories() : 0;
         String time = recipe.getCookTimeMinutes() != null
             ? recipe.getCookTimeMinutes() + " min" : "";
+        String imageUrl = recipe.getImageUrl();
 
-        return new MealData(name, calories, time);
+        return new MealData(name, calories, time, imageUrl);
     }
 
     /**
@@ -1407,11 +1443,17 @@ public class DashboardView extends BorderPane implements PropertyChangeListener 
         final String name;
         final int calories;
         final String time;
+        final String imageUrl;
 
         MealData(String name, int calories, String time) {
+            this(name, calories, time, null);
+        }
+
+        MealData(String name, int calories, String time, String imageUrl) {
             this.name = name;
             this.calories = calories;
             this.time = time;
+            this.imageUrl = imageUrl;
         }
     }
 

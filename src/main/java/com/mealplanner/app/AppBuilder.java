@@ -70,7 +70,7 @@ public class AppBuilder {
         
         // Add Meal Flow (Shared Controller)
         com.mealplanner.interface_adapter.view_model.MealPlanViewModel mealPlanViewModel = new com.mealplanner.interface_adapter.view_model.MealPlanViewModel();
-        com.mealplanner.interface_adapter.presenter.MealPlanPresenter mealPlanPresenter = new com.mealplanner.interface_adapter.presenter.MealPlanPresenter(mealPlanViewModel, viewManagerModel);
+        com.mealplanner.interface_adapter.presenter.MealPlanPresenter mealPlanPresenter = new com.mealplanner.interface_adapter.presenter.MealPlanPresenter(mealPlanViewModel, scheduleViewModel, viewManagerModel);
         var addMealInteractor = UseCaseFactory.createAddMealInteractor(mealPlanPresenter, viewManagerModel);
         com.mealplanner.interface_adapter.controller.AddMealController addMealController = new com.mealplanner.interface_adapter.controller.AddMealController(addMealInteractor);
         

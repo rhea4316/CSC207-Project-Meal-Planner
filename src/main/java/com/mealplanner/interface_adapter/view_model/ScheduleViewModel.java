@@ -27,7 +27,9 @@ public class ScheduleViewModel {
         return schedule;
     }
     public void setSchedule(Schedule schedule) {
+        Schedule oldSchedule = this.schedule;
         this.schedule = schedule;
+        this.propertyChangeSupport.firePropertyChange("schedule", oldSchedule, this.schedule);
     }
     public String getError() {
         return error;

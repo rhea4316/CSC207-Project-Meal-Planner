@@ -1,0 +1,11 @@
+{
+  "scheduleId": "84e5b376-7b74-480d-9590-d443df885a80",
+  "userId": "491b876b-e57b-4369-83fc-2462c58390ae",
+  "mealsByDate": {
+    "2025-12-01": {
+      "DINNER": "recipe-3d62d84f-f4b2-4b07-8998-b6aa54c7b6ef",
+      "BREAKFAST": "default-dinner-001",
+      "LUNCH": "recipe-dc6abd93-5202-40f0-91a9-8f6ff986c0db"
+    }
+  }
+}

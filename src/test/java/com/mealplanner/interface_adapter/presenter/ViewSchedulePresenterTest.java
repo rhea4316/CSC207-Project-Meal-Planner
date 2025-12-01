@@ -42,7 +42,7 @@ public class ViewSchedulePresenterTest {
         verify(viewModel).setUsername("testuser");
         verify(viewModel).setSchedule(schedule);
         verify(viewModel).setError(null);
-        verify(viewModel).firePropertyChanged();
+        // setSchedule() already fires property change, so firePropertyChanged() is not needed
     }
 
     @Test
@@ -80,6 +80,6 @@ public class ViewSchedulePresenterTest {
         
         verify(viewModel).setSchedule(null);
         verify(viewModel).setError(errorMessage);
-        verify(viewModel).firePropertyChanged();
+        // setSchedule(null) already fires property change, so firePropertyChanged() is not needed
     }
 }

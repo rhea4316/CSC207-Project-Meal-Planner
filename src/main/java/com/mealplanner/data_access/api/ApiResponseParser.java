@@ -145,9 +145,43 @@ public class ApiResponseParser {
             for (int i = 0; i < ingredientsArray.length(); i++) {
                 JSONObject ingredient = ingredientsArray.getJSONObject(i);
                 String name = ingredient.optString("nameClean", ingredient.optString("name", ""));
-                if (!name.isEmpty()) {
-                    ingredients.add(name);
+                if (name.isEmpty()) {
+                    continue;
                 }
+                
+                // Extract quantity and unit for serving size adjustment
+                double amount = ingredient.optDouble("amount", 0.0);
+                String unit = ingredient.optString("unit", "").trim();
+                
+                // Format ingredient string with quantity and unit if available
+                StringBuilder ingredientStr = new StringBuilder();
+                
+                // Add quantity if available
+                if (amount > 0) {
+                    // Format decimal numbers nicely (avoid .0 for whole numbers)
+                    if (amount == (int) amount) {
+                        ingredientStr.append((int) amount);
+                    } else {
+                        // Round to 2 decimal places for cleaner display
+                        ingredientStr.append(String.format("%.2f", amount).replaceAll("0+$", "").replaceAll("\\.$", ""));
+                    }
+                }
+                
+                // Add unit if available
+                if (!unit.isEmpty()) {
+                    if (ingredientStr.length() > 0) {
+                        ingredientStr.append(" ");
+                    }
+                    ingredientStr.append(unit);
+                }
+                
+                // Add ingredient name
+                if (ingredientStr.length() > 0) {
+                    ingredientStr.append(" ");
+                }
+                ingredientStr.append(name);
+                
+                ingredients.add(ingredientStr.toString());
             }
         }
         return ingredients;

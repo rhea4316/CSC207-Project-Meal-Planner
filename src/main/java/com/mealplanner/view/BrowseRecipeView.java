@@ -1,6 +1,5 @@
 package com.mealplanner.view;
 
-import com.mealplanner.app.SessionManager;
 import com.mealplanner.entity.Recipe;
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.BrowseRecipeController;
@@ -45,6 +44,7 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
     private final RecipeDetailViewModel recipeDetailViewModel;
     private final RecipeRepository recipeRepository;
     private final ImageCacheManager imageCache = ImageCacheManager.getInstance();
+    @SuppressWarnings("unused")
     private GetRecommendationsController recommendationsController;
     private final StoreRecipeController storeRecipeController;
     private static final Logger logger = LoggerFactory.getLogger(BrowseRecipeView.class);
@@ -79,9 +79,6 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
     private VBox errorPanel;
     private Label errorLabel;
     private Label countLabel; // "Showing 9 of 16 recipes"
-    
-    // Recommendations Section
-    private VBox recommendationsSection;
     
     private Sonner sonner;
     
@@ -179,17 +176,9 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
         
         topBar.getChildren().addAll(headerBox, spacer, savedCountButton);
         
-        // Recommendations Section (only if controller is available)
-        if (recommendationsController != null) {
-            recommendationsSection = createRecommendedSection();
-            VBox topSection = new VBox(24);
-            topSection.getChildren().addAll(topBar, createSearchPanel(), recommendationsSection);
-            setTop(topSection);
-        } else {
-            VBox topSection = new VBox(24);
-            topSection.getChildren().addAll(topBar, createSearchPanel());
-            setTop(topSection);
-        }
+        VBox topSection = new VBox(24);
+        topSection.getChildren().addAll(topBar, createSearchPanel());
+        setTop(topSection);
 
         // Results Count Label
         countLabel = new Label("");
@@ -211,9 +200,6 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
         errorLabel.setStyle("-fx-text-fill: -fx-theme-destructive; -fx-font-weight: bold;");
         errorLabel.setPadding(new Insets(10, 0, 0, 0));
         setBottom(errorLabel);
-        
-        // Load recommendations on initialization
-        loadRecommendations();
         
         // Load local database recipes on initialization
         loadLocalRecipes();
@@ -295,17 +281,6 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
                 });
             }
         }).start();
-    }
-
-    private void loadRecommendations() {
-        if (recommendationsController == null) {
-            return;  // Phase 5 not yet implemented
-        }
-        com.mealplanner.entity.User currentUser = SessionManager.getInstance().getCurrentUser();
-        if (currentUser != null) {
-            String userId = currentUser.getUserId();
-            recommendationsController.execute(userId);
-        }
     }
 
     private VBox createSearchPanel() {
@@ -804,12 +779,19 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
                 ImageView imageView = new ImageView();
                 imageView.setFitWidth(300);
                 imageView.setFitHeight(180);
-                imageView.setPreserveRatio(true);
+                imageView.setPreserveRatio(false); // Fill the entire area without preserving ratio
                 imageView.setSmooth(true);
                 imageView.setCache(true);
                 
                 Image image = imageCache.getImage(imageUrl);
                 imageView.setImage(image);
+                
+                // Apply clipping mask to ensure image fills the container with rounded corners
+                javafx.scene.shape.Rectangle clip = new javafx.scene.shape.Rectangle(0, 0, 300, 180);
+                clip.setArcWidth(12);
+                clip.setArcHeight(12);
+                imageView.setClip(clip);
+                
                 imageContainer.getChildren().add(0, imageView); // Add image as first child (behind overlays)
             } catch (Exception e) {
                 // If image loading fails, fall back to placeholder background
@@ -1091,11 +1073,6 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
                     // Phase 4: Update bookmark states after recipes are displayed
                     refreshBookmarkStates();
                     break;
-                case RecipeBrowseViewModel.PROP_RECOMMENDATIONS:
-                    if (recommendationsController != null) {
-                        updateRecommendationsSection(viewModel.getRecommendations());
-                    }
-                    break;
                 case RecipeBrowseViewModel.PROP_ERROR_MESSAGE:
                     String msg = viewModel.getErrorMessage();
                     if (StringUtil.hasContent(msg)) {
@@ -1151,134 +1128,6 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
         } else {
             Platform.runLater(updateUI);
         }
-    }
-    
-    private VBox createRecommendedSection() {
-        VBox section = new VBox(16);
-        section.setPadding(new Insets(20, 0, 20, 0));
-        
-        // 헤더
-        HBox header = new HBox(8);
-        header.setAlignment(Pos.CENTER_LEFT);
-        
-        Node sparkIcon = SvgIconLoader.loadIcon("/svg/sparkles.svg", 18, Color.web("#fbbf24"));
-        Label title = new Label("Recommended for You");
-        title.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #111827;");
-        
-        if (sparkIcon != null) header.getChildren().add(sparkIcon);
-        header.getChildren().add(title);
-        
-        // 레시피 리스트
-        HBox recipeList = new HBox(16);
-        recipeList.setAlignment(Pos.CENTER_LEFT);
-        
-        // 초기에는 로딩 표시
-        Label loadingLabel = new Label("Loading recommendations...");
-        loadingLabel.setStyle("-fx-text-fill: #6b7280; -fx-font-size: 14px;");
-        recipeList.getChildren().add(loadingLabel);
-        
-        section.getChildren().addAll(header, recipeList);
-        
-        return section;
-    }
-    
-    private void updateRecommendationsSection(List<Recipe> recommendations) {
-        Platform.runLater(() -> {
-            if (recommendationsSection == null || recommendationsSection.getChildren().size() < 2) {
-                return;
-            }
-            
-            HBox recipeList = (HBox) recommendationsSection.getChildren().get(1);
-            recipeList.getChildren().clear();
-            
-            if (recommendations == null || recommendations.isEmpty()) {
-                Label emptyLabel = new Label("No recommendations available");
-                emptyLabel.setStyle("-fx-text-fill: #6b7280; -fx-font-size: 14px;");
-                recipeList.getChildren().add(emptyLabel);
-            } else {
-                for (Recipe recipe : recommendations) {
-                    VBox card = createRecommendationCard(recipe);
-                    recipeList.getChildren().add(card);
-                }
-            }
-        });
-    }
-    
-    private VBox createRecommendationCard(Recipe recipe) {
-        VBox card = new VBox();
-        card.setPrefWidth(220);
-        card.setMinWidth(220);
-        card.setSpacing(0);
-        card.setCursor(Cursor.HAND);
-        card.setStyle("-fx-background-color: white; -fx-background-radius: 12px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 8, 0, 2, 2);");
-        
-        // 이미지
-        StackPane imageContainer = new StackPane();
-        imageContainer.setPrefHeight(140);
-        imageContainer.setStyle("-fx-background-color: #e5e7eb; -fx-background-radius: 8px 8px 0 0;");
-        imageContainer.setClip(new javafx.scene.shape.Rectangle(0, 0, 220, 140));
-        ((javafx.scene.shape.Rectangle) imageContainer.getClip()).setArcWidth(8);
-        ((javafx.scene.shape.Rectangle) imageContainer.getClip()).setArcHeight(8);
-        
-        String imageUrl = recipe.getImageUrl();
-        if (imageUrl != null && !imageUrl.isEmpty()) {
-            try {
-                ImageView imageView = new ImageView();
-                imageView.setFitWidth(220);
-                imageView.setFitHeight(140);
-                imageView.setPreserveRatio(true);
-                imageView.setSmooth(true);
-                imageView.setCache(true);
-                Image image = imageCache.getImage(imageUrl);
-                imageView.setImage(image);
-                imageContainer.getChildren().add(imageView);
-            } catch (Exception e) {
-                // 이미지 로딩 실패 시 placeholder 유지
-            }
-        }
-        
-        // 내용
-        VBox content = new VBox(8);
-        content.setPadding(new Insets(12));
-        
-        String recipeName = recipe.getName() != null ? recipe.getName() : "Unnamed Recipe";
-        Label title = new Label(recipeName);
-        title.setStyle("-fx-font-weight: 600; -fx-font-size: 14px; -fx-text-fill: #111827;");
-        title.setWrapText(true);
-        title.setMaxHeight(40);
-        
-        // 메타 정보
-        HBox meta = new HBox(12);
-        String calText = recipe.getNutritionInfo() != null
-            ? recipe.getNutritionInfo().getCalories() + " cal"
-            : "-- cal";
-        Label calLabel = new Label(calText);
-        calLabel.setStyle("-fx-text-fill: #6b7280; -fx-font-size: 12px;");
-        
-        Integer cookTime = recipe.getCookTimeMinutes();
-        String timeText = (cookTime != null && cookTime > 0)
-            ? cookTime + " min"
-            : "--";
-        Label timeLabel = new Label(timeText);
-        timeLabel.setStyle("-fx-text-fill: #6b7280; -fx-font-size: 12px;");
-        
-        meta.getChildren().addAll(calLabel, timeLabel);
-        content.getChildren().addAll(title, meta);
-        
-        card.getChildren().addAll(imageContainer, content);
-        
-        // 클릭 이벤트
-        card.setOnMouseClicked(e -> openRecipeDetail(recipe));
-        
-        // Hover effect
-        card.setOnMouseEntered(e -> {
-            card.setStyle("-fx-background-color: white; -fx-background-radius: 12px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.15), 12, 0, 2, 4);");
-        });
-        card.setOnMouseExited(e -> {
-            card.setStyle("-fx-background-color: white; -fx-background-radius: 12px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 8, 0, 2, 2);");
-        });
-        
-        return card;
     }
 
     private void openRecipeDetail(Recipe recipe) {

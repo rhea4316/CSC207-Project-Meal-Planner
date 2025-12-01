@@ -2,6 +2,7 @@ package com.mealplanner.interface_adapter.presenter;
 
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.view_model.MealPlanViewModel;
+import com.mealplanner.interface_adapter.view_model.ScheduleViewModel;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
@@ -22,12 +23,15 @@ public class MealPlanPresenterTest {
     private MealPlanViewModel viewModel;
 
     @Mock
+    private ScheduleViewModel scheduleViewModel;
+
+    @Mock
     private ViewManagerModel viewManager;
 
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        presenter = new MealPlanPresenter(viewModel, viewManager);
+        presenter = new MealPlanPresenter(viewModel, scheduleViewModel, viewManager);
     }
 
     @Test
@@ -40,6 +44,8 @@ public class MealPlanPresenterTest {
         
         verify(viewModel).setSchedule(schedule);
         verify(viewModel).setSuccessMessage("Meal added successfully");
+        verify(scheduleViewModel).setSchedule(schedule);
+        verify(scheduleViewModel).setError(null);
         verify(viewManager).setActiveView(com.mealplanner.view.ViewManager.SCHEDULE_VIEW);
     }
 
@@ -53,6 +59,8 @@ public class MealPlanPresenterTest {
         
         verify(viewModel).setSchedule(schedule);
         verify(viewModel).setSuccessMessage("Meal edited successfully");
+        verify(scheduleViewModel).setSchedule(schedule);
+        verify(scheduleViewModel).setError(null);
         verify(viewManager).setActiveView(com.mealplanner.view.ViewManager.SCHEDULE_VIEW);
     }
 
@@ -66,6 +74,8 @@ public class MealPlanPresenterTest {
         
         verify(viewModel).setSchedule(schedule);
         verify(viewModel).setSuccessMessage("Meal deleted successfully");
+        verify(scheduleViewModel).setSchedule(schedule);
+        verify(scheduleViewModel).setError(null);
         verify(viewManager).setActiveView(com.mealplanner.view.ViewManager.SCHEDULE_VIEW);
     }
 
@@ -93,11 +103,14 @@ public class MealPlanPresenterTest {
     public void testPresentNullOutputData() {
         presenter.presentAddSuccess(null);
         verify(viewModel).setErrorMessage("Failed to add meal");
+        verify(scheduleViewModel).setError("Failed to add meal");
         
         presenter.presentEditSuccess(null);
         verify(viewModel).setErrorMessage("Failed to edit meal");
+        verify(scheduleViewModel).setError("Failed to edit meal");
         
         presenter.presentDeleteSuccess(null);
         verify(viewModel).setErrorMessage("Failed to delete meal");
+        verify(scheduleViewModel).setError("Failed to delete meal");
     }
 }
