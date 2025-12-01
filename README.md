@@ -2,6 +2,25 @@
 
 A comprehensive meal planning application that helps users manage their daily and weekly meals with detailed nutrient tracking.
 
+## Requirements
+
+**IMPORTANT: Java Version**
+- **Recommended**: Java 17 or Java 21 (LTS versions)
+- **Minimum**: Java 11
+- **Not Recommended**: Java 22+ (including Java 25)
+
+If you're using Java 22 or newer, you may experience crashes due to JavaFX compatibility issues.
+Download Java 17 (LTS) from: https://adoptium.net/
+
+To check your Java version:
+```bash
+java -version
+```
+
+**Other Requirements:**
+- Maven 3.6+ (the script will install it automatically on Mac if needed)
+- Internet connection for first-time setup (to download dependencies)
+
 ## Easy Setup & Run (Recommended)
 
 You don't need to manually install Maven or libraries. Just run the script below!
