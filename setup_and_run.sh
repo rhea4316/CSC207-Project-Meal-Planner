@@ -117,44 +117,45 @@ if [ -z "$MVN_CMD" ]; then
     exit 1
 fi
 
-# Check dependencies and build
-print_info "Checking dependencies..."
-if [ ! -f "target/meal-planner-1.0-SNAPSHOT.jar" ]; then
-    print_info "Building project and installing dependencies..."
-    print_info "This may take a few minutes on first run..."
-    print_info "Running: $MVN_CMD clean package -DskipTests"
-    
-    if $MVN_CMD clean package -DskipTests; then
-        print_success "Build completed successfully!"
-    else
-        print_error "Build failed. Please check the errors above."
-        exit 1
-    fi
-else
-    print_info "Project already built. Skipping build."
+# Java version compatibility warning
+if [ "$JAVA_MAJOR" -ge 25 ] 2>/dev/null; then
+    print_warn "You are using Java $JAVA_MAJOR, which is an early access version."
+    print_warn "For best compatibility, we recommend using Java 17 or 21 (LTS versions)."
+    print_warn "You can download Java 17 from: https://adoptium.net/"
+    echo ""
+    print_info "Continuing anyway..."
+    echo ""
 fi
 
-# Verify JAR file exists after build
-if [ ! -f "target/meal-planner-1.0-SNAPSHOT.jar" ]; then
-    print_error "JAR file not found: target/meal-planner-1.0-SNAPSHOT.jar"
-    print_error "Build may have failed. Please check the errors above."
+# Check dependencies and build
+print_info "Checking dependencies..."
+print_info "Building project..."
+print_info "Running: $MVN_CMD clean compile"
+
+if $MVN_CMD clean compile -q; then
+    print_success "Build completed successfully!"
+else
+    print_error "Build failed. Please check the errors above."
     exit 1
 fi
 
-print_success "JAR file found: target/meal-planner-1.0-SNAPSHOT.jar"
-
 echo ""
 print_info "Starting Meal Planner..."
+print_info "Note: If the app crashes, please try using Java 17 or 21 instead of Java $JAVA_MAJOR"
 echo ""
 
-# Run the fat JAR created by maven-shade-plugin
-if java -jar target/meal-planner-1.0-SNAPSHOT.jar; then
+# Run using JavaFX Maven Plugin (handles module configuration automatically)
+if $MVN_CMD javafx:run; then
+    echo ""
     print_success "Application exited successfully."
 else
     EXIT_CODE=$?
     echo ""
     print_error "Application exited with error code: $EXIT_CODE"
-    print_error "Please check the error messages above."
+    print_error ""
+    print_error "If the app crashed, this is likely due to Java 25 compatibility issues."
+    print_error "RECOMMENDED FIX: Install Java 17 or 21 (LTS versions) from https://adoptium.net/"
+    print_error ""
     exit $EXIT_CODE
 fi
 
