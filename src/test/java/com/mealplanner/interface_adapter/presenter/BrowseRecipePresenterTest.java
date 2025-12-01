@@ -71,7 +71,7 @@ public class BrowseRecipePresenterTest {
 
         verify(viewModel).setErrorMessage("No recipe data available");
         verify(viewModel).setRecipes(Collections.emptyList());
-        verify(viewManager).setActiveView(null);
+        // Don't verify setActiveView(null) - we removed that to avoid ViewManager errors
     }
 
     @Test
@@ -112,6 +112,6 @@ public class BrowseRecipePresenterTest {
 
         verify(viewModel).setErrorMessage(anyString());
         verify(viewModel).setRecipes(Collections.emptyList());
-        verify(viewManager).setActiveView(null);
+        // Don't verify setActiveView(null) - we removed that to avoid ViewManager errors
     }
 }

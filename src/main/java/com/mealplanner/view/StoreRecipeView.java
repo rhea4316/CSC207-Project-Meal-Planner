@@ -9,6 +9,8 @@ import com.mealplanner.repository.RecipeRepository;
 import com.mealplanner.util.NumberUtil;
 import com.mealplanner.util.StringUtil;
 import com.mealplanner.util.ValidationUtil;
+import com.mealplanner.util.IngredientParser;
+import com.mealplanner.entity.NutritionInfo;
 import com.mealplanner.view.component.*;
 import com.mealplanner.view.util.SvgIconLoader;
 
@@ -20,9 +22,6 @@ import javafx.scene.control.*;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import javafx.scene.paint.CycleMethod;
-import javafx.scene.paint.LinearGradient;
-import javafx.scene.paint.Stop;
 
 // ControlsFX imports
 import org.controlsfx.control.SearchableComboBox;
@@ -61,7 +60,7 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
     
     private Input timeField;
     private Input caloriesField;
-    private Input servingSizeField;
+    private Spinner<Integer> servingSizeSpinner;
     
     // ValidatorFX
     private Validator validator;
@@ -69,6 +68,15 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
     private Input proteinField;
     private Input carbsField;
     private Input fatField;
+    
+    // Serving size scaling state
+    private int baseServingSize = 1;
+    private List<String> baseIngredients = new ArrayList<>();
+    private double baseCalories = 0;
+    private double baseProtein = 0;
+    private double baseCarbs = 0;
+    private double baseFat = 0;
+    private boolean isScaling = false; // Flag to prevent infinite loop
     
     // Dynamic Containers
     private FlowPane ingredientsContainer;
@@ -127,9 +135,45 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         if (showCookbook) {
             setCenter(cookbookContent);
             setPadding(new Insets(30, 40, 30, 40));
+            // Phase 3: Clear editing state when returning to cookbook
+            editingRecipe = null;
         } else {
             setCenter(editorContent);
             setPadding(new Insets(0)); // Full width for editor scroll
+            // Phase 3: Update UI based on edit mode
+            updateEditorUI();
+        }
+    }
+    
+    /**
+     * Phase 3: Update editor UI based on whether we're editing or creating
+     */
+    private void updateEditorUI() {
+        Label editTitle = (Label) editorContent.lookup("#editor-title");
+        Label editSub = (Label) editorContent.lookup("#editor-subtitle");
+        
+        if (editingRecipe != null) {
+            // Edit mode
+            if (editTitle != null) {
+                editTitle.setText("Edit Recipe");
+            }
+            if (editSub != null) {
+                editSub.setText("Update recipe details");
+            }
+            if (saveBtn != null) {
+                saveBtn.setText("Update Recipe");
+            }
+        } else {
+            // Create mode
+            if (editTitle != null) {
+                editTitle.setText("Create Recipe");
+            }
+            if (editSub != null) {
+                editSub.setText("Add a new recipe to your cookbook");
+            }
+            if (saveBtn != null) {
+                saveBtn.setText("Create Recipe");
+            }
         }
     }
 
@@ -151,12 +195,10 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
         Button createBtn = new Button("Create Recipe");
-        // Apply gradient background matching sidebar active buttons
-        Stop[] gradientStops = new Stop[] { new Stop(0, Color.web("#8be200")), new Stop(1, Color.web("#14cd49")) };
-        LinearGradient gradient = new LinearGradient(0, 0, 1, 1, true, CycleMethod.NO_CYCLE, gradientStops);
-        createBtn.setStyle("-fx-text-fill: white; -fx-font-weight: 600; -fx-background-radius: 8px; -fx-padding: 10 20; -fx-cursor: hand; -fx-background-color: null;");
-        createBtn.setBackground(new Background(new BackgroundFill(gradient, new CornerRadii(8), Insets.EMPTY)));
+        createBtn.setStyle("-fx-text-fill: white; -fx-font-weight: 600; -fx-background-radius: 8px; -fx-padding: 10 20; -fx-cursor: hand; -fx-background-color: #68CA2A;");
         createBtn.setOnAction(e -> {
+            // Phase 3: Clear editing state when creating new recipe
+            editingRecipe = null;
             clearForm();
             toggleView(false);
         });
@@ -228,9 +270,12 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         backBtn.setOnAction(e -> toggleView(true));
         
         VBox titleBox = new VBox(2);
-        Label editTitle = new Label("Edit Recipe"); // Or Create New Recipe
+        // Phase 3: Dynamic title based on edit mode
+        Label editTitle = new Label("Create Recipe"); // Will be updated in toggleView
+        editTitle.setId("editor-title"); // For easy access
         editTitle.setStyle("-fx-font-weight: bold; -fx-font-size: 20px; -fx-text-fill: #1A1A1A;");
-        Label editSub = new Label("Update recipe details");
+        Label editSub = new Label("Add a new recipe to your cookbook"); // Will be updated in toggleView
+        editSub.setId("editor-subtitle"); // For easy access
         editSub.setStyle("-fx-font-size: 14px; -fx-text-fill: #888888;");
         titleBox.getChildren().addAll(editTitle, editSub);
         HBox.setMargin(titleBox, new Insets(0, 0, 0, 16));
@@ -239,16 +284,97 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         HBox.setHgrow(headerSpacer, Priority.ALWAYS);
         
         Button cancelBtn = new Button("Cancel");
-        cancelBtn.getStyleClass().add("secondary-button");
-        cancelBtn.setOnAction(e -> toggleView(true));
+        cancelBtn.setStyle(
+            "-fx-background-color: white; " +
+            "-fx-text-fill: #68CA2A; " +
+            "-fx-border-color: #68CA2A; " +
+            "-fx-border-width: 1px; " +
+            "-fx-border-radius: 8px; " +
+            "-fx-background-radius: 8px; " +
+            "-fx-font-weight: 600; " +
+            "-fx-font-size: 14px; " +
+            "-fx-padding: 10px 20px; " +
+            "-fx-cursor: hand; " +
+            "-fx-min-height: 40px; " +
+            "-fx-pref-height: 40px;"
+        );
+        cancelBtn.setOnMouseEntered(e -> {
+            cancelBtn.setStyle(
+                "-fx-background-color: #f0fdf4; " +
+                "-fx-text-fill: #68CA2A; " +
+                "-fx-border-color: #68CA2A; " +
+                "-fx-border-width: 1px; " +
+                "-fx-border-radius: 8px; " +
+                "-fx-background-radius: 8px; " +
+                "-fx-font-weight: 600; " +
+                "-fx-font-size: 14px; " +
+                "-fx-padding: 10px 20px; " +
+                "-fx-cursor: hand; " +
+                "-fx-min-height: 40px; " +
+                "-fx-pref-height: 40px;"
+            );
+        });
+        cancelBtn.setOnMouseExited(e -> {
+            cancelBtn.setStyle(
+                "-fx-background-color: white; " +
+                "-fx-text-fill: #68CA2A; " +
+                "-fx-border-color: #68CA2A; " +
+                "-fx-border-width: 1px; " +
+                "-fx-border-radius: 8px; " +
+                "-fx-background-radius: 8px; " +
+                "-fx-font-weight: 600; " +
+                "-fx-font-size: 14px; " +
+                "-fx-padding: 10px 20px; " +
+                "-fx-cursor: hand; " +
+                "-fx-min-height: 40px; " +
+                "-fx-pref-height: 40px;"
+            );
+        });
+        cancelBtn.setOnAction(e -> {
+            // Phase 3: Clear form and editing state on cancel (clearForm() already sets editingRecipe = null)
+            clearForm();
+            toggleView(true);
+        });
         
-        saveBtn = new Button("Save Changes");
+        saveBtn = new Button("Create Recipe"); // Phase 3: Will be updated in toggleView
         saveBtn.getStyleClass().add("primary-button");
-        // Apply gradient background matching sidebar active buttons
-        Stop[] gradientStops = new Stop[] { new Stop(0, Color.web("#8be200")), new Stop(1, Color.web("#14cd49")) };
-        LinearGradient gradient = new LinearGradient(0, 0, 1, 1, true, CycleMethod.NO_CYCLE, gradientStops);
-        saveBtn.setStyle("-fx-text-fill: white; -fx-font-weight: 600; -fx-background-radius: 8px; -fx-cursor: hand; -fx-background-color: null;");
-        saveBtn.setBackground(new Background(new BackgroundFill(gradient, new CornerRadii(8), Insets.EMPTY)));
+        saveBtn.setStyle(
+            "-fx-text-fill: white; " +
+            "-fx-font-weight: 600; " +
+            "-fx-font-size: 14px; " +
+            "-fx-background-radius: 8px; " +
+            "-fx-background-color: #68CA2A; " +
+            "-fx-padding: 10px 20px; " +
+            "-fx-cursor: hand; " +
+            "-fx-min-height: 40px; " +
+            "-fx-pref-height: 40px;"
+        );
+        saveBtn.setOnMouseEntered(e -> {
+            saveBtn.setStyle(
+                "-fx-text-fill: white; " +
+                "-fx-font-weight: 600; " +
+                "-fx-font-size: 14px; " +
+                "-fx-background-radius: 8px; " +
+                "-fx-background-color: #5ab023; " +
+                "-fx-padding: 10px 20px; " +
+                "-fx-cursor: hand; " +
+                "-fx-min-height: 40px; " +
+                "-fx-pref-height: 40px;"
+            );
+        });
+        saveBtn.setOnMouseExited(e -> {
+            saveBtn.setStyle(
+                "-fx-text-fill: white; " +
+                "-fx-font-weight: 600; " +
+                "-fx-font-size: 14px; " +
+                "-fx-background-radius: 8px; " +
+                "-fx-background-color: #68CA2A; " +
+                "-fx-padding: 10px 20px; " +
+                "-fx-cursor: hand; " +
+                "-fx-min-height: 40px; " +
+                "-fx-pref-height: 40px;"
+            );
+        });
         saveBtn.setOnAction(e -> saveRecipe()); // Bind save action
         
         // Loading indicator for save button
@@ -261,8 +387,11 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         // Stack the indicator on top of the button
         StackPane saveBtnContainer = new StackPane();
         saveBtnContainer.getChildren().addAll(saveBtn, savingIndicator);
+        saveBtnContainer.setAlignment(Pos.CENTER);
         
-        HBox actionBtns = new HBox(10, cancelBtn, saveBtnContainer);
+        HBox actionBtns = new HBox(10);
+        actionBtns.setAlignment(Pos.CENTER_RIGHT);
+        actionBtns.getChildren().addAll(cancelBtn, saveBtnContainer);
         
         header.getChildren().addAll(backBtn, titleBox, headerSpacer, actionBtns);
         
@@ -340,19 +469,125 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         timeField = new Input(); 
         timeField.setPromptText("e.g. 10 min");
         
-        servingSizeField = new Input("1");
-        servingSizeField.setPromptText("1-100");
+        // Serving Size Spinner - Modern Design
+        HBox servingSizeControl = new HBox(10);
+        servingSizeControl.setAlignment(Pos.CENTER_LEFT);
+        Label servingLabel = new Label("Servings:");
+        servingLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #374151; -fx-font-weight: 500;");
         
-        Label servingSizeHelpLabel = new Label("Enter a number between 1 and 100");
+        servingSizeSpinner = new Spinner<>(1, 100, 1);
+        servingSizeSpinner.setPrefWidth(120);
+        servingSizeSpinner.setEditable(true);
+        servingSizeSpinner.setStyle(
+            "-fx-font-size: 14px; " +
+            "-fx-background-color: white; " +
+            "-fx-background-radius: 8px; " +
+            "-fx-border-color: #e5e7eb; " +
+            "-fx-border-width: 1px; " +
+            "-fx-border-radius: 8px; " +
+            "-fx-padding: 8px 12px;"
+        );
+        
+        // Style the spinner editor (text field inside spinner)
+        servingSizeSpinner.getEditor().setStyle(
+            "-fx-background-color: transparent; " +
+            "-fx-border-width: 0; " +
+            "-fx-padding: 0; " +
+            "-fx-font-size: 14px; " +
+            "-fx-text-fill: #111827;"
+        );
+        
+        // Style spinner buttons (increment/decrement) - Apply after spinner is added to scene
+        Platform.runLater(() -> {
+            Node incrementBtn = servingSizeSpinner.lookup(".increment-button");
+            Node decrementBtn = servingSizeSpinner.lookup(".decrement-button");
+            if (incrementBtn != null) {
+                incrementBtn.setStyle(
+                    "-fx-background-color: #f3f4f6; " +
+                    "-fx-background-radius: 0 8px 0 0; " +
+                    "-fx-border-color: #e5e7eb; " +
+                    "-fx-border-width: 0 0 1px 0; " +
+                    "-fx-cursor: hand;"
+                );
+            }
+            if (decrementBtn != null) {
+                decrementBtn.setStyle(
+                    "-fx-background-color: #f3f4f6; " +
+                    "-fx-background-radius: 0 0 8px 0; " +
+                    "-fx-border-color: #e5e7eb; " +
+                    "-fx-border-width: 1px 0 0 0; " +
+                    "-fx-cursor: hand;"
+                );
+            }
+        });
+        
+        // Hover effects for spinner
+        servingSizeSpinner.setOnMouseEntered(e -> {
+            servingSizeSpinner.setStyle(
+                "-fx-font-size: 14px; " +
+                "-fx-background-color: white; " +
+                "-fx-background-radius: 8px; " +
+                "-fx-border-color: #68CA2A; " +
+                "-fx-border-width: 1px; " +
+                "-fx-border-radius: 8px; " +
+                "-fx-padding: 8px 12px;"
+            );
+        });
+        servingSizeSpinner.setOnMouseExited(e -> {
+            servingSizeSpinner.setStyle(
+                "-fx-font-size: 14px; " +
+                "-fx-background-color: white; " +
+                "-fx-background-radius: 8px; " +
+                "-fx-border-color: #e5e7eb; " +
+                "-fx-border-width: 1px; " +
+                "-fx-border-radius: 8px; " +
+                "-fx-padding: 8px 12px;"
+            );
+        });
+        
+        // Add listener to scale ingredients and nutrition when serving size changes
+        servingSizeSpinner.valueProperty().addListener((obs, oldVal, newVal) -> {
+            if (!isScaling && newVal != null && newVal > 0 && !newVal.equals(oldVal)) {
+                scaleRecipeForServingSize(newVal);
+            }
+        });
+        
+        // Handle Enter key press in editable spinner
+        servingSizeSpinner.getEditor().setOnAction(e -> {
+            try {
+                String text = servingSizeSpinner.getEditor().getText();
+                if (text != null && !text.isEmpty()) {
+                    int value = Integer.parseInt(text);
+                    if (value > 0 && value <= 100) {
+                        servingSizeSpinner.getValueFactory().setValue(value);
+                    } else {
+                        // Reset to valid range
+                        int clampedValue = Math.max(1, Math.min(100, value));
+                        servingSizeSpinner.getValueFactory().setValue(clampedValue);
+                    }
+                }
+            } catch (NumberFormatException ex) {
+                // Invalid input, reset to current value
+                servingSizeSpinner.getValueFactory().setValue(servingSizeSpinner.getValue());
+            }
+        });
+        
+        servingSizeControl.getChildren().addAll(servingLabel, servingSizeSpinner);
+        
+        Label servingSizeHelpLabel = new Label("Serving size affects ingredient quantities and nutrition values");
         servingSizeHelpLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: #6b7280; -fx-padding: 2 0 0 0;");
+        servingSizeHelpLabel.setWrapText(true);
         
         detailCard.getChildren().addAll(
             createLabel("Time"), timeField,
-            createLabel("Servings"), servingSizeField, servingSizeHelpLabel
+            createLabel("Servings"), servingSizeControl, servingSizeHelpLabel
         );
         
         // ValidatorFX 검증 설정
         setupValidations();
+        
+        // Initialize base serving size
+        baseServingSize = 1;
         
         // Nutrition (Manual Entry)
         VBox nutritionCard = createCardPanel("Nutrition (per serving)");
@@ -360,6 +595,28 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         proteinField = new Input(); proteinField.setPromptText("g");
         carbsField = new Input(); carbsField.setPromptText("g");
         fatField = new Input(); fatField.setPromptText("g");
+        
+        // Add listeners to update base nutrition when user manually edits
+        caloriesField.textProperty().addListener((obs, old, val) -> {
+            if (!isScaling && val != null && !val.equals(old)) {
+                Platform.runLater(() -> updateBaseNutrition());
+            }
+        });
+        proteinField.textProperty().addListener((obs, old, val) -> {
+            if (!isScaling && val != null && !val.equals(old)) {
+                Platform.runLater(() -> updateBaseNutrition());
+            }
+        });
+        carbsField.textProperty().addListener((obs, old, val) -> {
+            if (!isScaling && val != null && !val.equals(old)) {
+                Platform.runLater(() -> updateBaseNutrition());
+            }
+        });
+        fatField.textProperty().addListener((obs, old, val) -> {
+            if (!isScaling && val != null && !val.equals(old)) {
+                Platform.runLater(() -> updateBaseNutrition());
+            }
+        });
         
         nutritionCard.getChildren().addAll(
             createLabel("Total Calories"), caloriesField,
@@ -498,7 +755,8 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         card.setMinHeight(180);
         card.setPadding(new Insets(16));
 
-        Label nameLabel = new Label(recipe.getName());
+        String recipeName = recipe.getName() != null ? recipe.getName() : "Unnamed Recipe";
+        Label nameLabel = new Label(recipeName);
         nameLabel.getStyleClass().add("text-gray-900");
         nameLabel.setStyle("-fx-font-weight: 600; -fx-font-size: 16px;");
         nameLabel.setWrapText(true);
@@ -516,14 +774,55 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         actions.setAlignment(Pos.CENTER_LEFT);
 
         Button editBtn = new Button("Edit");
-        editBtn.getStyleClass().add("secondary-button");
+        editBtn.setStyle(
+            "-fx-background-color: #68CA2A; " +
+            "-fx-text-fill: white; " +
+            "-fx-font-weight: 600; " +
+            "-fx-font-size: 14px; " +
+            "-fx-background-radius: 6px; " +
+            "-fx-padding: 8px 16px; " +
+            "-fx-cursor: hand;"
+        );
+        editBtn.setOnMouseEntered(e -> {
+            editBtn.setStyle(
+                "-fx-background-color: #5ab023; " +
+                "-fx-text-fill: white; " +
+                "-fx-font-weight: 600; " +
+                "-fx-font-size: 14px; " +
+                "-fx-background-radius: 6px; " +
+                "-fx-padding: 8px 16px; " +
+                "-fx-cursor: hand;"
+            );
+        });
+        editBtn.setOnMouseExited(e -> {
+            editBtn.setStyle(
+                "-fx-background-color: #68CA2A; " +
+                "-fx-text-fill: white; " +
+                "-fx-font-weight: 600; " +
+                "-fx-font-size: 14px; " +
+                "-fx-background-radius: 6px; " +
+                "-fx-padding: 8px 16px; " +
+                "-fx-cursor: hand;"
+            );
+        });
         editBtn.setOnAction(e -> {
             e.consume();
             openRecipeInEditor(recipe);
         });
 
         Button deleteBtn = new Button("Delete");
-        deleteBtn.setStyle("-fx-background-color: white; -fx-text-fill: #ef4444; -fx-border-color: #ef4444; -fx-border-radius: 6px; -fx-background-radius: 6px;");
+        deleteBtn.setStyle(
+            "-fx-background-color: white; " +
+            "-fx-text-fill: #ef4444; " +
+            "-fx-border-color: #ef4444; " +
+            "-fx-border-width: 1px; " +
+            "-fx-border-radius: 6px; " +
+            "-fx-background-radius: 6px; " +
+            "-fx-font-weight: 600; " +
+            "-fx-font-size: 14px; " +
+            "-fx-padding: 8px 16px; " +
+            "-fx-cursor: hand;"
+        );
         deleteBtn.setOnAction(e -> {
             e.consume();
             deleteRecipe(recipe);
@@ -578,14 +877,77 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
             return;
         }
         nameField.setText(recipe.getName());
-        servingSizeField.setText(String.valueOf(recipe.getServingSize()));
-        descField.setText("");
-        imgUrlField.setText("");
-        timeField.setText("");
-        caloriesField.setText("");
-        proteinField.setText("");
-        carbsField.setText("");
-        fatField.setText("");
+        
+        // Set serving size spinner
+        int servingSize = recipe.getServingSize();
+        if (servingSizeSpinner != null) {
+            isScaling = true;
+            try {
+                servingSizeSpinner.getValueFactory().setValue(servingSize);
+            } finally {
+                isScaling = false;
+            }
+        }
+        
+        // Store base values for scaling
+        baseServingSize = servingSize;
+        baseIngredients = new ArrayList<>(recipe.getIngredients());
+        
+        // Load image URL if available
+        if (recipe.getImageUrl() != null && !recipe.getImageUrl().trim().isEmpty()) {
+            imgUrlField.setText(recipe.getImageUrl());
+        } else {
+            imgUrlField.clear();
+        }
+        
+        // Load cook time if available
+        if (recipe.getCookTimeMinutes() != null) {
+            timeField.setText(String.valueOf(recipe.getCookTimeMinutes()) + " min");
+        } else {
+            timeField.clear();
+        }
+        
+        // Load nutrition info if available
+        // Note: Recipe's NutritionInfo is for the entire recipe (all servings)
+        // We need to convert to per-serving values for the editor
+        if (recipe.getNutritionInfo() != null) {
+            NutritionInfo nutrition = recipe.getNutritionInfo();
+            int recipeServingSize = recipe.getServingSize();
+            
+            // Convert total nutrition to per-serving (divide by serving size)
+            if (recipeServingSize > 0) {
+                baseCalories = (double) nutrition.getCalories() / recipeServingSize;
+                baseProtein = nutrition.getProtein() / recipeServingSize;
+                baseCarbs = nutrition.getCarbs() / recipeServingSize;
+                baseFat = nutrition.getFat() / recipeServingSize;
+            } else {
+                // Fallback if serving size is invalid
+                baseCalories = nutrition.getCalories();
+                baseProtein = nutrition.getProtein();
+                baseCarbs = nutrition.getCarbs();
+                baseFat = nutrition.getFat();
+            }
+            
+            // Display per-serving values
+            caloriesField.setText(String.valueOf((int) Math.round(baseCalories)));
+            proteinField.setText(String.valueOf((int) Math.round(baseProtein)));
+            carbsField.setText(String.valueOf((int) Math.round(baseCarbs)));
+            fatField.setText(String.valueOf((int) Math.round(baseFat)));
+        } else {
+            baseCalories = 0;
+            baseProtein = 0;
+            baseCarbs = 0;
+            baseFat = 0;
+            caloriesField.clear();
+            proteinField.clear();
+            carbsField.clear();
+            fatField.clear();
+        }
+        
+        // Description field is not part of Recipe entity, so keep it empty
+        descField.clear();
+        
+        // Category and difficulty are not part of Recipe entity, so use defaults
         categoryCombo.setValue("Breakfast");
         difficultyCombo.setValue("Easy");
 
@@ -605,6 +967,8 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
                 }
             }
         }
+        
+        // Tags are not part of Recipe entity (dietaryRestrictions could be used but not implemented in UI)
         tagsContainer.getChildren().clear();
     }
     
@@ -660,36 +1024,67 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
             .decorates(descField)
             .immediate();
 
-        // Serving Size 검증
-        validator.createCheck()
-            .dependsOn("servingSize", servingSizeField.textProperty())
-            .withMethod(context -> {
-                String text = StringUtil.safeTrim(context.get("servingSize"));
-                if (!StringUtil.isNullOrEmpty(text)) {
-                    int servingSize = NumberUtil.parseInt(text, -1);
-                    if (servingSize < 0) {
-                        context.error("Please enter a valid number");
-                    } else if (!ValidationUtil.validateServingSize(servingSize)) {
-                        context.error("Serving size must be between 1 and 100");
-                    }
-                }
-            })
-            .decorates(servingSizeField)
-            .immediate();
+        // Serving Size 검증 (Spinner는 자동으로 범위 검증하지만, 추가 검증 필요시)
+        // Spinner는 이미 1-100 범위로 제한되어 있으므로 추가 검증은 선택적
     }
     
     private HBox createDynamicInputRow(String placeholder, java.util.function.Consumer<String> onAdd) {
         HBox row = new HBox(10);
+        row.setAlignment(Pos.CENTER_LEFT);
         
         TextField input = new TextField();
         input.setPromptText(placeholder);
         input.getStyleClass().add("text-field");
         HBox.setHgrow(input, Priority.ALWAYS);
         
+        // Get input field height to match button height
+        input.heightProperty().addListener((obs, oldHeight, newHeight) -> {
+            if (newHeight.doubleValue() > 0) {
+                // Button height will be set to match input height
+            }
+        });
+        
         Button addBtn = new Button("Add");
-        addBtn.setStyle("-fx-background-color: #76FF03; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8px;");
+        // Match button height with input field (TextField default is ~32px with padding)
+        addBtn.setPrefHeight(32);
+        addBtn.setMinHeight(32);
+        addBtn.setMaxHeight(32);
+        addBtn.setStyle(
+            "-fx-background-color: #68CA2A; " +
+            "-fx-text-fill: white; " +
+            "-fx-font-weight: 600; " +
+            "-fx-font-size: 14px; " +
+            "-fx-background-radius: 8px; " +
+            "-fx-padding: 0 16px; " +
+            "-fx-cursor: hand;"
+        );
+        addBtn.setOnMouseEntered(e -> {
+            addBtn.setStyle(
+                "-fx-background-color: #5ab023; " +
+                "-fx-text-fill: white; " +
+                "-fx-font-weight: 600; " +
+                "-fx-font-size: 14px; " +
+                "-fx-background-radius: 8px; " +
+                "-fx-padding: 0 16px; " +
+                "-fx-cursor: hand;"
+            );
+        });
+        addBtn.setOnMouseExited(e -> {
+            addBtn.setStyle(
+                "-fx-background-color: #68CA2A; " +
+                "-fx-text-fill: white; " +
+                "-fx-font-weight: 600; " +
+                "-fx-font-size: 14px; " +
+                "-fx-background-radius: 8px; " +
+                "-fx-padding: 0 16px; " +
+                "-fx-cursor: hand;"
+            );
+        });
         Node plusIcon = SvgIconLoader.loadIcon("/svg/plus.svg", 14, Color.WHITE);
-        if (plusIcon != null) addBtn.setGraphic(plusIcon);
+        if (plusIcon != null) {
+            addBtn.setGraphic(plusIcon);
+            addBtn.setGraphicTextGap(6);
+        }
         
         Runnable triggerAdd = () -> {
             String text = input.getText().trim();
@@ -718,12 +1113,24 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         input.getStyleClass().add("chip-input");
         // Auto-resize width roughly based on text length (simple logic)
         input.setPrefWidth(Math.max(60, text.length() * 8 + 20));
-        input.textProperty().addListener((obs, old, val) -> input.setPrefWidth(Math.max(60, val.length() * 8 + 20)));
+        input.textProperty().addListener((obs, old, val) -> {
+            input.setPrefWidth(Math.max(60, val.length() * 8 + 20));
+            // Update base ingredients when user manually edits (only for ingredient chips)
+            if (!isTag && !isScaling) {
+                Platform.runLater(() -> updateBaseIngredients());
+            }
+        });
         
         Button deleteBtn = new Button("✕"); // or load icon
         deleteBtn.getStyleClass().add("chip-delete-btn");
         deleteBtn.setVisible(false);
-        deleteBtn.setOnAction(e -> container.getChildren().remove(chip));
+        deleteBtn.setOnAction(e -> {
+            container.getChildren().remove(chip);
+            // Update base ingredients when ingredient is deleted
+            if (!isTag && !isScaling) {
+                Platform.runLater(() -> updateBaseIngredients());
+            }
+        });
         
         // Hover logic
         chip.setOnMouseEntered(e -> deleteBtn.setVisible(true));
@@ -824,10 +1231,43 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
             }
         }
         
-        int servingSize = NumberUtil.parseInt(servingSizeField.getText(), 1);
+        int servingSize = servingSizeSpinner != null ? servingSizeSpinner.getValue() : 1;
         
+        // TODO: StoreRecipeController와 StoreRecipeInputData가 다음 필드들을 지원하도록 확장 필요:
+        // - imageUrl: imgUrlField에서 수집
+        // - cookTimeMinutes: timeField에서 파싱 (예: "10 min" -> 10)
+        // - nutritionInfo: caloriesField, proteinField, carbsField, fatField에서 수집
+        // 현재는 controller.execute()가 이 필드들을 받지 않으므로, 기본 동작만 유지
+        String imageUrl = StringUtil.safeTrim(imgUrlField.getText());
+        String timeText = StringUtil.safeTrim(timeField.getText());
+        // Parse time (e.g., "10 min" -> 10)
+        Integer cookTimeMinutes = null;
+        if (!timeText.isEmpty()) {
+            // Remove "min" and extract number
+            String timeNum = timeText.replaceAll("(?i)\\s*min\\s*", "").trim();
+            int parsedTime = NumberUtil.parseInt(timeNum, -1);
+            if (parsedTime > 0) {
+                cookTimeMinutes = parsedTime;
+            }
+        }
+        
+        // Parse nutrition values
+        int calories = NumberUtil.parseInt(caloriesField.getText(), 0);
+        double protein = NumberUtil.parseDouble(proteinField.getText(), 0.0);
+        double carbs = NumberUtil.parseDouble(carbsField.getText(), 0.0);
+        double fat = NumberUtil.parseDouble(fatField.getText(), 0.0);
+        
+        // Note: Currently StoreRecipeController.execute() only accepts basic fields
+        // The nutrition, imageUrl, and cookTimeMinutes are collected but not passed
+        // This is a placeholder for future enhancement when the use case layer supports these fields
         String recipeId = editingRecipe != null ? editingRecipe.getRecipeId() : null;
         controller.execute(recipeId, name, ingredients, steps, servingSize);
+        
+        // Log collected optional fields for debugging
+        if (logger.isDebugEnabled()) {
+            logger.debug("Collected optional fields - imageUrl: {}, cookTime: {}, calories: {}, protein: {}, carbs: {}, fat: {}",
+                imageUrl, cookTimeMinutes, calories, protein, carbs, fat);
+        }
     }
     
     private void resetSaveButton() {
@@ -835,7 +1275,12 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
             saveBtn.setDisable(false);
             savingIndicator.setVisible(false);
             savingIndicator.setManaged(false);
-            saveBtn.setText("Save Changes");
+            // Phase 3: Update button text based on edit mode
+            if (editingRecipe != null) {
+                saveBtn.setText("Update Recipe");
+            } else {
+                saveBtn.setText("Create Recipe");
+            }
         });
     }
     
@@ -858,11 +1303,160 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         ingredientsContainer.getChildren().clear();
         instructionsContainer.getChildren().clear();
         tagsContainer.getChildren().clear();
-        servingSizeField.setText("1");
+        
+        // Reset serving size spinner
+        if (servingSizeSpinner != null) {
+            isScaling = true;
+            try {
+                servingSizeSpinner.getValueFactory().setValue(1);
+            } finally {
+                isScaling = false;
+            }
+        }
+        
+        // Reset base values
+        baseServingSize = 1;
+        baseIngredients.clear();
+        baseCalories = 0;
+        baseProtein = 0;
+        baseCarbs = 0;
+        baseFat = 0;
+        
         timeField.clear(); caloriesField.clear(); proteinField.clear(); carbsField.clear(); fatField.clear();
         categoryCombo.setValue("Breakfast");
         difficultyCombo.setValue("Easy");
         editingRecipe = null;
+    }
+    
+    /**
+     * Scale recipe ingredients and nutrition based on serving size change.
+     * This method updates the UI to reflect the new serving size.
+     */
+    private void scaleRecipeForServingSize(int newServingSize) {
+        if (newServingSize <= 0) {
+            return;
+        }
+        
+        // Calculate scale factor
+        double scaleFactor = (double) newServingSize / baseServingSize;
+        
+        // Scale ingredients
+        if (!baseIngredients.isEmpty()) {
+            // Update ingredient chips with scaled values
+            List<String> scaledIngredients = new ArrayList<>();
+            for (String ingredient : baseIngredients) {
+                try {
+                    String scaled = IngredientParser.scaleIngredient(ingredient, scaleFactor);
+                    scaledIngredients.add(scaled);
+                } catch (Exception e) {
+                    // If scaling fails, keep original
+                    logger.warn("Failed to scale ingredient '{}': {}", ingredient, e.getMessage());
+                    scaledIngredients.add(ingredient);
+                }
+            }
+            
+            // Update UI
+            ingredientsContainer.getChildren().clear();
+            for (String ing : scaledIngredients) {
+                addChipItem(ingredientsContainer, ing, false);
+            }
+        } else {
+            // If base ingredients not set, harvest current ingredients as base
+            List<String> currentIngredients = harvestChips(ingredientsContainer);
+            if (!currentIngredients.isEmpty()) {
+                baseIngredients = new ArrayList<>(currentIngredients);
+                baseServingSize = newServingSize;
+                
+                // Recursively call with same serving size to update base
+                scaleRecipeForServingSize(newServingSize);
+                return;
+            }
+        }
+        
+        // Scale nutrition values
+        if (baseCalories > 0 || baseProtein > 0 || baseCarbs > 0 || baseFat > 0) {
+            double scaledCalories = baseCalories * scaleFactor;
+            double scaledProtein = baseProtein * scaleFactor;
+            double scaledCarbs = baseCarbs * scaleFactor;
+            double scaledFat = baseFat * scaleFactor;
+            
+            caloriesField.setText(String.valueOf((int) Math.round(scaledCalories)));
+            proteinField.setText(String.valueOf((int) Math.round(scaledProtein)));
+            carbsField.setText(String.valueOf((int) Math.round(scaledCarbs)));
+            fatField.setText(String.valueOf((int) Math.round(scaledFat)));
+        } else {
+            // If base nutrition not set, harvest current values as base
+            try {
+                String calText = caloriesField.getText();
+                String protText = proteinField.getText();
+                String carbText = carbsField.getText();
+                String fatText = fatField.getText();
+                
+                if (!StringUtil.isNullOrEmpty(calText) || !StringUtil.isNullOrEmpty(protText) || 
+                    !StringUtil.isNullOrEmpty(carbText) || !StringUtil.isNullOrEmpty(fatText)) {
+                    baseCalories = NumberUtil.parseDouble(calText, 0);
+                    baseProtein = NumberUtil.parseDouble(protText, 0);
+                    baseCarbs = NumberUtil.parseDouble(carbText, 0);
+                    baseFat = NumberUtil.parseDouble(fatText, 0);
+                    baseServingSize = newServingSize;
+                    
+                    // Recursively call with same serving size to update base
+                    scaleRecipeForServingSize(newServingSize);
+                    return;
+                }
+            } catch (Exception e) {
+                logger.warn("Failed to parse nutrition values for scaling: {}", e.getMessage());
+            }
+        }
+        
+        // Update base serving size for next scaling operation
+        baseServingSize = newServingSize;
+    }
+    
+    /**
+     * Store current ingredient values as base for future scaling.
+     * Should be called when user manually edits ingredients.
+     */
+    private void updateBaseIngredients() {
+        List<String> currentIngredients = harvestChips(ingredientsContainer);
+        if (!currentIngredients.isEmpty()) {
+            baseIngredients = new ArrayList<>(currentIngredients);
+            if (servingSizeSpinner != null) {
+                baseServingSize = servingSizeSpinner.getValue();
+            }
+        }
+    }
+    
+    /**
+     * Store current nutrition values as base for future scaling.
+     * Should be called when user manually edits nutrition values.
+     */
+    private void updateBaseNutrition() {
+        try {
+            String calText = caloriesField.getText();
+            String protText = proteinField.getText();
+            String carbText = carbsField.getText();
+            String fatText = fatField.getText();
+            
+            if (!StringUtil.isNullOrEmpty(calText)) {
+                baseCalories = NumberUtil.parseDouble(calText, 0);
+            }
+            if (!StringUtil.isNullOrEmpty(protText)) {
+                baseProtein = NumberUtil.parseDouble(protText, 0);
+            }
+            if (!StringUtil.isNullOrEmpty(carbText)) {
+                baseCarbs = NumberUtil.parseDouble(carbText, 0);
+            }
+            if (!StringUtil.isNullOrEmpty(fatText)) {
+                baseFat = NumberUtil.parseDouble(fatText, 0);
+            }
+            
+            if (servingSizeSpinner != null) {
+                baseServingSize = servingSizeSpinner.getValue();
+            }
+        } catch (Exception e) {
+            logger.warn("Failed to update base nutrition values: {}", e.getMessage());
+        }
     }
 
     @Override
@@ -870,13 +1464,19 @@ public class StoreRecipeView extends BorderPane implements PropertyChangeListene
         Platform.runLater(() -> {
             if (RecipeStoreViewModel.PROP_SUCCESS_MESSAGE.equals(evt.getPropertyName())) {
                 resetSaveButton();
-                sonner.show("Success", (String) evt.getNewValue(), Sonner.Type.SUCCESS);
+                String message = (String) evt.getNewValue();
+                if (message != null && sonner != null) {
+                    sonner.show("Success", message, Sonner.Type.SUCCESS);
+                }
                 clearForm();
-                // Refresh cookbook and then toggle view after completion
+                // Phase 3: clearForm() already clears editingRecipe, refresh cookbook and return to list
                 refreshCookbook(() -> toggleView(true)); // Return to list on success
             } else if (RecipeStoreViewModel.PROP_ERROR_MESSAGE.equals(evt.getPropertyName())) {
                 resetSaveButton();
-                sonner.show("Error", (String) evt.getNewValue(), Sonner.Type.ERROR);
+                String message = (String) evt.getNewValue();
+                if (message != null && sonner != null) {
+                    sonner.show("Error", message, Sonner.Type.ERROR);
+                }
             }
         });
     }

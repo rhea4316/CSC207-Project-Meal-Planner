@@ -11,6 +11,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class RecipeBrowseViewModel {
+    // Property name constants for PropertyChangeListener
+    public static final String PROP_RECIPES = "recipes";
+    public static final String PROP_ERROR_MESSAGE = "errorMessage";
+    public static final String PROP_RECOMMENDATIONS = "recommendations";
+    public static final String PROP_DISPLAY_RECIPES = "displayRecipes";
+    
     private List<Recipe> recipes;
     private List<Recipe> recommendations;
     private String errorMessage;
@@ -43,8 +49,15 @@ public class RecipeBrowseViewModel {
         }
 
         this.displayRecipes = true;
-        this.propertyChangeSupport.firePropertyChange("recipes", oldRecipes, this.recipes);
-        this.propertyChangeSupport.firePropertyChange("displayRecipes", oldDisplayRecipes, this.displayRecipes);
+        
+        // Log for debugging
+        org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(RecipeBrowseViewModel.class);
+        logger.debug("setRecipes: firing PropertyChange event for {} recipes, listener count: {}", 
+            this.recipes.size(), 
+            java.util.Arrays.asList(propertyChangeSupport.getPropertyChangeListeners()).size());
+        
+        this.propertyChangeSupport.firePropertyChange(PROP_RECIPES, oldRecipes, this.recipes);
+        this.propertyChangeSupport.firePropertyChange(PROP_DISPLAY_RECIPES, oldDisplayRecipes, this.displayRecipes);
     }
 
     public void setErrorMessage(String errorMessage) {
@@ -54,8 +67,8 @@ public class RecipeBrowseViewModel {
         this.errorMessage = errorMessage != null ? errorMessage : "";
 
         this.displayRecipes = false;
-        this.propertyChangeSupport.firePropertyChange("errorMessage", oldErrorMessage, this.errorMessage);
-        this.propertyChangeSupport.firePropertyChange("displayRecipes", oldDisplayRecipes, this.displayRecipes);
+        this.propertyChangeSupport.firePropertyChange(PROP_ERROR_MESSAGE, oldErrorMessage, this.errorMessage);
+        this.propertyChangeSupport.firePropertyChange(PROP_DISPLAY_RECIPES, oldDisplayRecipes, this.displayRecipes);
     }
 
     public void setRecommendations(List<Recipe> recommendations) {
@@ -63,7 +76,7 @@ public class RecipeBrowseViewModel {
         this.recommendations = recommendations != null 
             ? new ArrayList<>(recommendations) 
             : new ArrayList<>();
-        this.propertyChangeSupport.firePropertyChange("recommendations", 
+        this.propertyChangeSupport.firePropertyChange(PROP_RECOMMENDATIONS, 
             oldRecommendations, this.recommendations);
     }
 

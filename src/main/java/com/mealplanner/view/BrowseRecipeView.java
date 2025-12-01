@@ -5,6 +5,7 @@ import com.mealplanner.entity.Recipe;
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.BrowseRecipeController;
 import com.mealplanner.interface_adapter.controller.GetRecommendationsController;
+import com.mealplanner.interface_adapter.controller.StoreRecipeController;
 import com.mealplanner.interface_adapter.view_model.RecipeBrowseViewModel;
 import com.mealplanner.interface_adapter.view_model.RecipeDetailViewModel;
 import com.mealplanner.repository.RecipeRepository;
@@ -13,6 +14,7 @@ import com.mealplanner.util.StringUtil;
 import com.mealplanner.util.ImageCacheManager;
 import com.mealplanner.view.component.Sonner;
 import com.mealplanner.view.util.SvgIconLoader;
+import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -22,11 +24,10 @@ import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import javafx.scene.paint.CycleMethod;
-import javafx.scene.paint.LinearGradient;
-import javafx.scene.paint.Stop;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.util.Duration;
+import javafx.concurrent.Task;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -34,6 +35,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BrowseRecipeView extends BorderPane implements PropertyChangeListener {
     private final RecipeBrowseViewModel viewModel;
@@ -43,6 +46,8 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
     private final RecipeRepository recipeRepository;
     private final ImageCacheManager imageCache = ImageCacheManager.getInstance();
     private GetRecommendationsController recommendationsController;
+    private final StoreRecipeController storeRecipeController;
+    private static final Logger logger = LoggerFactory.getLogger(BrowseRecipeView.class);
     
     /**
      * Clean up resources and remove property change listeners to prevent memory leaks.
@@ -79,11 +84,14 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
     private VBox recommendationsSection;
     
     private Sonner sonner;
+    
+    // Phase 4: Saved count button reference
+    private Button savedCountButton;
 
     /**
-     * Constructor with GetRecommendationsController (Phase 5 feature).
+     * Constructor with GetRecommendationsController and StoreRecipeController (Phase 5 + Phase 1).
      */
-    public BrowseRecipeView(RecipeBrowseViewModel viewModel, BrowseRecipeController controller, ViewManagerModel viewManagerModel, RecipeDetailViewModel recipeDetailViewModel, RecipeRepository recipeRepository, GetRecommendationsController recommendationsController) {
+    public BrowseRecipeView(RecipeBrowseViewModel viewModel, BrowseRecipeController controller, ViewManagerModel viewManagerModel, RecipeDetailViewModel recipeDetailViewModel, RecipeRepository recipeRepository, GetRecommendationsController recommendationsController, StoreRecipeController storeRecipeController) {
         if (viewModel == null) throw new IllegalArgumentException("ViewModel cannot be null");
         if (controller == null) throw new IllegalArgumentException("Controller cannot be null");
         if (viewManagerModel == null) throw new IllegalArgumentException("ViewManagerModel cannot be null");
@@ -96,19 +104,24 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
         this.recipeDetailViewModel = recipeDetailViewModel;
         this.recipeRepository = recipeRepository;
         this.recommendationsController = recommendationsController;
+        this.storeRecipeController = storeRecipeController;
         
         initializeView();
     }
 
     /**
      * Constructor without GetRecommendationsController (current version).
+     * @deprecated Use constructor with StoreRecipeController for bookmark functionality
      */
+    @Deprecated
     public BrowseRecipeView(RecipeBrowseViewModel viewModel, BrowseRecipeController controller, ViewManagerModel viewManagerModel, RecipeDetailViewModel recipeDetailViewModel, RecipeRepository recipeRepository) {
         if (viewModel == null) throw new IllegalArgumentException("ViewModel cannot be null");
         if (controller == null) throw new IllegalArgumentException("Controller cannot be null");
         if (viewManagerModel == null) throw new IllegalArgumentException("ViewManagerModel cannot be null");
         if (recipeDetailViewModel == null) throw new IllegalArgumentException("RecipeDetailViewModel cannot be null");
         if (recipeRepository == null) throw new IllegalArgumentException("RecipeRepository cannot be null");
+        
+        this.storeRecipeController = null; // 북마크 기능 없음
 
         this.viewModel = viewModel;
         this.controller = controller;
@@ -147,18 +160,16 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
         
         headerBox.getChildren().addAll(titleLabel, subTitle);
 
-        // Saved Button (Top Right) - Mockup
-        Button savedBtn = new Button("3 Saved");
-        // Apply gradient background: #8be200 -> #14cd49 (top-left to bottom-right)
-        Stop[] gradientStops = new Stop[] { new Stop(0, Color.web("#8be200")), new Stop(1, Color.web("#14cd49")) };
-        LinearGradient gradient = new LinearGradient(0, 0, 1, 1, true, CycleMethod.NO_CYCLE, gradientStops);
-        savedBtn.setStyle("-fx-text-fill: white; -fx-font-weight: 600; -fx-background-radius: 8px; -fx-padding: 8 16; -fx-cursor: hand; -fx-background-color: null;");
-        savedBtn.setBackground(new Background(new BackgroundFill(gradient, new CornerRadii(8), Insets.EMPTY)));
+        // Saved Button (Top Right) - Phase 4: Dynamic count
+        savedCountButton = new Button("0 Saved");
+        savedCountButton.setId("saved-count-btn"); // For easy access
+        savedCountButton.setStyle("-fx-text-fill: white; -fx-font-weight: 600; -fx-background-radius: 8px; -fx-padding: 8 16; -fx-cursor: hand; -fx-background-color: #68CA2A;");
         Node bookmarkIcon = SvgIconLoader.loadIcon("/svg/bookmark.svg", 14, Color.WHITE);
         if (bookmarkIcon != null) {
-            savedBtn.setGraphic(bookmarkIcon);
-            savedBtn.setGraphicTextGap(8);
+            savedCountButton.setGraphic(bookmarkIcon);
+            savedCountButton.setGraphicTextGap(8);
         }
+        // Phase 4: Update saved count on initialization (will be called after UI is ready)
         
         HBox topBar = new HBox();
         topBar.setAlignment(Pos.CENTER_LEFT);
@@ -166,7 +177,7 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         
-        topBar.getChildren().addAll(headerBox, spacer, savedBtn);
+        topBar.getChildren().addAll(headerBox, spacer, savedCountButton);
         
         // Recommendations Section (only if controller is available)
         if (recommendationsController != null) {
@@ -206,6 +217,9 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
         
         // Load local database recipes on initialization
         loadLocalRecipes();
+        
+        // Phase 4: Update saved count after UI is ready
+        Platform.runLater(() -> updateSavedCount());
     }
     
     /**
@@ -214,30 +228,71 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
      */
     private void loadLocalRecipes() {
         if (recipeRepository == null) {
+            logger.warn("recipeRepository is null, cannot load local recipes");
+            // If no repository, ensure empty state is shown
+            Platform.runLater(() -> {
+                if (listPanel.getChildren().isEmpty() || 
+                    listPanel.getChildren().contains(loadingPanel)) {
+                    listPanel.getChildren().clear();
+                    listPanel.getChildren().add(emptyPanel);
+                }
+            });
             return;
         }
         
+        logger.debug("Loading local recipes from repository");
         new Thread(() -> {
             try {
                 List<Recipe> localRecipes = recipeRepository.findAll();
-                if (localRecipes != null && !localRecipes.isEmpty()) {
-                    Platform.runLater(() -> {
-                        // Set local recipes as initial display
-                        allRecipes = new ArrayList<>(localRecipes);
+                logger.debug("Loaded {} recipes from local repository", localRecipes != null ? localRecipes.size() : 0);
+                Platform.runLater(() -> {
+                    if (localRecipes != null && !localRecipes.isEmpty()) {
+                        logger.debug("Setting {} recipes to allRecipes and applying filter", localRecipes.size());
+                        // Set local recipes as initial display (thread-safe)
+                        synchronized (this) {
+                            allRecipes = new ArrayList<>(localRecipes);
+                        }
                         applyClientSideFilter();
-                    });
-                } else {
-                    // If no local recipes, show empty state
-                    Platform.runLater(() -> {
+                        // Phase 4: Update saved count and bookmark states after loading
+                        updateSavedCount();
+                        refreshBookmarkStates();
+                    } else {
+                        logger.debug("No local recipes found, showing empty state");
+                        // If no local recipes, show empty state
+                        // Ensure loading panel is removed if present
                         listPanel.getChildren().clear();
                         listPanel.getChildren().add(emptyPanel);
-                        countLabel.setText("Showing 0 recipes");
-                    });
-                }
+                        if (countLabel != null) {
+                            countLabel.setText("Showing 0 recipes");
+                        }
+                    }
+                });
             } catch (DataAccessException e) {
-                // Silently fail - local recipes are optional
+                logger.error("DataAccessException while loading local recipes: {}", e.getMessage(), e);
+                // Local recipes are optional, but ensure loading state is cleared
+                Platform.runLater(() -> {
+                    if (listPanel.getChildren().contains(loadingPanel)) {
+                        listPanel.getChildren().clear();
+                        listPanel.getChildren().add(emptyPanel);
+                    }
+                    // If already showing empty panel, keep it
+                    if (listPanel.getChildren().isEmpty()) {
+                        listPanel.getChildren().add(emptyPanel);
+                    }
+                });
             } catch (Exception e) {
-                // Silently fail - local recipes are optional
+                logger.error("Exception while loading local recipes: {}", e.getMessage(), e);
+                // Local recipes are optional, but ensure loading state is cleared
+                Platform.runLater(() -> {
+                    if (listPanel.getChildren().contains(loadingPanel)) {
+                        listPanel.getChildren().clear();
+                        listPanel.getChildren().add(emptyPanel);
+                    }
+                    // If already showing empty panel, keep it
+                    if (listPanel.getChildren().isEmpty()) {
+                        listPanel.getChildren().add(emptyPanel);
+                    }
+                });
             }
         }).start();
     }
@@ -326,11 +381,7 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
         String selectedStyle = "-fx-text-fill: white; -fx-border-color: transparent; -fx-border-radius: 8px; -fx-background-radius: 8px; -fx-padding: 8 16; -fx-font-size: 13px; -fx-font-weight: 600; -fx-cursor: hand;";
         
         if (isSelected) {
-            // Apply gradient background matching sidebar active buttons
-            Stop[] gradientStops = new Stop[] { new Stop(0, Color.web("#8be200")), new Stop(1, Color.web("#14cd49")) };
-            LinearGradient gradient = new LinearGradient(0, 0, 1, 1, true, CycleMethod.NO_CYCLE, gradientStops);
-            btn.setStyle(selectedStyle + " -fx-background-color: null;");
-            btn.setBackground(new Background(new BackgroundFill(gradient, new CornerRadii(8), Insets.EMPTY)));
+            btn.setStyle(selectedStyle + " -fx-background-color: #68CA2A;");
         } else {
             btn.setStyle(defaultStyle);
         }
@@ -354,11 +405,7 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
 
         btn.selectedProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal) {
-                // Apply gradient background matching sidebar active buttons
-                Stop[] gradientStops = new Stop[] { new Stop(0, Color.web("#8be200")), new Stop(1, Color.web("#14cd49")) };
-                LinearGradient gradient = new LinearGradient(0, 0, 1, 1, true, CycleMethod.NO_CYCLE, gradientStops);
-                btn.setStyle(selectedStyle + " -fx-background-color: null;");
-                btn.setBackground(new Background(new BackgroundFill(gradient, new CornerRadii(8), Insets.EMPTY)));
+                btn.setStyle(selectedStyle + " -fx-background-color: #68CA2A;");
                 selectedCategory = name;
                 // Update icon color to white
                 if (btn.getGraphic() != null) {
@@ -501,39 +548,60 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
         listPanel.getChildren().add(loadingPanel);
         errorLabel.setText("");
 
-        // Run search in background
+        // Run search in background using JavaFX Task
         final String finalQuery = effectiveQuery;
-        new Thread(() -> {
-            try {
-                // Default to 10 results for now
-                controller.execute(finalQuery, 12); 
-            } catch (IOException ex) {
-                Platform.runLater(() -> {
-                    sonner.show("Network Error", "Failed to search recipes. Please check your connection and try again.", Sonner.Type.ERROR);
-                    errorLabel.setText(""); // Clear error label
-                    listPanel.getChildren().clear();
-                    listPanel.getChildren().add(emptyPanel);
-                });
-            } catch (Exception ex) {
-                Platform.runLater(() -> {
-                    sonner.show("Error", "An unexpected error occurred while searching. Please try again.", Sonner.Type.ERROR);
-                    errorLabel.setText(""); // Clear error label
-                    listPanel.getChildren().clear();
-                    listPanel.getChildren().add(emptyPanel);
-                });
+        Task<Void> searchTask = new Task<Void>() {
+            @Override
+            protected Void call() throws Exception {
+                try {
+                    logger.debug("Starting search for query: {}", finalQuery);
+                    // Default to 12 results
+                    controller.execute(finalQuery, 12);
+                    logger.debug("Search completed for query: {}", finalQuery);
+                    return null;
+                } catch (Exception e) {
+                    logger.error("Exception in search task: {}", e.getMessage(), e);
+                    throw e;
+                }
             }
-        }).start();
+        };
+        
+        // Handle task failure
+        searchTask.setOnFailed(e -> {
+            Throwable ex = searchTask.getException();
+            if (ex != null) {
+                logger.error("Search task failed: {}", ex.getMessage(), ex);
+                String errorMessage;
+                if (ex instanceof IOException) {
+                    errorMessage = "Network error: " + ex.getMessage();
+                    sonner.show("Network Error", "Failed to search recipes. Please check your connection and try again.", Sonner.Type.ERROR);
+                } else {
+                    errorMessage = "An error occurred: " + ex.getMessage();
+                    sonner.show("Error", "An unexpected error occurred while searching. Please try again.", Sonner.Type.ERROR);
+                }
+                // ViewModel에 에러 설정하여 PropertyChangeListener가 트리거되도록 함
+                Platform.runLater(() -> viewModel.setErrorMessage(errorMessage));
+            }
+        });
+        
+        // Start the task in a background thread
+        new Thread(searchTask).start();
     }
 
     private void displayRecipes(List<Recipe> recipes) {
         Platform.runLater(() -> {
+            logger.debug("displayRecipes called with {} recipes", recipes != null ? recipes.size() : 0);
+            
             // OPTIMIZATION: Store all recipes for client-side filtering
             List<Recipe> apiRecipes = recipes != null ? new ArrayList<>(recipes) : new ArrayList<>();
+            
+            logger.debug("Initial API recipes count: {}", apiRecipes.size());
             
             // Merge with local database recipes
             if (recipeRepository != null) {
                 try {
                     List<Recipe> localRecipes = recipeRepository.findAll();
+                    logger.debug("Local recipes count: {}", localRecipes != null ? localRecipes.size() : 0);
                     if (localRecipes != null && !localRecipes.isEmpty()) {
                         // Merge recipes, avoiding duplicates
                         for (Recipe localRecipe : localRecipes) {
@@ -546,13 +614,20 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
                         }
                     }
                 } catch (DataAccessException e) {
+                    logger.warn("Failed to load local recipes: {}", e.getMessage());
                     // Silently fail - local recipes are optional
                 } catch (Exception e) {
+                    logger.warn("Exception while loading local recipes: {}", e.getMessage());
                     // Silently fail - local recipes are optional
                 }
             }
             
-            allRecipes = apiRecipes;
+            logger.debug("Total recipes after merge: {}", apiRecipes.size());
+            
+            // Thread-safe write
+            synchronized (this) {
+                allRecipes = new ArrayList<>(apiRecipes);
+            }
 
             // Apply current filter
             applyClientSideFilter();
@@ -561,39 +636,92 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
 
     /**
      * OPTIMIZATION: Apply client-side category filtering without re-fetching from API.
+     * This method should be called from JavaFX Application Thread.
      */
     private void applyClientSideFilter() {
+        if (listPanel == null) {
+            logger.warn("listPanel is null, cannot apply filter");
+            return;
+        }
+        
+        // Ensure we're on JavaFX Application Thread
+        if (!Platform.isFxApplicationThread()) {
+            Platform.runLater(this::applyClientSideFilter);
+            return;
+        }
+        
         listPanel.getChildren().clear();
 
-        if (allRecipes == null || allRecipes.isEmpty()) {
-            emptyPanel.getChildren().set(1, new Label("No recipes found. Try a different term."));
-            listPanel.getChildren().add(emptyPanel);
-            countLabel.setText("Showing 0 recipes");
+        // Thread-safe read
+        List<Recipe> recipesToFilter;
+        synchronized (this) {
+            recipesToFilter = new ArrayList<>(allRecipes);
+        }
+
+        logger.debug("Applying filter: selectedCategory={}, totalRecipes={}", selectedCategory, recipesToFilter.size());
+
+        if (recipesToFilter == null || recipesToFilter.isEmpty()) {
+            logger.debug("No recipes to filter, showing empty state");
+            // Recreate empty panel with proper message
+            VBox emptyMsg = new VBox(15);
+            emptyMsg.setAlignment(Pos.CENTER);
+            Label iconLabel = new Label("🍳");
+            iconLabel.setStyle("-fx-font-size: 48px;");
+            Label emptyLabel = new Label("No recipes found. Try a different term.");
+            emptyLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: -fx-theme-muted-foreground;");
+            emptyMsg.getChildren().addAll(iconLabel, emptyLabel);
+            listPanel.getChildren().add(emptyMsg);
+            if (countLabel != null) {
+                countLabel.setText("Showing 0 recipes");
+            }
             return;
         }
 
-        // Filter recipes based on selected category
-        List<Recipe> filteredRecipes = allRecipes.stream()
+        // Filter recipes based on selected category - use recipesToFilter instead of allRecipes
+        List<Recipe> filteredRecipes = recipesToFilter.stream()
             .filter(recipe -> matchesCategory(recipe, selectedCategory))
             .collect(java.util.stream.Collectors.toList());
 
+        logger.debug("Filtered recipes: {} out of {}", filteredRecipes.size(), recipesToFilter.size());
+
         if (filteredRecipes.isEmpty()) {
-            emptyPanel.getChildren().set(1, new Label("No recipes found in this category."));
-            listPanel.getChildren().add(emptyPanel);
-            countLabel.setText("Showing 0 recipes");
+            logger.debug("No recipes match category filter, showing empty state");
+            // Recreate empty panel with proper message
+            VBox emptyMsg = new VBox(15);
+            emptyMsg.setAlignment(Pos.CENTER);
+            Label iconLabel = new Label("🍳");
+            iconLabel.setStyle("-fx-font-size: 48px;");
+            Label emptyLabel = new Label("No recipes found in this category.");
+            emptyLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: -fx-theme-muted-foreground;");
+            emptyMsg.getChildren().addAll(iconLabel, emptyLabel);
+            listPanel.getChildren().add(emptyMsg);
+            if (countLabel != null) {
+                countLabel.setText("Showing 0 recipes");
+            }
         } else {
-            countLabel.setText("Showing " + filteredRecipes.size() + " of " + allRecipes.size() + " recipes");
+            if (countLabel != null) {
+                countLabel.setText("Showing " + filteredRecipes.size() + " of " + recipesToFilter.size() + " recipes");
 
-            // Mockup shows specific "Showing 9 of 16 recipes" style
-            Node trendIcon = SvgIconLoader.loadIcon("/svg/chart.svg", 16, Color.web("#84cc16")); // Green zigzag
-            if (trendIcon != null) {
-                countLabel.setGraphic(trendIcon);
-                countLabel.setGraphicTextGap(8);
+                // Mockup shows specific "Showing 9 of 16 recipes" style
+                Node trendIcon = SvgIconLoader.loadIcon("/svg/chart.svg", 16, Color.web("#84cc16")); // Green zigzag
+                if (trendIcon != null) {
+                    countLabel.setGraphic(trendIcon);
+                    countLabel.setGraphicTextGap(8);
+                }
             }
 
+            logger.debug("Displaying {} recipe cards", filteredRecipes.size());
             for (Recipe recipe : filteredRecipes) {
-                listPanel.getChildren().add(createRecipeCard(recipe));
+                Node card = createRecipeCard(recipe);
+                if (card != null) {
+                    listPanel.getChildren().add(card);
+                } else {
+                    logger.warn("createRecipeCard returned null for recipe: {}", recipe != null ? recipe.getName() : "null");
+                }
             }
+            
+            // Phase 4: Update bookmark states after displaying recipes
+            refreshBookmarkStates();
         }
     }
 
@@ -601,11 +729,15 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
      * Check if a recipe matches the given category filter.
      */
     private boolean matchesCategory(Recipe recipe, String category) {
+        if (recipe == null) {
+            return false;
+        }
+        
         if (category == null || category.equals("All")) {
             return true;
         }
 
-        String recipeName = recipe.getName().toLowerCase();
+        String recipeName = recipe.getName() != null ? recipe.getName().toLowerCase() : "";
 
         // Simple category matching based on recipe name
         // In a real application, this would use recipe tags or categories from the API
@@ -629,9 +761,11 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
                     || recipeName.contains("cookie") || recipeName.contains("ice cream")
                     || recipeName.contains("chocolate");
             case "Vegetarian":
+                // Vegetarian과 Vegan 필터링 로직 통일 - 동물성 제품 모두 제외
                 return !recipeName.contains("meat") && !recipeName.contains("chicken")
                     && !recipeName.contains("beef") && !recipeName.contains("pork")
-                    && !recipeName.contains("fish");
+                    && !recipeName.contains("fish") && !recipeName.contains("egg")
+                    && !recipeName.contains("cheese") && !recipeName.contains("milk");
             case "Vegan":
                 return !recipeName.contains("meat") && !recipeName.contains("chicken")
                     && !recipeName.contains("beef") && !recipeName.contains("egg")
@@ -642,6 +776,11 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
     }
     
     private VBox createRecipeCard(Recipe recipe) {
+        if (recipe == null) {
+            logger.warn("Cannot create recipe card for null recipe");
+            return new VBox(); // Return empty card to avoid NPE
+        }
+        
         VBox card = new VBox();
         card.getStyleClass().add("meal-card");
         card.setPrefWidth(300); // Wider card as per mockup
@@ -683,69 +822,207 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
         StackPane.setAlignment(difficultyTag, Pos.TOP_LEFT);
         StackPane.setMargin(difficultyTag, new Insets(12));
         
-        // Save Button Overlay
+        // Save Button Overlay (Bookmark) - Phase 4: Dynamic state
         Button saveBtn = new Button();
         saveBtn.setStyle("-fx-background-color: white; -fx-background-radius: 50%; -fx-min-width: 32px; -fx-min-height: 32px; -fx-max-width: 32px; -fx-max-height: 32px; -fx-cursor: hand; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 4, 0, 0, 2);");
-        Node bookmarkIcon = SvgIconLoader.loadIcon("/svg/book.svg", 14, Color.web("#374151"));
-        saveBtn.setGraphic(bookmarkIcon);
+        saveBtn.setUserData(recipe); // Store recipe reference for easy access
+        
+        // Phase 4: Check bookmark status and update icon
+        updateBookmarkButtonIcon(saveBtn, recipe);
+        
         StackPane.setAlignment(saveBtn, Pos.TOP_RIGHT);
         StackPane.setMargin(saveBtn, new Insets(12));
+        
+        // 북마크 기능 추가
+        saveBtn.setOnAction(e -> {
+            bookmarkRecipe(recipe);
+            e.consume();
+            // Phase 4: Update icon after bookmarking
+            updateBookmarkButtonIcon(saveBtn, recipe);
+            updateSavedCount();
+        });
 
         // Add overlays (they will be on top of the image)
-        imageContainer.getChildren().addAll(difficultyTag, saveBtn);
+        imageContainer.getChildren().add(saveBtn);
+        if (difficultyTag != null) {
+            imageContainer.getChildren().add(difficultyTag);
+        }
         card.getChildren().add(imageContainer);
+        
+        // Image hover effect with dark overlay and scale animation
+        imageContainer.setOnMouseEntered(e -> {
+            // Add dark overlay gradient on hover
+            Region overlay = new Region();
+            overlay.setStyle(
+                "-fx-background-color: linear-gradient(to bottom, rgba(0,0,0,0.2), transparent); " +
+                "-fx-background-radius: 12px 12px 0 0;"
+            );
+            overlay.setMouseTransparent(true);
+            overlay.setId("hover-overlay");
+            imageContainer.getChildren().add(overlay);
+            
+            // Scale image slightly on hover (if ImageView exists)
+            for (Node node : imageContainer.getChildren()) {
+                if (node instanceof ImageView) {
+                    ImageView imgView = (ImageView) node;
+                    javafx.animation.ScaleTransition scale = new javafx.animation.ScaleTransition(Duration.millis(500), imgView);
+                    scale.setToX(1.1);
+                    scale.setToY(1.1);
+                    scale.play();
+                    break;
+                }
+            }
+        });
+        
+        imageContainer.setOnMouseExited(e -> {
+            // Remove overlay
+            imageContainer.getChildren().removeIf(node -> "hover-overlay".equals(node.getId()));
+            
+            // Reset image scale
+            for (Node node : imageContainer.getChildren()) {
+                if (node instanceof ImageView) {
+                    ImageView imgView = (ImageView) node;
+                    javafx.animation.ScaleTransition scale = new javafx.animation.ScaleTransition(Duration.millis(500), imgView);
+                    scale.setToX(1.0);
+                    scale.setToY(1.0);
+                    scale.play();
+                    break;
+                }
+            }
+        });
 
         // 2. Content Area
         VBox content = new VBox(12);
-        content.setPadding(new Insets(16));
+        content.setPadding(new Insets(20)); // p-5 = 20px padding
         
-        // Title
-        Label title = new Label(recipe.getName());
-        title.getStyleClass().add("text-gray-900");
-        title.setStyle("-fx-font-weight: bold; -fx-font-size: 16px;");
+        // Title - 18px, Medium weight, line-clamp-1
+        String recipeName = recipe.getName() != null ? recipe.getName() : "Unnamed Recipe";
+        Label title = new Label(recipeName);
+        title.setStyle("-fx-font-weight: 500; -fx-font-size: 18px; -fx-text-fill: #111827;");
         title.setWrapText(true);
+        title.setMaxHeight(27); // line-clamp-1 = 18px * 1.5 = 27px
         
-        // Meta Row (Time, Cals, Servings)
-        HBox metaRow = new HBox(12);
+        // Meta Row (Time, Cals, Servings) - gap-2 = 8px
+        HBox metaRow = new HBox(8);
         metaRow.setAlignment(Pos.CENTER_LEFT);
         
-        // Time
-        Label timeLabel = createMetaLabel("30 min", "/svg/clock.svg", "#3b82f6", "#eff6ff"); // Blue theme
-        // Cals
-        String cals = (recipe.getNutritionInfo() != null) ? recipe.getNutritionInfo().getCalories() + "" : "350";
-        Label calLabel = createMetaLabel(cals, "/svg/fire-flame.svg", "#f97316", "#fff7ed"); // Orange theme
+        // Time - Use actual cook time if available
+        Integer cookTime = recipe.getCookTimeMinutes();
+        String timeText = (cookTime != null && cookTime > 0) 
+            ? cookTime + " min" 
+            : "-- min";
+        Label timeLabel = createMetaLabel(timeText, "/svg/clock.svg", "#1d4ed8", "#eff6ff"); // Blue theme
+        
+        // Calories - Use actual calories if available
+        String cals;
+        if (recipe.getNutritionInfo() != null && recipe.getNutritionInfo().getCalories() > 0) {
+            cals = String.valueOf(recipe.getNutritionInfo().getCalories());
+        } else {
+            cals = "--";
+        }
+        Label calLabel = createMetaLabel(cals, "/svg/fire-flame.svg", "#c2410c", "#fff7ed"); // Orange theme
+        
         // Servings
-        Label servLabel = createMetaLabel(String.valueOf(recipe.getServingSize()), "/svg/users.svg", "#a855f7", "#faf5ff"); // Purple theme
+        Label servLabel = createMetaLabel(String.valueOf(recipe.getServingSize()), "/svg/users.svg", "#7e22ce", "#faf5ff"); // Purple theme
         
         metaRow.getChildren().addAll(timeLabel, calLabel, servLabel);
         
-        // Tags Row
+        // Tags Row - Use actual dietary restrictions, limit to 2 tags
         FlowPane tagsRow = new FlowPane();
-        tagsRow.setHgap(8);
-        tagsRow.setVgap(8);
+        tagsRow.setHgap(6);
+        tagsRow.setVgap(6);
         
-        tagsRow.getChildren().add(createTag("Vegetarian", false));
-        tagsRow.getChildren().add(createTag("Italian", false));
+        List<String> tagTexts = new ArrayList<>();
+        if (recipe.getDietaryRestrictions() != null && !recipe.getDietaryRestrictions().isEmpty()) {
+            recipe.getDietaryRestrictions().stream()
+                .limit(2)
+                .forEach(restriction -> tagTexts.add(restriction.getDisplayName()));
+        }
         
-        // Add to Plan Button
-        Button addBtn = new Button("Add to Plan");
+        // Add tags (max 2)
+        for (int i = 0; i < Math.min(tagTexts.size(), 2); i++) {
+            tagsRow.getChildren().add(createTag(tagTexts.get(i), false));
+        }
+        
+        // Add to Plan Button - Gradient style with icon
+        Button addBtn = new Button("+ Add to Plan");
         addBtn.setMaxWidth(Double.MAX_VALUE);
-        addBtn.setStyle("-fx-background-color: #4ade80; -fx-text-fill: white; -fx-font-weight: 600; -fx-background-radius: 8px; -fx-cursor: hand; -fx-padding: 10;");
-        Node plusIcon = SvgIconLoader.loadIcon("/svg/plus.svg", 16, Color.WHITE);
+        addBtn.setStyle(
+            "-fx-background-color: linear-gradient(to right, #84cc16, #22c55e); " +
+            "-fx-text-fill: white; " +
+            "-fx-font-size: 14px; " +
+            "-fx-font-weight: 500; " +
+            "-fx-background-radius: 12px; " +
+            "-fx-cursor: hand; " +
+            "-fx-padding: 10; " +
+            "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 2, 0, 0, 1);"
+        );
+        addBtn.setTooltip(new Tooltip("Add to weekly plan"));
+        Node plusIcon = SvgIconLoader.loadIcon("/svg/plus.svg", 18, Color.WHITE); // w-4.5 h-4.5 = 18px
         if (plusIcon != null) {
             addBtn.setGraphic(plusIcon);
             addBtn.setGraphicTextGap(8);
         }
+        
+        // Hover effect for button
+        addBtn.setOnMouseEntered(e -> {
+            addBtn.setStyle(
+                "-fx-background-color: linear-gradient(to right, #65a30d, #16a34a); " +
+                "-fx-text-fill: white; " +
+                "-fx-font-size: 14px; " +
+                "-fx-font-weight: 500; " +
+                "-fx-background-radius: 12px; " +
+                "-fx-cursor: hand; " +
+                "-fx-padding: 10; " +
+                "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 2, 0, 0, 1);"
+            );
+        });
+        addBtn.setOnMouseExited(e -> {
+            addBtn.setStyle(
+                "-fx-background-color: linear-gradient(to right, #84cc16, #22c55e); " +
+                "-fx-text-fill: white; " +
+                "-fx-font-size: 14px; " +
+                "-fx-font-weight: 500; " +
+                "-fx-background-radius: 12px; " +
+                "-fx-cursor: hand; " +
+                "-fx-padding: 10; " +
+                "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 2, 0, 0, 1);"
+            );
+        });
 
         content.getChildren().addAll(title, metaRow, tagsRow, addBtn);
         card.getChildren().add(content);
 
+        // Card default style (set before hover handlers)
+        card.setStyle(
+            "-fx-background-color: white; " +
+            "-fx-background-radius: 16px; " +
+            "-fx-border-color: #f3f4f6; " +
+            "-fx-border-width: 2px; " +
+            "-fx-border-radius: 16px; " +
+            "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 4, 0, 0, 2);"
+        );
+        
         // Hover Effect
         card.setOnMouseEntered(e -> {
-            card.setStyle("-fx-border-color: -fx-theme-primary; -fx-border-width: 1px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 4);");
+            card.setStyle(
+                "-fx-background-color: white; " +
+                "-fx-background-radius: 16px; " +
+                "-fx-border-color: #d9f99d; " + // lime-200
+                "-fx-border-width: 2px; " +
+                "-fx-border-radius: 16px; " +
+                "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.25), 25, 0, 0, 12);" // shadow-2xl
+            );
         });
         card.setOnMouseExited(e -> {
-            card.setStyle(""); // Reset to default CSS
+            card.setStyle(
+                "-fx-background-color: white; " +
+                "-fx-background-radius: 16px; " +
+                "-fx-border-color: #f3f4f6; " +
+                "-fx-border-width: 2px; " +
+                "-fx-border-radius: 16px; " +
+                "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 4, 0, 0, 2);"
+            );
         });
 
         card.setOnMouseClicked(e -> openRecipeDetail(recipe));
@@ -785,46 +1062,95 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
 
     @Override
     public void propertyChange(PropertyChangeEvent evt) {
-        Platform.runLater(() -> {
-            String prop = evt.getPropertyName();
+        if (evt == null) {
+            logger.warn("propertyChange called with null event");
+            return;
+        }
+        
+        String prop = evt.getPropertyName();
+        if (prop == null) {
+            logger.warn("propertyChange event has null property name");
+            return;
+        }
+        
+        logger.debug("PropertyChange event received: {} (old: {}, new: {})", 
+            prop, evt.getOldValue(), evt.getNewValue());
+        
+        // If we're already on JavaFX Application Thread, execute directly
+        // Otherwise, use Platform.runLater
+        Runnable updateUI = () -> {
             switch (prop) {
-                case "recipes":
+                case RecipeBrowseViewModel.PROP_RECIPES:
                     // Clear error when recipes are successfully loaded
-                    errorLabel.setText("");
-                    displayRecipes(viewModel.getRecipes());
+                    if (errorLabel != null) {
+                        errorLabel.setText("");
+                    }
+                    List<Recipe> recipes = viewModel.getRecipes();
+                    logger.debug("PropertyChange PROP_RECIPES: viewModel.getRecipes() returned {} recipes", recipes != null ? recipes.size() : 0);
+                    displayRecipes(recipes);
+                    // Phase 4: Update bookmark states after recipes are displayed
+                    refreshBookmarkStates();
                     break;
-                case "recommendations":
+                case RecipeBrowseViewModel.PROP_RECOMMENDATIONS:
                     if (recommendationsController != null) {
                         updateRecommendationsSection(viewModel.getRecommendations());
                     }
                     break;
-                case "errorMessage":
+                case RecipeBrowseViewModel.PROP_ERROR_MESSAGE:
                     String msg = viewModel.getErrorMessage();
                     if (StringUtil.hasContent(msg)) {
-                        errorLabel.setText(msg);
-                        listPanel.getChildren().clear();
-                        listPanel.getChildren().add(errorPanel);
+                        if (errorLabel != null) {
+                            errorLabel.setText(msg);
+                        }
+                        if (listPanel != null && errorPanel != null) {
+                            listPanel.getChildren().clear();
+                            listPanel.getChildren().add(errorPanel);
+                        }
                         // Check if it's a network error
                         String lowerMsg = msg.toLowerCase();
                         if (lowerMsg.contains("network") || lowerMsg.contains("connection") || 
                             lowerMsg.contains("timeout") || lowerMsg.contains("인터넷")) {
-                            // Update error panel message for network errors
-                            if (errorPanel.getChildren().size() > 2) {
-                                Label errorSubLabel = (Label) errorPanel.getChildren().get(2);
-                                errorSubLabel.setText("인터넷 연결을 확인하고 다시 시도해주세요");
+                            // Update error panel message for network errors - safe access
+                            if (errorPanel != null) {
+                                try {
+                                    if (errorPanel.getChildren().size() > 2) {
+                                        Node labelNode = errorPanel.getChildren().get(2);
+                                        if (labelNode instanceof Label) {
+                                            Label errorSubLabel = (Label) labelNode;
+                                            errorSubLabel.setText("인터넷 연결을 확인하고 다시 시도해주세요");
+                                        }
+                                    }
+                                } catch (IndexOutOfBoundsException e) {
+                                    logger.warn("Error accessing errorPanel children: {}", e.getMessage());
+                                }
                             }
                         }
                     } else {
-                        errorLabel.setText("");
+                        if (errorLabel != null) {
+                            errorLabel.setText("");
+                        }
                         // If error is cleared, show empty state if no recipes
-                        if (viewModel.getRecipes() == null || viewModel.getRecipes().isEmpty()) {
-                            listPanel.getChildren().clear();
-                            listPanel.getChildren().add(emptyPanel);
+                        if (listPanel != null && emptyPanel != null) {
+                            List<Recipe> currentRecipes = viewModel.getRecipes();
+                            if (currentRecipes == null || currentRecipes.isEmpty()) {
+                                listPanel.getChildren().clear();
+                                listPanel.getChildren().add(emptyPanel);
+                            }
                         }
                     }
                     break;
+                default:
+                    // Unknown property, ignore
+                    break;
             }
-        });
+        };
+        
+        // Execute on JavaFX Application Thread if needed
+        if (Platform.isFxApplicationThread()) {
+            updateUI.run();
+        } else {
+            Platform.runLater(updateUI);
+        }
     }
     
     private VBox createRecommendedSection() {
@@ -915,7 +1241,8 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
         VBox content = new VBox(8);
         content.setPadding(new Insets(12));
         
-        Label title = new Label(recipe.getName());
+        String recipeName = recipe.getName() != null ? recipe.getName() : "Unnamed Recipe";
+        Label title = new Label(recipeName);
         title.setStyle("-fx-font-weight: 600; -fx-font-size: 14px; -fx-text-fill: #111827;");
         title.setWrapText(true);
         title.setMaxHeight(40);
@@ -960,5 +1287,357 @@ public class BrowseRecipeView extends BorderPane implements PropertyChangeListen
         }
         recipeDetailViewModel.setRecipe(recipe);
         viewManagerModel.setActiveView(ViewManager.RECIPE_DETAIL_VIEW);
+    }
+    
+    /**
+     * Phase 1: 북마크 기능 - 레시피를 My Cookbook에 저장하고 이동
+     */
+    private void bookmarkRecipe(Recipe recipe) {
+        if (storeRecipeController == null || recipe == null) {
+            if (sonner != null) {
+                sonner.show("Error", "Unable to bookmark recipe. Please try again.", Sonner.Type.ERROR);
+            }
+            return;
+        }
+        
+        try {
+            // Recipe를 StoreRecipeInputData로 변환
+            String recipeName = recipe.getName();
+            if (recipeName == null || recipeName.trim().isEmpty()) {
+                if (sonner != null) {
+                    sonner.show("Error", "Recipe name is missing.", Sonner.Type.ERROR);
+                }
+                return;
+            }
+            
+            List<String> ingredients = recipe.getIngredients() != null 
+                ? new ArrayList<>(recipe.getIngredients())
+                : new ArrayList<>();
+            
+            // steps는 String이므로 List<String>으로 변환
+            List<String> steps = new ArrayList<>();
+            if (recipe.getSteps() != null && !recipe.getSteps().trim().isEmpty()) {
+                String[] stepArray = recipe.getSteps().split("\\r?\\n");
+                for (String step : stepArray) {
+                    String trimmed = step.trim();
+                    if (!trimmed.isEmpty()) {
+                        steps.add(trimmed);
+                    }
+                }
+            }
+            
+            int servingSize = recipe.getServingSize();
+            if (servingSize <= 0) {
+                servingSize = 1; // 기본값
+            }
+            
+            // 중복 체크 (선택 사항 - Phase 4에서 개선 가능)
+            try {
+                List<Recipe> existingRecipes = recipeRepository.findByName(recipeName);
+                if (existingRecipes != null && !existingRecipes.isEmpty()) {
+                    boolean exactMatch = existingRecipes.stream()
+                        .anyMatch(r -> r != null && r.getName() != null && 
+                                      r.getName().equalsIgnoreCase(recipeName));
+                    
+                    if (exactMatch) {
+                        // 이미 저장된 경우
+                        if (sonner != null) {
+                            sonner.show("Already Saved", "This recipe is already in your cookbook.", Sonner.Type.INFO);
+                        }
+                        // My Cookbook으로 이동
+                        if (viewManagerModel != null) {
+                            viewManagerModel.setActiveView(ViewManager.STORE_RECIPE_VIEW);
+                        }
+                        return;
+                    }
+                }
+            } catch (DataAccessException e) {
+                // 중복 체크 실패해도 계속 진행
+                logger.debug("Failed to check duplicate: {}", e.getMessage());
+            }
+            
+            // StoreRecipeController 호출 (recipeId는 null로 새 레시피로 저장)
+            storeRecipeController.execute(
+                null,  // recipeId (null = 새 레시피)
+                recipeName,
+                ingredients,
+                steps,
+                servingSize
+            );
+            
+            // 성공 메시지는 StoreRecipePresenter에서 처리되지만,
+            // 여기서도 토스트를 표시할 수 있음
+            if (sonner != null) {
+                sonner.show("Saved!", "Recipe saved to your cookbook.", Sonner.Type.SUCCESS);
+            }
+            
+            // Phase 4: 북마크 상태 및 개수 업데이트
+            refreshBookmarkStates();
+            updateSavedCount();
+            
+            // My Cookbook으로 이동 (약간의 지연을 두어 토스트 메시지가 보이도록)
+            if (viewManagerModel != null) {
+                PauseTransition pause = new PauseTransition(Duration.millis(800));
+                pause.setOnFinished(e -> viewManagerModel.setActiveView(ViewManager.STORE_RECIPE_VIEW));
+                pause.play();
+            }
+            
+        } catch (Exception e) {
+            logger.error("Failed to bookmark recipe: {}", e.getMessage(), e);
+            if (sonner != null) {
+                sonner.show("Error", "Failed to save recipe. Please try again.", Sonner.Type.ERROR);
+            }
+        }
+    }
+    
+    /**
+     * Phase 4: 북마크 상태를 확인하고 버튼 아이콘을 업데이트
+     */
+    private void updateBookmarkButtonIcon(Button saveBtn, Recipe recipe) {
+        if (saveBtn == null || recipe == null) {
+            return;
+        }
+        
+        final boolean isBookmarked;
+        try {
+            isBookmarked = isRecipeBookmarked(recipe);
+        } catch (Exception e) {
+            logger.warn("Failed to check bookmark status in updateBookmarkButtonIcon: {}", e.getMessage());
+            // Use false as default if check fails - treat as not bookmarked
+            // Set default style and return
+            Node bookmarkIcon = SvgIconLoader.loadIcon("/svg/bookmark.svg", 18, Color.web("#4b5563"));
+            if (bookmarkIcon == null) {
+                bookmarkIcon = SvgIconLoader.loadIcon("/svg/book.svg", 18, Color.web("#4b5563"));
+            }
+            if (bookmarkIcon != null) {
+                saveBtn.setGraphic(bookmarkIcon);
+            }
+            saveBtn.setStyle(
+                "-fx-background-color: rgba(255, 255, 255, 0.95); " +
+                "-fx-background-radius: 12px; " +
+                "-fx-min-width: 40px; " +
+                "-fx-min-height: 40px; " +
+                "-fx-max-width: 40px; " +
+                "-fx-max-height: 40px; " +
+                "-fx-cursor: hand; " +
+                "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 3);"
+            );
+            return;
+        }
+        
+        // 북마크 상태에 따라 아이콘 및 스타일 변경
+        Node bookmarkIcon;
+        if (isBookmarked) {
+            // 북마크된 상태 - 그라데이션 배경
+            bookmarkIcon = SvgIconLoader.loadIcon("/svg/bookmark.svg", 18, Color.WHITE);
+            if (bookmarkIcon == null) {
+                bookmarkIcon = SvgIconLoader.loadIcon("/svg/book-fill.svg", 18, Color.WHITE);
+            }
+            if (bookmarkIcon == null) {
+                bookmarkIcon = SvgIconLoader.loadIcon("/svg/book.svg", 18, Color.WHITE);
+            }
+            saveBtn.setStyle(
+                "-fx-background-color: linear-gradient(to right, #84cc16, #22c55e); " +
+                "-fx-background-radius: 12px; " +
+                "-fx-min-width: 40px; " +
+                "-fx-min-height: 40px; " +
+                "-fx-max-width: 40px; " +
+                "-fx-max-height: 40px; " +
+                "-fx-cursor: hand; " +
+                "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 3);"
+            );
+        } else {
+            // 북마크 안 된 상태 - 흰색 배경
+            bookmarkIcon = SvgIconLoader.loadIcon("/svg/bookmark.svg", 18, Color.web("#4b5563"));
+            if (bookmarkIcon == null) {
+                bookmarkIcon = SvgIconLoader.loadIcon("/svg/book.svg", 18, Color.web("#4b5563"));
+            }
+            saveBtn.setStyle(
+                "-fx-background-color: rgba(255, 255, 255, 0.95); " +
+                "-fx-background-radius: 12px; " +
+                "-fx-min-width: 40px; " +
+                "-fx-min-height: 40px; " +
+                "-fx-max-width: 40px; " +
+                "-fx-max-height: 40px; " +
+                "-fx-cursor: hand; " +
+                "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 3);"
+            );
+        }
+        
+        if (bookmarkIcon != null) {
+            saveBtn.setGraphic(bookmarkIcon);
+        }
+        
+        // Hover effect for bookmark button
+        saveBtn.setOnMouseEntered(e -> {
+            if (isBookmarked) {
+                saveBtn.setStyle(
+                    "-fx-background-color: linear-gradient(to right, #65a30d, #16a34a); " +
+                    "-fx-background-radius: 12px; " +
+                    "-fx-min-width: 40px; " +
+                    "-fx-min-height: 40px; " +
+                    "-fx-max-width: 40px; " +
+                    "-fx-max-height: 40px; " +
+                    "-fx-cursor: hand; " +
+                    "-fx-scale-x: 1.1; " +
+                    "-fx-scale-y: 1.1; " +
+                    "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 3);"
+                );
+            } else {
+                saveBtn.setStyle(
+                    "-fx-background-color: white; " +
+                    "-fx-background-radius: 12px; " +
+                    "-fx-min-width: 40px; " +
+                    "-fx-min-height: 40px; " +
+                    "-fx-max-width: 40px; " +
+                    "-fx-max-height: 40px; " +
+                    "-fx-cursor: hand; " +
+                    "-fx-scale-x: 1.1; " +
+                    "-fx-scale-y: 1.1; " +
+                    "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 3);"
+                );
+            }
+        });
+        
+        saveBtn.setOnMouseExited(e -> {
+            if (isBookmarked) {
+                saveBtn.setStyle(
+                    "-fx-background-color: linear-gradient(to right, #84cc16, #22c55e); " +
+                    "-fx-background-radius: 12px; " +
+                    "-fx-min-width: 40px; " +
+                    "-fx-min-height: 40px; " +
+                    "-fx-max-width: 40px; " +
+                    "-fx-max-height: 40px; " +
+                    "-fx-cursor: hand; " +
+                    "-fx-scale-x: 1.0; " +
+                    "-fx-scale-y: 1.0; " +
+                    "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 3);"
+                );
+            } else {
+                saveBtn.setStyle(
+                    "-fx-background-color: rgba(255, 255, 255, 0.95); " +
+                    "-fx-background-radius: 12px; " +
+                    "-fx-min-width: 40px; " +
+                    "-fx-min-height: 40px; " +
+                    "-fx-max-width: 40px; " +
+                    "-fx-max-height: 40px; " +
+                    "-fx-cursor: hand; " +
+                    "-fx-scale-x: 1.0; " +
+                    "-fx-scale-y: 1.0; " +
+                    "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 3);"
+                );
+            }
+        });
+    }
+    
+    /**
+     * Phase 4: 레시피가 북마크되어 있는지 확인
+     */
+    private boolean isRecipeBookmarked(Recipe recipe) {
+        if (recipe == null || recipeRepository == null) {
+            return false;
+        }
+        
+        try {
+            List<Recipe> existingRecipes = recipeRepository.findByName(recipe.getName());
+            if (existingRecipes != null && !existingRecipes.isEmpty()) {
+                // 이름이 정확히 일치하는 레시피가 있는지 확인 (대소문자 무시)
+                return existingRecipes.stream()
+                    .anyMatch(r -> r != null && r.getName() != null && r.getName().equalsIgnoreCase(recipe.getName()));
+            }
+        } catch (DataAccessException e) {
+            logger.debug("Failed to check bookmark status: {}", e.getMessage());
+        } catch (Exception e) {
+            // Catch all exceptions including JsonSyntaxException from malformed JSON files
+            logger.warn("Exception while checking bookmark status for recipe '{}': {}", 
+                recipe.getName(), e.getMessage());
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Phase 4: 저장된 레시피 개수를 업데이트
+     */
+    private void updateSavedCount() {
+        if (recipeRepository == null || savedCountButton == null) {
+            return;
+        }
+        
+        // Run in background thread to avoid blocking UI
+        new Thread(() -> {
+            try {
+                List<Recipe> allSavedRecipes = recipeRepository.findAll();
+                int count = allSavedRecipes != null ? allSavedRecipes.size() : 0;
+                
+                // UI 업데이트는 JavaFX Application Thread에서
+                Platform.runLater(() -> {
+                    if (savedCountButton != null) {
+                        savedCountButton.setText(count + " Saved");
+                    }
+                });
+            } catch (DataAccessException e) {
+                logger.warn("Failed to update saved count: {}", e.getMessage());
+            } catch (Exception e) {
+                // Catch all exceptions including JsonSyntaxException from malformed JSON files
+                logger.warn("Exception while updating saved count: {}", e.getMessage());
+            }
+        }).start();
+    }
+    
+    /**
+     * Phase 4: 모든 레시피 카드의 북마크 상태를 업데이트
+     */
+    private void refreshBookmarkStates() {
+        if (listPanel == null) {
+            return;
+        }
+        
+        Platform.runLater(() -> {
+            try {
+                for (Node node : listPanel.getChildren()) {
+                    if (node instanceof VBox) {
+                        VBox card = (VBox) node;
+                        // 카드에서 북마크 버튼 찾기
+                        StackPane imageContainer = findImageContainer(card);
+                        if (imageContainer != null) {
+                            for (Node child : imageContainer.getChildren()) {
+                                if (child instanceof Button) {
+                                    Button saveBtn = (Button) child;
+                                    Recipe recipe = (Recipe) saveBtn.getUserData();
+                                    if (recipe != null) {
+                                        try {
+                                            updateBookmarkButtonIcon(saveBtn, recipe);
+                                        } catch (Exception e) {
+                                            logger.warn("Failed to update bookmark icon for recipe '{}': {}", 
+                                                recipe.getName(), e.getMessage());
+                                            // Continue with next recipe
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                logger.warn("Exception in refreshBookmarkStates: {}", e.getMessage());
+            }
+        });
+    }
+    
+    /**
+     * Phase 4: 카드에서 이미지 컨테이너 찾기
+     */
+    private StackPane findImageContainer(VBox card) {
+        if (card == null || card.getChildren().isEmpty()) {
+            return null;
+        }
+        
+        Node firstChild = card.getChildren().get(0);
+        if (firstChild instanceof StackPane) {
+            return (StackPane) firstChild;
+        }
+        
+        return null;
     }
 }

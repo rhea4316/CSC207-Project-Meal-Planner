@@ -1,13 +1,30 @@
 {
-  "name": "Pasta",
+  "name": "Classic Marinara Pasta",
   "ingredients": [
-    "500 g Pasta",
-    "200 g Sauce"
+    "12 oz pasta (penne or spaghetti)",
+    "2 tablespoons olive oil",
+    "4 cloves garlic, minced",
+    "1 can (28 oz) crushed tomatoes",
+    "1 small onion, diced",
+    "1 teaspoon dried oregano",
+    "1 teaspoon dried basil",
+    "1/2 teaspoon red pepper flakes",
+    "1/4 cup fresh basil, chopped",
+    "1/2 cup parmesan cheese, grated",
+    "salt to taste",
+    "black pepper to taste"
   ],
-  "steps": [
-    "Boil"
+  "steps": "Bring a large pot of salted water to a boil. Add pasta and cook according to package directions until al dente.\nWhile pasta cooks, heat olive oil in a large pan over medium heat.\nAdd diced onion and sauté for 3-4 minutes until translucent.\nAdd minced garlic and red pepper flakes, cook for 1 minute until fragrant.\nPour in crushed tomatoes and add oregano and dried basil. Season with salt and pepper.\nSimmer sauce for 10-15 minutes, stirring occasionally, until it thickens slightly.\nDrain pasta, reserving 1/2 cup of pasta water.\nAdd cooked pasta to the sauce along with a splash of pasta water if needed.\nToss everything together and stir in fresh basil.\nServe hot, topped with grated parmesan cheese.",
+  "servingSize": 4,
+  "nutritionInfo": {
+    "calories": 420,
+    "protein": 16.0,
+    "carbs": 68.0,
+    "fat": 12.0
+  },
+  "cookTimeMinutes": 25,
+  "dietaryRestrictions": [
+    "VEGETARIAN"
   ],
-  "servingSize": 2,
-  "dietaryRestrictions": [],
   "recipeId": "recipe-dc6abd93-5202-40f0-91a9-8f6ff986c0db"
 }

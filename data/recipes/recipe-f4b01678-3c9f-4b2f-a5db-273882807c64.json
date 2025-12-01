@@ -1,13 +1,25 @@
 {
-  "name": "Steak",
+  "name": "Grilled Flank Steak",
   "ingredients": [
-    "500 g flank",
-    "2 pinch salt"
+    "1.5 lbs flank steak",
+    "2 tablespoons olive oil",
+    "3 cloves garlic, minced",
+    "1 teaspoon salt",
+    "1/2 teaspoon black pepper",
+    "1 teaspoon dried rosemary",
+    "1/2 teaspoon paprika",
+    "2 tablespoons Worcestershire sauce",
+    "1 lemon, juiced"
   ],
-  "steps": [
-    "Grill at 500"
-  ],
-  "servingSize": 1,
+  "steps": "Pat the flank steak dry with paper towels.\nIn a small bowl, mix olive oil, minced garlic, salt, pepper, rosemary, paprika, Worcestershire sauce, and lemon juice to create a marinade.\nPlace steak in a resealable bag and pour marinade over it. Marinate for at least 2 hours in the refrigerator, or overnight for best results.\nRemove steak from marinade and let it come to room temperature for 30 minutes before cooking.\nPreheat grill to high heat (500°F) or heat a cast-iron pan over high heat.\nGrill steak for 4-5 minutes per side for medium-rare, or adjust time based on desired doneness.\nLet steak rest for 5-10 minutes before slicing against the grain.\nSlice into thin strips and serve immediately.",
+  "servingSize": 4,
+  "nutritionInfo": {
+    "calories": 320,
+    "protein": 38.0,
+    "carbs": 2.0,
+    "fat": 18.0
+  },
+  "cookTimeMinutes": 20,
   "dietaryRestrictions": [],
   "recipeId": "recipe-f4b01678-3c9f-4b2f-a5db-273882807c64"
 }

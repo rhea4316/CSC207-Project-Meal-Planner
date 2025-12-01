@@ -251,10 +251,10 @@ public class SidebarPanel extends VBox implements PropertyChangeListener {
         profileBox.setAlignment(Pos.CENTER_LEFT);
         profileBox.setPadding(new Insets(12, 12, 12, 20));
         
-        // Avatar
+        // Avatar - 원형 #68CA2A 배경에 이니셜만 표시
         String initials = extractInitials(viewManagerModel.getCurrentUsername());
         Avatar avatar = new Avatar(20, null, initials);
-        avatar.setStyle("-fx-background-color: #4CAF50;"); 
+        avatar.setBackgroundColor("#68CA2A");
         
         VBox userInfo = new VBox(0);
         String displayName = viewManagerModel.getCurrentUsername() != null ? viewManagerModel.getCurrentUsername() : "PlanEat Member";
@@ -262,18 +262,16 @@ public class SidebarPanel extends VBox implements PropertyChangeListener {
         nameLabel.getStyleClass().add("text-gray-900");
         nameLabel.setStyle("-fx-font-family: 'Poppins'; -fx-font-weight: 600; -fx-font-size: 14px;");
         
-        Label statusLabel = new Label("Premium");
-        statusLabel.getStyleClass().add("text-gray-500");
-        statusLabel.setStyle("-fx-font-family: 'Poppins'; -fx-font-size: 11px;");
+        // Premium 라벨 제거
         
-        userInfo.getChildren().addAll(nameLabel, statusLabel);
+        userInfo.getChildren().add(nameLabel);
         
-        // Menu dots icon
-        Node menuDotsIcon = SvgIconLoader.loadIcon("/svg/menu-dots.svg", 16, Color.web("#9ca3af"));
+        // Menu dots icon - 크기 개선
+        Node menuDotsIcon = SvgIconLoader.loadIcon("/svg/menu-dots.svg", 24, Color.web("#9ca3af"));
         if (menuDotsIcon == null) {
             // Fallback: create a simple label with dots
             Label dotsLabel = new Label("⋯");
-            dotsLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: #9ca3af;");
+            dotsLabel.setStyle("-fx-font-size: 24px; -fx-text-fill: #9ca3af;");
             menuDotsIcon = dotsLabel;
         }
         

@@ -1,23 +1,26 @@
 {
-  "name": "Grilled Steak with Vegetables",
+  "name": "Grilled Ribeye Steak with Roasted Vegetables",
   "ingredients": [
-    "2 ribeye steaks",
-    "2 cups mixed vegetables",
-    "2 tablespoons olive oil",
-    "2 cloves garlic",
-    "1 tablespoon rosemary",
+    "2 ribeye steaks (1.5 inches thick, about 12 oz each)",
+    "2 cups mixed vegetables (broccoli, bell peppers, zucchini, carrots)",
+    "3 tablespoons olive oil, divided",
+    "4 cloves garlic, minced",
+    "2 tablespoons fresh rosemary, chopped",
+    "1 tablespoon fresh thyme, chopped",
+    "2 tablespoons butter",
     "salt to taste",
-    "black pepper to taste"
+    "coarse black pepper to taste",
+    "1 lemon, cut into wedges"
   ],
-  "steps": "Season steaks with salt, pepper, and rosemary.\nLet steaks rest at room temperature for 30 minutes.\nHeat grill or pan to high heat.\nCook steaks for 4-5 minutes per side for medium-rare.\nLet steaks rest for 5 minutes.\nToss vegetables with olive oil, garlic, salt, and pepper.\nRoast vegetables in oven at 400°F for 15 minutes.\nServe steak with roasted vegetables.",
+  "steps": "Remove steaks from refrigerator 30-45 minutes before cooking to bring to room temperature.\nPreheat oven to 400°F for roasting vegetables.\nPat steaks dry with paper towels and season generously with salt and coarse black pepper on both sides.\nRub steaks with 1 tablespoon of olive oil and press chopped rosemary and thyme onto the surface.\nCut vegetables into uniform pieces. Toss with 2 tablespoons olive oil, minced garlic, salt, and pepper.\nSpread vegetables on a baking sheet and roast in preheated oven for 15-20 minutes until tender and slightly charred.\nWhile vegetables roast, heat a cast-iron skillet or grill pan over high heat until very hot.\nSear steaks for 4-5 minutes per side for medium-rare (adjust time based on desired doneness and steak thickness).\nAdd butter to the pan during the last minute of cooking and baste steaks with melted butter.\nRemove steaks from heat and let rest on a cutting board for 5-10 minutes (this allows juices to redistribute).\nSlice steaks against the grain into thick strips.\nServe steaks alongside roasted vegetables with lemon wedges on the side.",
   "servingSize": 2,
   "nutritionInfo": {
-    "calories": 580,
-    "protein": 42.0,
-    "carbs": 12.0,
-    "fat": 38.0
+    "calories": 620,
+    "protein": 48.0,
+    "carbs": 14.0,
+    "fat": 42.0
   },
-  "cookTimeMinutes": 30,
+  "cookTimeMinutes": 35,
   "dietaryRestrictions": [],
   "recipeId": "default-steak-001"
 }

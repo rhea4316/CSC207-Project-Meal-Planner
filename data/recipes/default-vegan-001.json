@@ -1,26 +1,37 @@
 {
-  "name": "Vegan Buddha Bowl",
+  "name": "Vegan Buddha Bowl with Tahini Dressing",
   "ingredients": [
-    "1 cup cooked chickpeas",
-    "1 cup cooked quinoa",
-    "1 cup roasted sweet potatoes",
-    "1 cup kale",
+    "1 can (15 oz) chickpeas, drained and rinsed",
+    "1 cup quinoa, rinsed",
+    "2 cups vegetable broth",
+    "2 medium sweet potatoes, cubed",
+    "2 cups kale, stems removed and chopped",
+    "1 cup cherry tomatoes, halved",
+    "1/2 cup red cabbage, shredded",
     "1/4 cup tahini",
-    "2 tablespoons lemon juice",
-    "1 tablespoon olive oil"
+    "3 tablespoons fresh lemon juice",
+    "2 tablespoons olive oil, divided",
+    "1 tablespoon maple syrup",
+    "1 clove garlic, minced",
+    "1/2 teaspoon ground cumin",
+    "1/2 teaspoon paprika",
+    "salt to taste",
+    "black pepper to taste",
+    "2 tablespoons pumpkin seeds for garnish"
   ],
-  "steps": "Roast sweet potatoes in the oven at 400°F for 20 minutes.\nCook quinoa according to package instructions.\nMassage kale with olive oil until tender.\nMix tahini with lemon juice and a bit of water for dressing.\nAssemble bowl with quinoa, chickpeas, sweet potatoes, and kale.\nDrizzle with tahini dressing and serve.",
-  "servingSize": 2,
+  "steps": "Preheat oven to 400°F.\nToss cubed sweet potatoes with 1 tablespoon olive oil, cumin, paprika, salt, and pepper.\nSpread sweet potatoes on a baking sheet and roast for 20-25 minutes until tender and slightly caramelized.\nWhile sweet potatoes roast, cook quinoa in vegetable broth according to package instructions (about 15-20 minutes). Fluff and let cool.\nDrain and rinse chickpeas, then pat dry.\nHeat remaining olive oil in a skillet over medium heat. Add chickpeas and cook for 5-6 minutes until slightly crispy. Season with salt and pepper.\nIn a large bowl, massage kale with a drizzle of olive oil and a pinch of salt until leaves are tender and darker in color.\nPrepare tahini dressing: whisk together tahini, lemon juice, maple syrup, minced garlic, and 2-3 tablespoons of water until smooth and creamy. Add more water if needed to reach desired consistency.\nTo assemble bowls: Start with a base of quinoa in each bowl.\nAdd roasted sweet potatoes, crispy chickpeas, massaged kale, cherry tomatoes, and shredded red cabbage.\nDrizzle generously with tahini dressing.\nGarnish with pumpkin seeds and serve immediately.",
+  "servingSize": 3,
   "nutritionInfo": {
-    "calories": 480,
-    "protein": 18.0,
-    "carbs": 68.0,
-    "fat": 16.0
+    "calories": 520,
+    "protein": 20.0,
+    "carbs": 72.0,
+    "fat": 18.0
   },
-  "cookTimeMinutes": 30,
+  "cookTimeMinutes": 35,
   "dietaryRestrictions": [
     "VEGAN",
-    "VEGETARIAN"
+    "VEGETARIAN",
+    "GLUTEN_FREE"
   ],
   "recipeId": "default-vegan-001"
 }

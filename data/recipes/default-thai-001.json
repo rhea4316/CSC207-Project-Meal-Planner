@@ -1,26 +1,33 @@
 {
-  "name": "Pad Thai",
+  "name": "Authentic Pad Thai",
   "ingredients": [
-    "8 oz rice noodles",
-    "1/2 lb shrimp",
-    "2 eggs",
-    "1 cup bean sprouts",
-    "1/4 cup peanuts",
+    "8 oz flat rice noodles",
+    "1/2 lb medium shrimp, peeled and deveined",
+    "2 large eggs, beaten",
+    "1 cup fresh bean sprouts",
+    "1/4 cup roasted peanuts, chopped",
+    "1/4 cup green onions, chopped",
+    "1/4 cup fresh cilantro, chopped",
+    "3 tablespoons vegetable oil",
+    "3 cloves garlic, minced",
+    "1 shallot, thinly sliced",
     "2 tablespoons fish sauce",
     "2 tablespoons tamarind paste",
-    "1 tablespoon brown sugar",
-    "2 cloves garlic",
-    "1 lime"
+    "2 tablespoons brown sugar",
+    "1 tablespoon rice vinegar",
+    "1/2 teaspoon red pepper flakes",
+    "2 limes, cut into wedges",
+    "1/4 cup firm tofu, cubed (optional)"
   ],
-  "steps": "Soak rice noodles in warm water for 30 minutes.\nHeat oil in a wok and scramble eggs, set aside.\nCook shrimp until pink, remove from pan.\nAdd garlic and soaked noodles to the pan.\nMix fish sauce, tamarind paste, and brown sugar for sauce.\nAdd sauce to noodles and toss.\nAdd eggs, shrimp, and bean sprouts.\nGarnish with peanuts and lime wedges.",
+  "steps": "Soak rice noodles in warm water for 30-40 minutes until pliable but not fully soft. Drain and set aside.\nPrepare the sauce: whisk together fish sauce, tamarind paste, brown sugar, and rice vinegar until sugar dissolves. Set aside.\nHeat 1 tablespoon of oil in a large wok or skillet over high heat.\nAdd beaten eggs and scramble quickly until just set. Remove and set aside.\nAdd another tablespoon of oil to the wok. Add shrimp and cook for 2-3 minutes until pink and opaque. Remove and set aside.\nAdd remaining oil to the wok. Add minced garlic and sliced shallot, stir-fry for 30 seconds until fragrant.\nAdd soaked noodles and 2-3 tablespoons of water. Stir-fry for 2-3 minutes until noodles are tender.\nPush noodles to one side, add tofu cubes (if using) and cook for 1 minute.\nPour in the prepared sauce and toss everything together.\nReturn scrambled eggs and shrimp to the wok.\nAdd bean sprouts and green onions, toss for 1 minute.\nRemove from heat and serve immediately.\nGarnish with chopped peanuts, fresh cilantro, and lime wedges on the side.",
   "servingSize": 2,
   "nutritionInfo": {
-    "calories": 480,
-    "protein": 28.0,
-    "carbs": 68.0,
-    "fat": 12.0
+    "calories": 520,
+    "protein": 32.0,
+    "carbs": 72.0,
+    "fat": 14.0
   },
-  "cookTimeMinutes": 25,
+  "cookTimeMinutes": 30,
   "dietaryRestrictions": [],
   "recipeId": "default-thai-001"
 }

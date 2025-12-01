@@ -1,24 +1,33 @@
 {
-  "name": "Protein Power Bowl",
+  "name": "High-Protein Power Bowl",
   "ingredients": [
-    "1 cup cooked quinoa",
-    "8 oz grilled chicken breast",
-    "1/2 cup black beans",
-    "1/2 cup Greek yogurt",
-    "1/2 avocado",
-    "1 cup spinach",
-    "1 tablespoon olive oil",
-    "lemon to taste"
+    "1 cup quinoa, rinsed",
+    "2 cups chicken or vegetable broth",
+    "8 oz boneless, skinless chicken breast",
+    "1 can (15 oz) black beans, drained and rinsed",
+    "1/2 cup plain Greek yogurt",
+    "1 large avocado, diced",
+    "2 cups fresh baby spinach",
+    "1 cup cherry tomatoes, halved",
+    "1/4 cup red onion, thinly sliced",
+    "2 tablespoons olive oil, divided",
+    "1 tablespoon fresh lemon juice",
+    "1 teaspoon cumin",
+    "1/2 teaspoon chili powder",
+    "1/4 teaspoon garlic powder",
+    "salt to taste",
+    "black pepper to taste",
+    "fresh cilantro for garnish"
   ],
-  "steps": "Cook quinoa and let cool.\nGrill chicken breast and slice.\nDrain and rinse black beans.\nDice avocado.\nAssemble bowl with quinoa, spinach, chicken, and beans.\nTop with Greek yogurt, avocado, and olive oil.\nSqueeze lemon juice over everything.\nServe at room temperature.",
+  "steps": "Rinse quinoa and cook in broth according to package instructions (about 15-20 minutes). Fluff and let cool.\nSeason chicken breast with salt, pepper, cumin, chili powder, and garlic powder.\nHeat 1 tablespoon olive oil in a skillet over medium-high heat.\nCook chicken for 6-7 minutes per side until internal temperature reaches 165°F.\nRemove chicken from heat, let rest for 5 minutes, then slice into strips.\nDrain and rinse black beans thoroughly.\nPrepare vegetables: halve tomatoes, slice red onion, dice avocado.\nIn a small bowl, mix Greek yogurt with lemon juice, salt, and pepper to create a creamy dressing.\nTo assemble bowls: Start with a base of quinoa in each bowl.\nAdd fresh spinach leaves on top of quinoa.\nArrange chicken strips, black beans, tomatoes, and red onion around the bowl.\nPlace diced avocado on top.\nDrizzle with remaining olive oil and the Greek yogurt dressing.\nGarnish with fresh cilantro and serve immediately.",
   "servingSize": 2,
   "nutritionInfo": {
-    "calories": 480,
-    "protein": 42.0,
-    "carbs": 38.0,
-    "fat": 16.0
+    "calories": 520,
+    "protein": 46.0,
+    "carbs": 42.0,
+    "fat": 18.0
   },
-  "cookTimeMinutes": 25,
+  "cookTimeMinutes": 30,
   "dietaryRestrictions": [
     "GLUTEN_FREE"
   ],

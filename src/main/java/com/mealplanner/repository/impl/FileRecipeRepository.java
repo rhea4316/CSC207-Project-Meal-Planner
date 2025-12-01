@@ -22,6 +22,7 @@ import com.mealplanner.config.AppConfig;
 import com.mealplanner.entity.Recipe;
 import com.mealplanner.exception.DataAccessException;
 import com.mealplanner.repository.RecipeRepository;
+import com.mealplanner.util.RecipeImageMatcher;
 
 /**
  * File-based implementation of RecipeRepository.
@@ -113,6 +114,9 @@ public class FileRecipeRepository implements RecipeRepository {
 
         try (FileReader reader = new FileReader(file)) {
             Recipe recipe = gson.fromJson(reader, Recipe.class);
+            if (recipe != null) {
+                recipe = ensureImageUrl(recipe);
+            }
             logger.debug("Successfully loaded recipe: {}", recipeId);
             return Optional.ofNullable(recipe);
         } catch (IOException e) {
@@ -151,11 +155,51 @@ public class FileRecipeRepository implements RecipeRepository {
     private Optional<Recipe> loadRecipeFromPath(Path path) {
         try (FileReader reader = new FileReader(path.toFile())) {
             Recipe recipe = gson.fromJson(reader, Recipe.class);
+            if (recipe != null) {
+                recipe = ensureImageUrl(recipe);
+            }
             return Optional.ofNullable(recipe);
         } catch (IOException e) {
             logger.error("Failed to load recipe from file: {}", path, e);
             return Optional.empty();
         }
+    }
+    
+    /**
+     * 레시피에 imageUrl이 없으면 자동으로 매칭합니다.
+     * 
+     * @param recipe 원본 레시피
+     * @return imageUrl이 설정된 레시피 (새로운 객체)
+     */
+    private Recipe ensureImageUrl(Recipe recipe) {
+        if (recipe == null) {
+            return null;
+        }
+        
+        // 이미 imageUrl이 있으면 그대로 반환
+        if (recipe.getImageUrl() != null && !recipe.getImageUrl().trim().isEmpty()) {
+            return recipe;
+        }
+        
+        // 레시피 이름으로 이미지 찾기
+        String imageUrl = RecipeImageMatcher.findImageUrl(recipe.getName());
+        if (imageUrl != null) {
+            logger.debug("Auto-matched image for recipe: {} -> {}", recipe.getName(), imageUrl);
+            // 새로운 Recipe 객체 생성 (imageUrl 포함)
+            return new Recipe(
+                recipe.getName(),
+                recipe.getIngredients(),
+                recipe.getSteps(),
+                recipe.getServingSize(),
+                recipe.getNutritionInfo(),
+                recipe.getCookTimeMinutes(),
+                recipe.getDietaryRestrictions(),
+                imageUrl,
+                recipe.getRecipeId()
+            );
+        }
+        
+        return recipe;
     }
 
     @Override

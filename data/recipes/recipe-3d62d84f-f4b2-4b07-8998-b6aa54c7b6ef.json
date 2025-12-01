@@ -1,12 +1,30 @@
 {
-  "name": "Rissoti",
+  "name": "Creamy Mushroom Risotto",
   "ingredients": [
-    "5 g rice"
+    "1.5 cups arborio rice",
+    "4 cups chicken or vegetable broth, warmed",
+    "1 cup white wine",
+    "8 oz mushrooms, sliced",
+    "1 small onion, finely diced",
+    "3 cloves garlic, minced",
+    "1/2 cup parmesan cheese, grated",
+    "3 tablespoons butter",
+    "2 tablespoons olive oil",
+    "1/4 cup fresh parsley, chopped",
+    "salt to taste",
+    "black pepper to taste"
   ],
-  "steps": [
-    "Cook it"
+  "steps": "Heat broth in a saucepan and keep it warm over low heat.\nHeat olive oil and 1 tablespoon butter in a large pan over medium heat.\nAdd mushrooms and cook for 5-6 minutes until golden brown. Remove and set aside.\nIn the same pan, add remaining butter and diced onion. Sauté for 3-4 minutes until translucent.\nAdd minced garlic and cook for 1 minute.\nAdd arborio rice and stir for 2 minutes until rice is slightly toasted.\nPour in white wine and stir until mostly absorbed.\nAdd warm broth one ladle at a time, stirring constantly and waiting for each addition to be absorbed before adding the next.\nContinue this process for 18-20 minutes until rice is creamy and al dente.\nStir in cooked mushrooms, parmesan cheese, and parsley.\nSeason with salt and pepper. Serve immediately while hot and creamy.",
+  "servingSize": 4,
+  "nutritionInfo": {
+    "calories": 450,
+    "protein": 14.0,
+    "carbs": 58.0,
+    "fat": 16.0
+  },
+  "cookTimeMinutes": 35,
+  "dietaryRestrictions": [
+    "VEGETARIAN"
   ],
-  "servingSize": 1,
-  "dietaryRestrictions": [],
   "recipeId": "recipe-3d62d84f-f4b2-4b07-8998-b6aa54c7b6ef"
 }

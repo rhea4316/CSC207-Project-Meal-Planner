@@ -77,6 +77,23 @@ public class ImageCacheManager {
             return null;
         }
         
+        // Resources 폴더의 이미지는 직접 로드 (캐싱 불필요)
+        if (imageUrl.startsWith("/recipe_images/") || imageUrl.startsWith("/images/")) {
+            try {
+                URL resourceUrl = ImageCacheManager.class.getResource(imageUrl);
+                if (resourceUrl != null) {
+                    logger.debug("Loading image from resources: {}", imageUrl);
+                    return new Image(resourceUrl.toExternalForm(), true);
+                } else {
+                    logger.warn("Resource image not found: {}", imageUrl);
+                    return null;
+                }
+            } catch (Exception e) {
+                logger.warn("Failed to load resource image: {}", imageUrl, e);
+                return null;
+            }
+        }
+        
         if (!cacheEnabled) {
             // 캐시 비활성화 시 직접 로드
             return new Image(imageUrl, true);

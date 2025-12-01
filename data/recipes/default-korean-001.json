@@ -1,25 +1,34 @@
 {
-  "name": "Bibimbap",
+  "name": "Authentic Korean Bibimbap",
   "ingredients": [
-    "2 cups cooked rice",
-    "1 cup spinach",
+    "2 cups short-grain white rice, cooked",
+    "2 cups fresh spinach",
     "1 cup bean sprouts",
-    "1 carrot",
-    "1 zucchini",
-    "2 eggs",
-    "2 tablespoons gochujang",
-    "1 tablespoon sesame oil",
-    "1 tablespoon soy sauce"
+    "1 large carrot, julienned",
+    "1 medium zucchini, julienned",
+    "4 oz shiitake mushrooms, sliced",
+    "1/2 cup ground beef (optional)",
+    "2 large eggs",
+    "3 tablespoons gochujang (Korean chili paste)",
+    "2 tablespoons sesame oil, divided",
+    "2 tablespoons soy sauce, divided",
+    "1 tablespoon rice vinegar",
+    "1 tablespoon sugar",
+    "2 cloves garlic, minced",
+    "1 tablespoon toasted sesame seeds",
+    "1/4 cup green onions, chopped",
+    "vegetable oil for cooking",
+    "salt to taste"
   ],
-  "steps": "Cook rice and set aside.\nBlanch spinach and bean sprouts separately, season with sesame oil.\nJulienne carrot and zucchini, sauté separately.\nFry eggs sunny-side up.\nArrange vegetables over rice in a bowl.\nTop with fried egg and gochujang.\nMix everything together before eating.",
+  "steps": "Cook rice according to package instructions and keep warm.\nBlanch spinach in boiling water for 30 seconds, then immediately transfer to ice water. Squeeze out excess water and season with 1 teaspoon sesame oil, 1 teaspoon soy sauce, and minced garlic.\nBlanch bean sprouts in boiling water for 2 minutes, drain, and season with 1 teaspoon sesame oil, 1 teaspoon soy sauce, and a pinch of salt.\nHeat a small amount of vegetable oil in a pan. Sauté julienned carrot for 2-3 minutes until slightly softened. Season with a pinch of salt.\nIn the same pan, sauté julienned zucchini for 2-3 minutes until tender. Season with salt.\nSauté sliced mushrooms until golden brown and tender. Season with 1 teaspoon soy sauce.\nIf using ground beef, cook in a pan with 1 tablespoon soy sauce and 1 teaspoon sugar until browned.\nFry eggs sunny-side up in a non-stick pan.\nTo make the sauce: mix gochujang with 1 tablespoon sesame oil, rice vinegar, and 1 teaspoon sugar.\nTo assemble: Place warm rice in the bottom of each bowl.\nArrange vegetables (spinach, bean sprouts, carrot, zucchini, mushrooms) in separate sections on top of the rice.\nAdd ground beef (if using) in the center.\nTop with a fried egg.\nDrizzle with gochujang sauce and remaining sesame oil.\nGarnish with sesame seeds and green onions.\nMix everything together thoroughly before eating.",
   "servingSize": 2,
   "nutritionInfo": {
-    "calories": 520,
-    "protein": 18.0,
-    "carbs": 75.0,
-    "fat": 16.0
+    "calories": 580,
+    "protein": 22.0,
+    "carbs": 78.0,
+    "fat": 18.0
   },
-  "cookTimeMinutes": 30,
+  "cookTimeMinutes": 40,
   "dietaryRestrictions": [],
   "recipeId": "default-korean-001"
 }

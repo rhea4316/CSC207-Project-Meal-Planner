@@ -60,7 +60,12 @@ public class SelectRecipeDialog {
         scrollPane.setPrefHeight(400);
         scrollPane.setStyle("-fx-background-color: transparent;");
         
-        container.getChildren().set(0, scrollPane);
+        // Replace loading label with scroll pane
+        if (!container.getChildren().isEmpty()) {
+            container.getChildren().set(0, scrollPane);
+        } else {
+            container.getChildren().add(scrollPane);
+        }
         dialog.setContent(container);
         
         // Load recipes in background
@@ -72,12 +77,15 @@ public class SelectRecipeDialog {
                 List<Recipe> recipes = recipeRepository.findAll();
                 Platform.runLater(() -> {
                     try {
+                        // Clear container and add appropriate content
+                        container.getChildren().clear();
+                        
                         if (recipes == null || recipes.isEmpty()) {
                             Label emptyLabel = new Label("No recipes available. Create a recipe first!");
                             emptyLabel.getStyleClass().add("text-gray-500");
                             emptyLabel.setAlignment(Pos.CENTER);
                             emptyLabel.setPadding(new Insets(40));
-                            container.getChildren().set(0, emptyLabel);
+                            container.getChildren().add(emptyLabel);
                         } else {
                             for (Recipe recipe : recipes) {
                                 if (recipe != null) {
@@ -85,32 +93,36 @@ public class SelectRecipeDialog {
                                     recipeGrid.getChildren().add(card);
                                 }
                             }
+                            container.getChildren().add(scrollPane);
                         }
                     } catch (Exception e) {
                         logger.error("Error updating UI with recipes", e);
+                        container.getChildren().clear();
                         Label errorLabel = new Label("Failed to display recipes: " + e.getMessage());
                         errorLabel.getStyleClass().add("text-gray-500");
                         errorLabel.setAlignment(Pos.CENTER);
                         errorLabel.setPadding(new Insets(40));
-                        container.getChildren().set(0, errorLabel);
+                        container.getChildren().add(errorLabel);
                     }
                 });
             } catch (IllegalStateException e) {
                 Platform.runLater(() -> {
+                    container.getChildren().clear();
                     Label errorLabel = new Label("Failed to load recipes: " + e.getMessage());
                     errorLabel.getStyleClass().add("text-gray-500");
                     errorLabel.setAlignment(Pos.CENTER);
                     errorLabel.setPadding(new Insets(40));
-                    container.getChildren().set(0, errorLabel);
+                    container.getChildren().add(errorLabel);
                 });
             } catch (Exception e) {
                 Platform.runLater(() -> {
+                    container.getChildren().clear();
                     String errorMessage = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
                     Label errorLabel = new Label("Failed to load recipes: " + errorMessage);
                     errorLabel.getStyleClass().add("text-gray-500");
                     errorLabel.setAlignment(Pos.CENTER);
                     errorLabel.setPadding(new Insets(40));
-                    container.getChildren().set(0, errorLabel);
+                    container.getChildren().add(errorLabel);
                 });
             }
         }).start();
@@ -128,10 +140,25 @@ public class SelectRecipeDialog {
         
         card.setStyle(defaultStyle);
         
-        // Image placeholder
+        // Image container with placeholder
+        StackPane imageContainer = new StackPane();
+        imageContainer.setPrefHeight(100);
+        imageContainer.setMinHeight(100);
+        imageContainer.setMaxHeight(100);
+        
+        // Placeholder background
         Region imagePlaceholder = new Region();
         imagePlaceholder.setPrefHeight(100);
         imagePlaceholder.setStyle("-fx-background-color: #E5E7EB; -fx-background-radius: 12px 12px 0 0;");
+        imageContainer.getChildren().add(imagePlaceholder);
+        
+        // Apply clipping mask to keep image inside card
+        javafx.scene.shape.Rectangle clip = new javafx.scene.shape.Rectangle();
+        clip.setArcWidth(24); // 12px radius on top corners
+        clip.setArcHeight(24);
+        clip.widthProperty().bind(imageContainer.widthProperty());
+        clip.heightProperty().bind(imageContainer.heightProperty());
+        imageContainer.setClip(clip);
         
         // Load image if available
         if (recipe.getImageUrl() != null && !recipe.getImageUrl().isEmpty()) {
@@ -140,19 +167,25 @@ public class SelectRecipeDialog {
                     Image image = imageCache.getImage(recipe.getImageUrl());
                     if (image != null) {
                         Platform.runLater(() -> {
+                            // Check if card still exists and has children
+                            if (card.getChildren().isEmpty() || card.getChildren().get(0) != imageContainer) {
+                                return; // Card structure changed, skip image update
+                            }
+                            
                             ImageView imageView = new ImageView(image);
-                            imageView.setFitWidth(150);
-                            imageView.setFitHeight(100);
-                            imageView.setPreserveRatio(true);
+                            imageView.fitWidthProperty().bind(imageContainer.widthProperty());
+                            imageView.fitHeightProperty().bind(imageContainer.heightProperty());
+                            imageView.setPreserveRatio(false); // Fill entire container
                             imageView.setSmooth(true);
-                            imagePlaceholder.setStyle("-fx-background-color: transparent; -fx-background-radius: 12px 12px 0 0;");
-                            StackPane imageStack = new StackPane();
-                            imageStack.getChildren().addAll(imagePlaceholder, imageView);
-                            card.getChildren().set(0, imageStack);
+                            imageView.setCache(true);
+                            
+                            // Replace placeholder with image view
+                            imageContainer.getChildren().set(0, imageView);
                         });
                     }
                 } catch (Exception e) {
                     // Keep placeholder if image fails to load
+                    logger.debug("Failed to load recipe image: {}", recipe.getImageUrl());
                 }
             }).start();
         }
@@ -183,7 +216,7 @@ public class SelectRecipeDialog {
         
         content.getChildren().addAll(nameLabel, meta);
         
-        card.getChildren().addAll(imagePlaceholder, content);
+        card.getChildren().addAll(imageContainer, content);
         
         // Hover effects
         card.setOnMouseEntered(e -> {

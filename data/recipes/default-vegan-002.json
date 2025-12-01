@@ -1,23 +1,35 @@
 {
-  "name": "Vegan Pasta Primavera",
+  "name": "Vegan Pasta Primavera with Cashew Cream",
   "ingredients": [
-    "8 oz pasta",
-    "2 cups mixed vegetables",
-    "2 tablespoons olive oil",
-    "3 cloves garlic",
-    "1/4 cup vegetable broth",
+    "12 oz penne or fusilli pasta",
+    "1 cup broccoli florets",
+    "1 cup bell peppers, sliced",
+    "1 cup cherry tomatoes, halved",
+    "1 cup zucchini, sliced",
+    "1/2 cup carrots, julienned",
+    "1/2 cup yellow squash, sliced",
+    "1/4 cup sun-dried tomatoes, chopped",
+    "3 tablespoons olive oil, divided",
+    "4 cloves garlic, minced",
+    "1/2 cup vegetable broth",
     "1/4 cup nutritional yeast",
-    "fresh basil to taste"
+    "1/4 cup raw cashews, soaked",
+    "1/4 cup fresh basil, chopped",
+    "2 tablespoons fresh lemon juice",
+    "1 teaspoon dried oregano",
+    "salt to taste",
+    "black pepper to taste",
+    "red pepper flakes to taste"
   ],
-  "steps": "Cook pasta according to package directions.\nHeat olive oil in a large pan over medium heat.\nAdd garlic and sauté for 1 minute.\nAdd vegetables and cook for 5-6 minutes until tender.\nAdd vegetable broth and nutritional yeast.\nToss with cooked pasta and fresh basil.\nServe hot.",
-  "servingSize": 2,
+  "steps": "Soak raw cashews in hot water for 30 minutes, then drain.\nBring a large pot of salted water to a boil. Add pasta and cook according to package directions until al dente. Reserve 1/2 cup pasta water before draining.\nWhile pasta cooks, heat 2 tablespoons olive oil in a large skillet over medium-high heat.\nAdd minced garlic and cook for 30 seconds until fragrant.\nAdd harder vegetables first (broccoli, carrots) and cook for 2-3 minutes.\nAdd remaining vegetables (bell peppers, zucchini, yellow squash, cherry tomatoes) and cook for 4-5 minutes until all vegetables are crisp-tender.\nSeason vegetables with oregano, salt, pepper, and red pepper flakes.\nTo make cashew cream: Blend soaked cashews with vegetable broth, nutritional yeast, lemon juice, and 1 tablespoon olive oil until smooth and creamy.\nAdd cashew cream to the vegetables and stir until well combined.\nAdd cooked pasta to the skillet along with a splash of reserved pasta water if needed.\nToss everything together until pasta is well coated with the creamy sauce.\nStir in sun-dried tomatoes and fresh basil.\nServe hot, garnished with additional nutritional yeast and red pepper flakes if desired.",
+  "servingSize": 4,
   "nutritionInfo": {
-    "calories": 420,
-    "protein": 16.0,
-    "carbs": 68.0,
-    "fat": 12.0
+    "calories": 460,
+    "protein": 18.0,
+    "carbs": 72.0,
+    "fat": 14.0
   },
-  "cookTimeMinutes": 20,
+  "cookTimeMinutes": 30,
   "dietaryRestrictions": [
     "VEGAN",
     "VEGETARIAN"
