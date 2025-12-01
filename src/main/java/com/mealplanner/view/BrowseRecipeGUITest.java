@@ -1,17 +1,20 @@
-package com.mealplanner;
+package com.mealplanner.view;
 
 import com.mealplanner.data_access.api.SpoonacularApiClient;
 import com.mealplanner.data_access.database.BrowseRecipeAPIParser;
 import com.mealplanner.interface_adapter.ViewManagerModel;
 import com.mealplanner.interface_adapter.controller.BrowseRecipeController;
+import com.mealplanner.interface_adapter.controller.StoreRecipeController;
 import com.mealplanner.interface_adapter.presenter.BrowseRecipePresenter;
+import com.mealplanner.interface_adapter.presenter.StoreRecipePresenter;
 import com.mealplanner.interface_adapter.view_model.RecipeBrowseViewModel;
 import com.mealplanner.interface_adapter.view_model.RecipeDetailViewModel;
+import com.mealplanner.interface_adapter.view_model.RecipeStoreViewModel;
 import com.mealplanner.repository.RecipeRepository;
 import com.mealplanner.repository.impl.FileRecipeRepository;
 import com.mealplanner.use_case.browse_recipe.BrowseRecipeDataAccessInterface;
 import com.mealplanner.use_case.browse_recipe.BrowseRecipeInteractor;
-import com.mealplanner.view.BrowseRecipeView;
+import com.mealplanner.use_case.store_recipe.StoreRecipeInteractor;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -54,9 +57,14 @@ public class BrowseRecipeGUITest extends Application {
         // Create RecipeRepository for local recipe access
         RecipeRepository recipeRepository = new FileRecipeRepository();
 
+        // Create StoreRecipeController for bookmark functionality
+        RecipeStoreViewModel storeViewModel = new RecipeStoreViewModel();
+        StoreRecipePresenter storePresenter = new StoreRecipePresenter(storeViewModel);
+        StoreRecipeInteractor storeInteractor = new StoreRecipeInteractor(storePresenter, recipeRepository);
+        StoreRecipeController storeRecipeController = new StoreRecipeController(storeInteractor);
+
         // Create the view
-        // Note: Using new constructor with null for optional controllers (recommendations and store recipe)
-        // These are optional features that may not be needed for basic testing
+        // Note: Using constructor with StoreRecipeController for bookmark functionality
         BrowseRecipeView browseRecipeView = new BrowseRecipeView(
             recipeBrowseViewModel, 
             controller, 
@@ -64,7 +72,7 @@ public class BrowseRecipeGUITest extends Application {
             recipeDetailViewModel, 
             recipeRepository, 
             null, // GetRecommendationsController - optional, can be null for testing
-            null  // StoreRecipeController - optional, can be null for testing
+            storeRecipeController  // StoreRecipeController - required for bookmark functionality
         );
 
         Scene scene = new Scene(browseRecipeView, 800, 600);
