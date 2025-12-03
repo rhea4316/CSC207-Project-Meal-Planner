@@ -1,4 +1,4 @@
-package com.mealplanner.use_case;
+package com.mealplanner.use_case.adjust_serving_size;
 
 import com.mealplanner.entity.NutritionInfo;
 import com.mealplanner.entity.Recipe;
@@ -197,6 +197,65 @@ public class AdjustServingSizeInteractorTest {
         Recipe adjustedRecipe = outputCaptor.getValue().getAdjustedRecipe();
         assertEquals(4, adjustedRecipe.getServingSize());
         assertNull(adjustedRecipe.getNutritionInfo());
+    }
+
+    @Test
+    public void testNullInputData() {
+        interactor.execute(null);
+
+        verify(presenter).presentError("Input data cannot be null");
+        verify(presenter, never()).presentAdjustedRecipe(any());
+        verify(dataAccess, never()).getRecipeById(anyString());
+    }
+
+    @Test
+    public void testIllegalArgumentException() throws RecipeNotFoundException {
+        // dataAccess.getRecipeById() throws IllegalArgumentException
+        when(dataAccess.getRecipeById("recipe1")).thenThrow(new IllegalArgumentException("Invalid recipe data"));
+
+        AdjustServingSizeInputData inputData = new AdjustServingSizeInputData("recipe1", 4);
+        interactor.execute(inputData);
+
+        verify(presenter).presentError(contains("Invalid serving size"));
+        verify(presenter, never()).presentAdjustedRecipe(any());
+    }
+
+    @Test
+    public void testGeneralException() throws RecipeNotFoundException {
+        when(dataAccess.getRecipeById("recipe1")).thenThrow(new RuntimeException("Database connection error"));
+
+        AdjustServingSizeInputData inputData = new AdjustServingSizeInputData("recipe1", 4);
+        interactor.execute(inputData);
+
+        verify(presenter).presentError(contains("An error occurred while adjusting serving size"));
+        verify(presenter, never()).presentAdjustedRecipe(any());
+    }
+
+    @Test
+    public void testGeneralExceptionWithNullMessage() throws RecipeNotFoundException {
+        // Exception with null message to test e.getMessage() == null case
+        RuntimeException exception = new RuntimeException();
+        when(dataAccess.getRecipeById("recipe1")).thenThrow(exception);
+
+        AdjustServingSizeInputData inputData = new AdjustServingSizeInputData("recipe1", 4);
+        interactor.execute(inputData);
+
+        verify(presenter).presentError(contains("An error occurred while adjusting serving size"));
+        verify(presenter, never()).presentAdjustedRecipe(any());
+    }
+
+    @Test
+    public void testConstructorWithNullDataAccess() {
+        assertThrows(NullPointerException.class, () -> {
+            new AdjustServingSizeInteractor(null, presenter);
+        });
+    }
+
+    @Test
+    public void testConstructorWithNullPresenter() {
+        assertThrows(NullPointerException.class, () -> {
+            new AdjustServingSizeInteractor(dataAccess, null);
+        });
     }
 
     // Helper method to create test recipe
